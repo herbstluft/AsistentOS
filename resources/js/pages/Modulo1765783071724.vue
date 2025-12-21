@@ -1,0 +1,1 @@
+<template><div class="p-8 text-center"><h1 class="text-3xl font-bold text-gray-800 mb-4">Modulo_1765783071724</h1><p class="text-gray-600">Módulo autogenerado. El contenido se está cargando...</p></div></template><script setup></script>
