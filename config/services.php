@@ -45,4 +45,8 @@ return [
         'url' => env('SOCKET_SERVER_URL', 'http://localhost:3001'),
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
 ];

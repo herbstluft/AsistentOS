@@ -9,7 +9,7 @@ class GeminiController extends Controller
 {
     public function proxy(Request $request)
     {
-        $apiKey = 'AIzaSyAZAs3i0-OEFm7F1BCqPTXjVsDvjlX4-8M'; // Ideally from env, but hardcoded for now to match frontend
+        $apiKey = config('services.gemini.key') ?? env('GEMINI_API_KEY'); // Get from config/env
         
         // Construct the request body for Gemini API
         // We expect the frontend to send the 'contents' array and 'generationConfig'
