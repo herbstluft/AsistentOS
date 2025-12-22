@@ -6,12 +6,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     server: {
-        host: '0.0.0.0',
-        hmr: {
-            host: 'localhost',
-        },
         cors: true,
-        allowedHosts: ['all', 'ngrok-free.app', 'localhost', '127.0.0.1', '.ngrok-free.app']
+        allowedHosts: true
     },
     plugins: [
         laravel({
