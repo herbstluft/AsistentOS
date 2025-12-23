@@ -67,6 +67,8 @@ createInertiaApp({
             .use(plugin)
             .use(ElementPlus)
             .use(createPinia())
+            // Register Link globally for ease of use (optional but good practice)
+            // .component('Link', Link) 
             .mount(el);
 
         // 3. Perform Redirect AFTER app is mounted (Safe)
@@ -87,7 +89,9 @@ createInertiaApp({
         }
     },
     progress: {
-        color: '#4B5563',
+        color: '#a855f7', // Purple-500 (Exo Theme)
+        showSpinner: false, // Cleaner, faster feel
+        delay: 25, // Immediate feedback
     },
 });
 

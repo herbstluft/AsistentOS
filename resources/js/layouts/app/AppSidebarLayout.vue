@@ -19,6 +19,18 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const { tabs, activeTab, addTab, removeTab, activateTab } = useTabs();
 
+const routeNameMap: Record<string, string> = {
+    'dashboard': 'Dashboard',
+    'calendar': 'Calendario',
+    'notes': 'Notas',
+    'contacts': 'Contactos',
+    'capabilities': 'Funcionalidades',
+    'image-generation': 'Generar Imágenes',
+    'settings': 'Configuración',
+    'biometrics': 'Biometría',
+    'spotify': 'Spotify'
+};
+
 // Sincronizar URL actual con las pestañas
 watch(() => page.url, (newUrl) => {
     // Determinar título basado en breadcrumbs o URL
@@ -28,8 +40,12 @@ watch(() => page.url, (newUrl) => {
     } else {
         // Fallback simple: /dashboard/users -> Users
         const parts = newUrl.split('/');
-        const lastPart = parts[parts.length - 1];
-        title = lastPart.charAt(0).toUpperCase() + lastPart.slice(1) || 'Inicio';
+        // Remove empty strings and get last part
+        const cleanParts = parts.filter(p => p);
+        const lastPart = cleanParts[cleanParts.length - 1] || 'dashboard';
+
+        // Translate using map or capitalize fallback
+        title = routeNameMap[lastPart] || (lastPart.charAt(0).toUpperCase() + lastPart.slice(1));
     }
 
     addTab({
@@ -44,8 +60,9 @@ watch(() => page.url, (newUrl) => {
 
 import { useAssistantReminders } from '@/composables/useAssistantReminders';
 import { useVoice } from '@/composables/useVoice';
-import MoodOrbs from '@/components/MoodOrbs.vue';
-import { computed } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
+
+const MoodOrbs = defineAsyncComponent(() => import('@/components/MoodOrbs.vue'));
 
 const { speak } = useVoice();
 // Initialize Global Reminder Checker (true = enable checking)

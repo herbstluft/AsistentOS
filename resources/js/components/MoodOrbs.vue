@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
 const {
     isSpeaking, stopSpeaking,
     audioLevel, isRecording, isListening, hasError,
-    startMicrophone, statusMessage,
+    triggerMicActivation, statusMessage,
     security, handleVerifyNip,
     userOps,
     reportState, closeReport,
@@ -52,15 +52,10 @@ const toggleFloating = () => isFloatingOpen.value = !isFloatingOpen.value;
 
 import { watch, onMounted } from 'vue';
 
-// Auto-start listening on mount
+// Auto-start listening logic removed to prevent conflicts and permission errors
+// Microphone must be activated manually by the user via Dashboard controls
 onMounted(() => {
-    startMicrophone();
-
-    // Global fallback for browser policies requiring interaction
-    const unlockHandler = () => {
-        if (!isListening.value) startMicrophone();
-    };
-    window.addEventListener('click', unlockHandler, { once: true });
+    // No auto-start
 });
 
 watch([isListening, isSpeaking], ([listening, speaking]) => {
@@ -73,7 +68,7 @@ const handleFloatingInteraction = () => {
     if (isSpeaking.value) {
         stopSpeaking();
     } else {
-        startMicrophone();
+        triggerMicActivation(true);
     }
 };
 

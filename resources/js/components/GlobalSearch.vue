@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Search, Command, FileText, User, Settings, Calendar, Home, ArrowRight, MessageSquare, Lock, Palette, Fingerprint, Music, MessageCircle, Shield, Zap } from 'lucide-vue-next';
+import { Search, Command, FileText, User, Settings, Calendar, Home, ArrowRight, MessageSquare, Lock, Palette, Fingerprint, Music, MessageCircle, Shield, Zap, Users, LogOut, Image as ImageIcon } from 'lucide-vue-next';
 import { Link, router } from '@inertiajs/vue3';
 
 const open = ref(false);
@@ -12,9 +12,12 @@ const links = [
     // General
     { title: 'Dashboard', href: '/dashboard', icon: Home, category: 'General', description: 'Panel principal con resumen' },
     { title: 'Funcionalidades', href: '/capabilities', icon: Zap, category: 'General', description: 'Explora lo que puede hacer tu IA' },
+    { title: 'Generar Imágenes', href: '/image-generation', icon: ImageIcon, category: 'General', description: 'Crea arte visual con IA' },
 
     // Aplicaciones
     { title: 'Calendario', href: '/calendar', icon: Calendar, category: 'Aplicaciones', description: 'Gestiona tus eventos y citas' },
+    { title: 'Contactos', href: '/contacts', icon: Users, category: 'Aplicaciones', description: 'Directorio de personas y empresas' },
+    { title: 'Notas', href: '/notes', icon: FileText, category: 'Aplicaciones', description: 'Tus apuntes y documentos' },
 
     // Configuración - Cuenta
     { title: 'Mi Perfil', href: '/settings/profile', icon: User, category: 'Configuración', description: 'Información personal' },
@@ -27,6 +30,9 @@ const links = [
     // Configuración - Integraciones
     { title: 'Biometría', href: '/settings/biometrics', icon: Fingerprint, category: 'Integraciones', description: 'Autenticación biométrica' },
     { title: 'Spotify', href: '/settings/spotify', icon: Music, category: 'Integraciones', description: 'Conectar con Spotify' },
+
+    // Acciones de Sistema
+    { title: 'Cerrar Sesión', href: '/logout', icon: LogOut, category: 'Sistema', description: 'Salir de la cuenta segura', method: 'post' },
 ];
 
 const filteredLinks = computed(() => {
@@ -49,9 +55,13 @@ const handleKeydown = (e: KeyboardEvent) => {
     }
 };
 
-const navigateTo = (href: string) => {
+const navigateTo = (link: any) => {
     open.value = false;
-    router.visit(href);
+    if (link.method === 'post') {
+        router.post(link.href);
+    } else {
+        router.visit(link.href);
+    }
 };
 
 onMounted(() => {
@@ -80,6 +90,12 @@ onUnmounted(() => {
             </button>
         </DialogTrigger>
         <DialogContent class="p-0 gap-0 bg-popover border-border sm:max-w-xl overflow-hidden shadow-2xl">
+            <!-- Accessibility: Visually hidden title and description -->
+            <DialogTitle class="sr-only">Buscador Global</DialogTitle>
+            <DialogDescription class="sr-only">
+                Busca y navega rápidamente por las aplicaciones, configuraciones y acciones del sistema.
+            </DialogDescription>
+
             <div class="flex items-center px-4 py-3 border-b border-border">
                 <Search class="w-5 h-5 text-muted-foreground mr-3" />
                 <input v-model="searchQuery" placeholder="Escribe para buscar..."
@@ -96,7 +112,7 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else class="space-y-1">
-                    <button v-for="link in filteredLinks" :key="link.href" @click="navigateTo(link.href)"
+                    <button v-for="link in filteredLinks" :key="link.href" @click="navigateTo(link)"
                         class="w-full flex items-center justify-between px-3 py-3 rounded-lg hover:bg-accent group transition-colors text-left">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <div
@@ -126,7 +142,7 @@ onUnmounted(() => {
                     <span>Seleccionar <span class="text-muted-foreground/70">↵</span></span>
                 </div>
                 <div>
-                    Buscador Global v1.0
+                    Buscador Global v1.2
                 </div>
             </div>
         </DialogContent>

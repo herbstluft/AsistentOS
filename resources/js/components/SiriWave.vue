@@ -67,7 +67,7 @@ class SiriWaveCurve {
             const y = y_base + (m * this.equation(i));
             x_init = x_init || x;
             ctx.lineTo(x, y);
-            i += 0.01;
+            i += 0.08;
         }
 
         const h = Math.abs(this.equation(0));
@@ -115,11 +115,12 @@ const initCanvas = () => {
         amplitude: 1.2,
     };
 
-    // Create curves
+    // Create curves (Optimized: Fewer curves)
     curves = [];
     for (let i = 0; i < COLORS.length; i++) {
         const color = COLORS[i];
-        const numCurves = 2 + ((Math.random() * 2) | 0);
+        // Reduced max curves from 4 to 2 per color
+        const numCurves = 1 + ((Math.random() * 1) | 0);
         for (let j = 0; j < numCurves; j++) {
             curves.push(new SiriWaveCurve({ controller, color }));
         }
@@ -143,6 +144,7 @@ const draw = () => {
 
     animationId = requestAnimationFrame(draw);
 };
+
 
 const start = () => {
     if (isRunning) return;

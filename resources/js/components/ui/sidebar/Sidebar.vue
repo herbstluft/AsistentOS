@@ -29,7 +29,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   <Sheet v-else-if="isMobile" :open="openMobile" v-bind="$attrs" @update:open="setOpenMobile">
     <SheetContent data-sidebar="sidebar" data-slot="sidebar" data-mobile="true" :side="side"
-      class="bg-sidebar backdrop-blur-3xl text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden border-r border-sidebar-border shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+      class="bg-sidebar backdrop-blur-xl text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden border-r border-sidebar-border shadow-[0_0_40px_rgba(0,0,0,0.5)]"
       :style="{
         '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
       }">
@@ -66,7 +66,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       props.class,
     )" v-bind="$attrs">
       <div data-sidebar="sidebar"
-        class="bg-sidebar backdrop-blur-2xl group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-xl group-data-[variant=floating]:border group-data-[variant=floating]:shadow-2xl transition-all duration-300">
+        class="bg-sidebar backdrop-blur-md group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-xl group-data-[variant=floating]:border group-data-[variant=floating]:shadow-2xl transition-all duration-300">
         <slot />
       </div>
     </div>

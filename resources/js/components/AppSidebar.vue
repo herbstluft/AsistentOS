@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Settings, LifeBuoy, Activity, Cpu, HardDrive, LayoutGrid, MessageCircle, Zap, FileText, Calendar, Users } from 'lucide-vue-next';
+import { Settings, LifeBuoy, Activity, Cpu, HardDrive, LayoutGrid, MessageCircle, Zap, FileText, Calendar, Users, Image as ImageIcon } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 
@@ -43,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Contactos',
         href: '/contacts',
         icon: Users,
+    },
+    {
+        title: 'Generar Imágenes',
+        href: '/image-generation',
+        icon: ImageIcon,
     },
 ];
 

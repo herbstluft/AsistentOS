@@ -83,6 +83,10 @@ Route::middleware([
         return Inertia::render('Contacts');
     })->name('contacts');
 
+    Route::get('/image-generation', function () {
+        return Inertia::render('ImageGenerationView');
+    })->name('image-generation');
+
     // Note Routes
     Route::get('/notes', [App\Http\Controllers\NoteController::class, 'index'])->name('notes');
     Route::get('/api/notes', [App\Http\Controllers\NoteController::class, 'list']);

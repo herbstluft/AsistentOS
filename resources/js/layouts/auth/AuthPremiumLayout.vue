@@ -26,44 +26,45 @@ defineProps<{
 
         <Head :title="title" />
 
-        <!-- Dynamic Ambient Background (OPTIMIZED FOR SPEED) -->
-        <div class="fixed inset-0 pointer-events-none overflow-hidden" style="contain: strict;">
-            <div class="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-blue-600/10 rounded-full blur-[60px] will-change-transform"
-                style="transform: translate3d(0,0,0);"></div>
-            <div class="absolute bottom-[-20%] right-[-10%] w-[700px] h-[700px] bg-purple-600/10 rounded-full blur-[60px] will-change-transform"
-                style="transform: translate3d(0,0,0);"></div>
-            <div class="absolute top-[40%] left-[30%] w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[50px] will-change-transform"
-                style="transform: translate3d(0,0,0);"></div>
+        <!-- Optimized Ambient Background (Static Gradients instead of heavy blurs) -->
+        <div class="fixed inset-0 pointer-events-none" style="z-index: 0;">
+            <div class="absolute inset-0 bg-gradient-to-br from-background via-background to-background"></div>
+            <div
+                class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-3xl transform-gpu">
+            </div>
+            <div
+                class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 rounded-full blur-3xl transform-gpu">
+            </div>
         </div>
 
         <!-- Main Card Container -->
-        <div class="w-full max-w-[420px] relative z-10 py-12 sm:py-6 perspective-1000">
+        <div class="w-full max-w-[420px] relative z-10 py-12 sm:py-6">
 
-            <!-- Floating 3D Card -->
-            <div class="relative group transition-all duration-500 transform hover:scale-[1.01]">
+            <!-- High Performance Card (No 3D Tilt, simplified shadows) -->
+            <div class="relative group">
 
-                <!-- Glow Behind -->
+                <!-- Simple Glow Behind (No animation) -->
                 <div
-                    class="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt">
+                    class="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-[2rem] blur-lg">
                 </div>
 
-                <!-- Glass Card Content -->
+                <!-- Glass Card Content (Reduced backdrop-blur for speed) -->
                 <div
-                    class="relative rounded-2xl sm:rounded-[1.8rem] bg-card/80 backdrop-blur-2xl border border-border p-6 sm:p-8 shadow-2xl overflow-hidden">
+                    class="relative rounded-2xl sm:rounded-[1.8rem] bg-card/90 backdrop-blur-md border border-border/50 p-6 sm:p-8 shadow-xl overflow-hidden">
 
-                    <!-- Top Shine -->
+                    <!-- Top Shine (Static) -->
                     <div
-                        class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent">
+                        class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent">
                     </div>
 
                     <!-- Header -->
                     <div class="flex flex-col items-center mb-8">
                         <div class="relative mb-6">
-                            <div class="absolute inset-0 bg-blue-500/30 blur-xl rounded-full animate-pulse-slow">
-                            </div>
+                            <!-- Logo Container (Simplified) -->
+                            <div class="absolute inset-0 bg-blue-500/20 blur-lg rounded-full"></div>
                             <Link href="/">
                                 <div
-                                    class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center relative shadow-inner hover:scale-105 transition-transform duration-300">
+                                    class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center relative shadow-lg hover:scale-105 transition-transform duration-200 transform-gpu">
                                     <AppLogoIcon class="w-10 h-10 text-white" />
                                 </div>
                             </Link>

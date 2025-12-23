@@ -66,7 +66,7 @@ export function useAssistantOrchestrator() {
     // --- State & Speech Setup ---
 
     // Hoisted function to break dependency cycle
-    async function processUserQuery(text: string) {
+    async function processUserQuery(text: string, bypassWakeWord: boolean = false) {
         if (isProcessing.value) return; // Prevent double submission
         if (!text || !text.trim()) return;
 
@@ -92,14 +92,17 @@ export function useAssistantOrchestrator() {
         // The user's log shows: "Pepe quiero que a partir de ahora te llames jarvis" -> Intent detected.
         // So the user IS using the current name.
 
-        if (!lowerText.includes(lowerName)) {
+        if (!bypassWakeWord && !lowerText.includes(lowerName)) {
             console.log(`🔇 Ignorando: No se detectó '${lowerName}' en '${text}'`);
             return;
         }
 
-        // Strip wake word
-        let cleanText = text.replace(new RegExp(`^${storedName}\\s*`, 'i'), '');
-        cleanText = cleanText.replace(new RegExp(storedName, 'i'), '').trim();
+        // Strip wake word (only if present, regardless of bypass mode)
+        let cleanText = text;
+        if (lowerText.includes(lowerName)) {
+            cleanText = text.replace(new RegExp(`^${storedName}\\s*`, 'i'), '');
+            cleanText = cleanText.replace(new RegExp(storedName, 'i'), '').trim();
+        }
 
         if (!cleanText) {
             console.log('🔇 Comando vacío después de quitar el nombre.');
@@ -1815,8 +1818,28 @@ export function useAssistantOrchestrator() {
         speak("Ya leí el documento. ¿Qué quieres saber?");
     };
 
+    // ANTI-LOOP THROTTLE
+    let lastActivationTime = 0;
+
     // Wrapper functions for external callers
-    const startMicrophone = async () => {
+    const triggerMicActivation = async (fromUserInteraction = false) => {
+        const now = Date.now();
+        if (now - lastActivationTime < 2000) {
+            console.warn('🚦 Trigger bloqueado por throttle (demasiadas llamadas seguidas)');
+            return;
+        }
+        lastActivationTime = now;
+
+        if (!fromUserInteraction) {
+            console.warn('⛔ Bloqueado intento de inicio de micrófono sin interacción explícita.');
+            return;
+        }
+
+        console.group('🎤 Diagnóstico de Activación');
+        console.log('triggerMicActivation() llamado con fromUserInteraction=true');
+        console.trace('¿Quién me llamó?'); // <--- AQUÍ ESTÁ EL DETECTIVE
+        console.groupEnd();
+
         if (isSpeaking.value) {
             console.log('🛑 Interrumpiendo asistente para escuchar usuario...');
             stopSpeech();
@@ -1830,7 +1853,7 @@ export function useAssistantOrchestrator() {
 
     const processTextQuery = async (text: string) => {
         transcript.value = text;
-        await processUserQuery(text);
+        await processUserQuery(text, true); // True: Bypass wake word check for explicit text input
     };
 
     return {
@@ -1844,7 +1867,8 @@ export function useAssistantOrchestrator() {
         visualState,
         reportState,
         // Methods
-        startMicrophone,
+        triggerMicActivation, // NEW NAME
+        startMicrophone: triggerMicActivation, // BACKWARD COMPAT (Just in case, but marked)
         stopMicrophone,
         stopSpeaking: stopSpeech, // Renamed silence to stopSpeaking for consistency
         processTextQuery,

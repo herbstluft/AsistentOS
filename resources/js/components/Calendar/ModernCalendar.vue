@@ -29,7 +29,7 @@ const firstDayOfMonth = computed(() => {
 });
 
 const monthName = computed(() => {
-    return currentDate.value.toLocaleString('default', { month: 'long', year: 'numeric' });
+    return currentDate.value.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
 });
 
 const calendarDays = computed(() => {
@@ -114,129 +114,174 @@ defineExpose({ fetchAppointments });
 </script>
 
 <template>
+    <!-- Main Container: h-auto on mobile to allow scrolling, h-full on desktop -->
     <div
-        class="flex flex-col h-full bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        class="flex flex-col md:h-full h-auto bg-card text-card-foreground rounded-3xl shadow-xl border border-border ring-1 ring-border/50 relative overflow-hidden">
+
         <!-- Header -->
         <div
-            class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-neutral-200 dark:border-neutral-800 gap-4">
-            <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
-                <h2 class="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white capitalize">{{ monthName }}
-                </h2>
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
+            class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 sm:p-8 border-b border-border/60 gap-6 bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+            <div class="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-start">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-light tracking-tight text-foreground capitalize">
+                        {{ monthName }}
+                    </h2>
+                    <p class="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-80">
+                        {{ currentDate.getFullYear() }}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center bg-secondary/50 rounded-xl p-1.5 border border-border/50">
                         <button @click="prevMonth"
-                            class="p-1 hover:bg-white dark:hover:bg-neutral-700 rounded-md transition-colors"
+                            class="p-2 hover:bg-background rounded-lg transition-all active:scale-95 text-muted-foreground hover:text-foreground"
                             title="Mes anterior">
-                            <ChevronLeft class="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                            <ChevronLeft class="w-5 h-5" />
                         </button>
                         <button @click="nextMonth"
-                            class="p-1 hover:bg-white dark:hover:bg-neutral-700 rounded-md transition-colors"
+                            class="p-2 hover:bg-background rounded-lg transition-all active:scale-95 text-muted-foreground hover:text-foreground"
                             title="Mes siguiente">
-                            <ChevronRight class="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                            <ChevronRight class="w-5 h-5" />
                         </button>
                     </div>
                     <Button variant="outline" size="sm" @click="currentDate = new Date()"
-                        class="hidden sm:flex">Hoy</Button>
+                        class="hidden sm:flex h-10 px-4 rounded-xl font-medium border-border/60 hover:bg-secondary/50">Hoy</Button>
                 </div>
             </div>
-            <Button @click="$emit('add-appointment')" class="w-full sm:w-auto gap-2 shadow-lg shadow-primary/20">
-                <Plus class="w-4 h-4" />
+
+            <Button @click="$emit('add-appointment')"
+                class="w-full sm:w-auto gap-2 shadow-lg shadow-purple-500/20 bg-purple-600 hover:bg-purple-700 text-white border-0 h-11 px-6 rounded-xl transition-all hover:scale-105 active:scale-95">
+                <Plus class="w-5 h-5" />
                 Nueva Cita
             </Button>
         </div>
 
-        <div class="flex flex-col lg:flex-row flex-1 overflow-hidden">
-            <!-- Calendar Grid -->
-            <div class="flex-1 flex flex-col p-2 sm:p-6 overflow-y-auto">
+        <!-- Content Area: Flex row on Desktop -->
+        <div class="flex flex-row flex-1 bg-muted/20 relative overflow-hidden">
+
+            <!-- Calendar Grid (Takes full width ALWAYS now) -->
+            <div class="flex-1 flex flex-col p-4 sm:p-8 overflow-y-auto min-h-[500px]">
                 <!-- Weekdays -->
-                <div class="grid grid-cols-7 mb-2 sm:mb-4">
+                <div class="grid grid-cols-7 mb-4 sm:mb-6 px-1">
                     <div v-for="day in ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']" :key="day"
-                        class="text-center text-xs sm:text-sm font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                        class="text-center text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-80">
                         {{ day }}
                     </div>
                 </div>
 
-                <!-- Days -->
-                <div class="grid grid-cols-7 gap-1 sm:gap-4 flex-1 auto-rows-fr min-h-[300px]">
+                <!-- Days Grid -->
+                <!-- Removed fixed heights that caused compression -->
+                <div class="grid grid-cols-7 gap-2 sm:gap-4 auto-rows-fr">
                     <div v-for="(day, index) in calendarDays" :key="index" @click="selectDate(day)" :class="[
-                        'relative p-1 sm:p-2 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer flex flex-col items-center sm:items-start justify-start min-h-[60px] sm:min-h-[100px]',
+                        'relative p-2 sm:p-3 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col items-center sm:items-start justify-start min-h-[100px] sm:min-h-[140px] group',
                         day.isPadding ? 'border-transparent opacity-0 pointer-events-none' :
-                            day.isToday ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/20' :
-                                selectedDate && isSameDay(day.date, selectedDate) ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600 ring-2 ring-neutral-200 dark:ring-neutral-700' :
-                                    'bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 hover:shadow-sm'
+                            day.isToday ? 'bg-purple-500/10 border-purple-500/50 ring-1 ring-purple-500/20' :
+                                selectedDate && isSameDay(day.date, selectedDate) ? 'bg-card border-purple-400 ring-2 ring-purple-400/30 shadow-md transform scale-[1.02] z-10' :
+                                    'bg-card border-border/60 hover:border-purple-500/40 hover:shadow-lg hover:-translate-y-0.5'
                     ]">
+                        <!-- Date Number -->
                         <span :class="[
-                            'text-xs sm:text-sm font-semibold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full mb-1 sm:mb-2',
-                            day.isToday ? 'bg-primary text-white shadow-md shadow-primary/30' : 'text-neutral-700 dark:text-neutral-300'
+                            'text-base sm:text-lg font-semibold w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full mb-2 transition-colors',
+                            day.isToday
+                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/40'
+                                : selectedDate && isSameDay(day.date, selectedDate)
+                                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200'
+                                    : 'text-foreground/80 group-hover:text-foreground bg-secondary/50'
                         ]">
                             {{ day.day }}
                         </span>
 
-                        <!-- Appointment Dots (Mobile) -->
-                        <div class="flex sm:hidden gap-0.5 mt-1">
-                            <div v-for="n in Math.min(getAppointmentsForDate(day.date).length, 3)" :key="n"
-                                class="w-1.5 h-1.5 rounded-full bg-primary/70"></div>
+                        <!-- Appointment Dots (Mobile/Tablet) -->
+                        <div class="flex lg:hidden gap-1 mt-1 flex-wrap justify-center">
+                            <div v-for="n in Math.min(getAppointmentsForDate(day.date).length, 4)" :key="n"
+                                class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50"></div>
                         </div>
 
-                        <!-- Appointment List (Desktop) -->
-                        <div class="hidden sm:flex flex-col gap-1 w-full overflow-hidden">
-                            <div v-for="app in getAppointmentsForDate(day.date).slice(0, 10)" :key="app.id"
-                                @click.stop="$emit('edit-appointment', app)" :class="['text-[10px] px-1.5 py-0.5 rounded truncate w-full border-l-2 font-medium transition-colors hover:brightness-95',
+                        <!-- Appointment List (Desktop Only) -->
+                        <div class="hidden lg:flex flex-col gap-1.5 w-full overflow-hidden mt-1">
+                            <div v-for="app in getAppointmentsForDate(day.date).slice(0, 4)" :key="app.id"
+                                @click.stop="$emit('edit-appointment', app)" :class="['text-[11px] px-2 py-1 rounded-md truncate w-full border-l-[3px] font-medium transition-all hover:scale-[1.02]',
                                     app.status === 'completed'
-                                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-500 line-through opacity-70'
-                                        : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-500'
+                                        ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/50 line-through opacity-60'
+                                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/60 hover:bg-purple-500/20'
                                 ]">
                                 {{ new Date(app.start_time).toLocaleTimeString([], {
                                     hour: '2-digit', minute: '2-digit',
                                     hour12: true
-                                }) }} {{ app.title }}
+                                }) }} <span class="opacity-80 ml-1 font-normal">| {{ app.title }}</span>
                             </div>
-                            <div v-if="getAppointmentsForDate(day.date).length > 10"
-                                class="text-[10px] text-neutral-400 pl-1 font-medium">
-                                +{{ getAppointmentsForDate(day.date).length - 10 }} más
+                            <div v-if="getAppointmentsForDate(day.date).length > 4"
+                                class="text-[10px] text-muted-foreground pl-1 font-medium italic">
+                                +{{ getAppointmentsForDate(day.date).length - 4 }} más...
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Side Panel (Selected Day) -->
-            <transition enter-active-class="transition ease-out duration-300"
-                enter-from-class="opacity-0 translate-y-4 lg:translate-y-0 lg:translate-x-4"
-                enter-to-class="opacity-100 translate-y-0 lg:translate-x-0"
-                leave-active-class="transition ease-in duration-200"
-                leave-from-class="opacity-100 translate-y-0 lg:translate-x-0"
-                leave-to-class="opacity-0 translate-y-4 lg:translate-y-0 lg:translate-x-4">
+            <!-- Side Panel Overlay / Drawer (Floating Absolute) -->
+            <!-- Adds a backdrop on mobile, slides in from right -->
+            <transition enter-active-class="transform transition ease-out duration-300"
+                enter-from-class="translate-x-full" enter-to-class="translate-x-0"
+                leave-active-class="transform transition ease-in duration-200" leave-from-class="translate-x-0"
+                leave-to-class="translate-x-full">
+
                 <div v-if="selectedDate"
-                    class="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 p-6 overflow-y-auto max-h-[40vh] lg:max-h-full shadow-inner lg:shadow-none">
-                    <div class="flex items-center justify-between mb-6">
+                    class="absolute inset-y-0 right-0 w-full md:w-[400px] bg-card border-l border-border shadow-2xl z-40 flex flex-col">
+
+                    <!-- Drawer Header with Close Button -->
+                    <div
+                        class="flex items-center justify-between p-6 border-b border-border/60 bg-card/95 backdrop-blur sticky top-0 z-10">
                         <div>
-                            <h3 class="text-lg font-bold text-neutral-900 dark:text-white capitalize">
-                                {{ selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }) }}
+                            <h3
+                                class="text-2xl font-light text-foreground capitalize tracking-tight flex items-center gap-2">
+                                {{ selectedDate.toLocaleDateString('es-ES', { weekday: 'long' }) }}
+                                <span
+                                    class="text-purple-500 font-bold bg-purple-500/10 px-2 py-0.5 rounded-lg text-lg">{{
+                                        selectedDate.getDate() }}</span>
                             </h3>
-                            <p class="text-sm text-neutral-500">
+                            <p class="text-sm text-muted-foreground mt-1 capitalize">
                                 {{ selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) }}
                             </p>
                         </div>
-                        <div
-                            class="bg-white dark:bg-neutral-800 px-3 py-1 rounded-full border border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-600 dark:text-neutral-400 shadow-sm">
-                            {{ getAppointmentsForDate(selectedDate).length }} citas
-                        </div>
+                        <button @click="selectedDate = null"
+                            class="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+                            <!-- X Icon manually SVG or Lucide -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-x w-6 h-6">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
                     </div>
 
-                    <div class="space-y-4">
+                    <!-- Drawer Content -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm font-medium text-muted-foreground uppercase tracking-widest opacity-60">
+                                Agenda</div>
+                            <div class="text-sm font-semibold text-foreground bg-secondary px-2 py-0.5 rounded-md">{{
+                                getAppointmentsForDate(selectedDate).length }} citas</div>
+                        </div>
+
                         <div v-for="app in getAppointmentsForDate(selectedDate)" :key="app.id"
-                            @click="$emit('edit-appointment', app)" :class="['bg-white dark:bg-neutral-800 p-4 rounded-xl shadow-sm border group hover:border-primary/30 transition-all hover:shadow-md cursor-pointer',
-                                app.status === 'completed' ? 'border-green-200 dark:border-green-900/50 opacity-75' : 'border-neutral-100 dark:border-neutral-700'
+                            @click="$emit('edit-appointment', app)" :class="['bg-background p-5 rounded-2xl shadow-sm border group hover:border-purple-500/40 transition-all hover:shadow-lg cursor-pointer transform hover:-translate-y-1 relative overflow-hidden',
+                                app.status === 'completed' ? 'border-border opacity-75' : 'border-border'
                             ]">
-                            <div class="flex items-start justify-between mb-2">
+                            <!-- Status Indicator Strip -->
+                            <div
+                                :class="['absolute left-0 top-0 bottom-0 w-1.5', app.status === 'completed' ? 'bg-green-500' : 'bg-purple-500']">
+                            </div>
+
+                            <div class="flex items-start justify-between mb-3 pl-2">
                                 <h4
-                                    :class="['font-semibold text-base', app.status === 'completed' ? 'text-green-700 dark:text-green-400 line-through' : 'text-neutral-900 dark:text-white']">
+                                    :class="['font-medium text-lg', app.status === 'completed' ? 'text-muted-foreground line-through decoration-wavy' : 'text-foreground']">
                                     {{ app.title }}
                                 </h4>
                                 <div
-                                    class="flex items-center text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                                    <Clock class="w-3 h-3 mr-1" />
+                                    class="flex items-center text-xs font-bold text-purple-600 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 px-2.5 py-1 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <Clock class="w-3.5 h-3.5 mr-1.5" />
                                     {{ new Date(app.start_time).toLocaleTimeString([], {
                                         hour: '2-digit',
                                         minute: '2-digit', hour12: true
@@ -244,34 +289,34 @@ defineExpose({ fetchAppointments });
                                 </div>
                             </div>
                             <p v-if="app.description"
-                                class="text-sm text-neutral-500 dark:text-neutral-400 mb-3 line-clamp-2 leading-relaxed">
+                                class="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed pl-2 font-light">
                                 {{ app.description }}
                             </p>
-                            <div
-                                class="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50">
-                                <div class="flex items-center text-xs text-neutral-400 gap-1.5">
-                                    <Bell class="w-3 h-3" />
-                                    <span>{{ app.reminder_minutes_before }}m antes</span>
+                            <div class="flex items-center justify-between mt-2 pt-3 border-t border-border/50 pl-2">
+                                <div class="flex items-center text-xs text-muted-foreground gap-2 font-medium">
+                                    <Bell class="w-3.5 h-3.5" />
+                                    <span>{{ app.reminder_minutes_before }}m antelación</span>
                                 </div>
                                 <div v-if="app.status === 'completed'"
-                                    class="flex items-center text-xs text-green-600 dark:text-green-400 font-medium gap-1">
-                                    <CheckCircle class="w-3 h-3" /> Completada
+                                    class="flex items-center text-xs text-green-600 dark:text-green-400 font-bold gap-1.5 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+                                    <CheckCircle class="w-3.5 h-3.5" /> Listo
                                 </div>
                             </div>
                         </div>
 
                         <div v-if="getAppointmentsForDate(selectedDate).length === 0"
-                            class="flex flex-col items-center justify-center py-12 text-center">
+                            class="flex flex-col items-center justify-center py-16 text-center">
                             <div
-                                class="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4 text-neutral-400">
-                                <Clock class="w-8 h-8 opacity-50" />
+                                class="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mb-6 text-muted-foreground/50 ring-8 ring-secondary/30">
+                                <Clock class="w-10 h-10" />
                             </div>
-                            <p class="text-neutral-900 dark:text-white font-medium mb-1">Día libre</p>
-                            <p class="text-sm text-neutral-500 mb-4 max-w-[200px]">No tienes citas programadas para este
-                                día.</p>
-                            <Button variant="outline" size="sm" @click="$emit('add-appointment', selectedDate)">
+                            <p class="text-xl text-foreground font-light mb-2">Todo despejado</p>
+                            <p class="text-sm text-muted-foreground mb-8 max-w-[220px] leading-relaxed">No tienes nada
+                                programado para este día. ¡Disfruta tu tiempo!</p>
+                            <Button @click="$emit('add-appointment', selectedDate)"
+                                class="bg-foreground text-background hover:opacity-90 rounded-xl px-8 shadow-lg">
                                 <Plus class="w-4 h-4 mr-2" />
-                                Agregar Cita
+                                Agregar Cita al Día
                             </Button>
                         </div>
                     </div>
