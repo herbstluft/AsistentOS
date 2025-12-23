@@ -243,9 +243,9 @@ const summaryState = computed(() => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- Main Container: Full Height, No Scroll on Outer (Inner scroll handled if needed) -->
+        <!-- Main Container: Scrollable on Mobile, Fixed on Desktop -->
         <div
-            class="h-full w-full bg-background text-foreground p-4 md:p-6 lg:p-8 overflow-hidden relative flex flex-col">
+            class="w-full bg-background text-foreground p-4 md:p-6 lg:p-8 relative flex flex-col min-h-[100dvh] lg:h-full lg:overflow-hidden overflow-y-auto">
 
             <!-- Ambient Background Glows -->
             <div
@@ -275,19 +275,20 @@ const summaryState = computed(() => {
             </header>
 
             <!-- BENTO GRID LAYOUT -->
+            <!-- Mobile: Stacked (flex-col) | Desktop: Grid 12 cols -->
             <div
-                class="grid grid-cols-1 lg:grid-cols-12 grid-rows-1 lg:grid-rows-[2fr_1fr] gap-4 md:gap-6 flex-1 min-h-0 relative z-10">
+                class="flex flex-col lg:grid lg:grid-cols-12 lg:grid-rows-[2fr_1fr] gap-4 md:gap-6 flex-1 min-h-0 relative z-10 pb-20 lg:pb-0">
 
                 <!-- 1. AI COMMAND CENTER (Main Stage) -->
-                <div class="lg:col-span-8 lg:row-span-2 relative group" @dragover="handleDragOver"
-                    @dragleave="handleDragLeave" @drop="handleDrop">
+                <div class="lg:col-span-8 lg:row-span-2 relative group min-h-[500px] lg:min-h-0"
+                    @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
 
                     <div
                         class="absolute inset-0 bg-card/50 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden transition-all duration-500 group-hover:border-white/10 group-hover:shadow-blue-500/5">
 
                         <!-- Visualizer Background -->
                         <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
-                            <div class="relative w-[500px] h-[500px]">
+                            <div class="relative w-full max-w-[500px] aspect-square">
                                 <!-- Idle Ring -->
                                 <div v-if="!isSpeaking"
                                     class="absolute inset-0 border border-slate-500/20 rounded-full animate-spin-slow">
