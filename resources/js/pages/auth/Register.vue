@@ -8,7 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthPremiumLayout from '@/layouts/auth/AuthPremiumLayout.vue';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
-import { Form } from '@inertiajs/vue3';
+import { Form, Link } from '@inertiajs/vue3';
 import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
 </script>
 
@@ -26,12 +26,12 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                         Completo</Label>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
                             <User class="w-5 h-5" />
                         </div>
                         <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" name="name"
                             placeholder="Tu nombre"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.name" />
                 </div>
@@ -43,12 +43,12 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                         Electrónico</Label>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
                             <Mail class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" required :tabindex="2" autocomplete="email" name="email"
                             placeholder="correo@ejemplo.com"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.email" />
                 </div>
@@ -59,12 +59,12 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                         class="text-neutral-400 text-xs uppercase tracking-wider font-semibold ml-1">Contraseña</Label>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
                             <Lock class="w-5 h-5" />
                         </div>
                         <Input id="password" type="password" required :tabindex="3" autocomplete="new-password"
                             name="password" placeholder="••••••••"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.password" />
                 </div>
@@ -76,25 +76,25 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                         Contraseña</Label>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
                             <Key class="w-5 h-5" />
                         </div>
                         <Input id="password_confirmation" type="password" required :tabindex="4"
                             autocomplete="new-password" name="password_confirmation" placeholder="••••••••"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.password_confirmation" />
                 </div>
             </div>
 
             <Button type="submit"
-                class="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-base shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300 relative overflow-hidden group/btn mt-4"
+                class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 relative overflow-hidden group/btn mt-4"
                 tabindex="5" :disabled="processing" data-test="register-user-button">
                 <div
                     class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 ease-in-out">
                 </div>
                 <div class="relative flex items-center justify-center gap-2">
-                    <Spinner v-if="processing" class="text-black" />
+                    <Spinner v-if="processing" class="text-white" />
                     <span v-else class="flex items-center gap-2">
                         Crear Cuenta
                         <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
@@ -105,14 +105,15 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
 
         <!-- Footer Slot -->
         <template #footer>
-            <p class="text-neutral-500 text-sm">
-                ¿Ya tienes una cuenta?
-                <TextLink :href="login()"
-                    class="text-emerald-400 hover:text-emerald-300 font-medium ml-1 transition-colors underline underline-offset-4 decoration-emerald-500/30 hover:decoration-emerald-500"
-                    :tabindex="6">
+            <div class="flex flex-col gap-2 items-center">
+                <p class="text-neutral-500 text-sm">
+                    ¿Ya tienes una cuenta en Exo?
+                </p>
+                <Link :href="login()"
+                    class="text-base font-semibold text-purple-400 hover:text-purple-300 transition-colors hover:underline underline-offset-4 decoration-purple-500/30">
                     Iniciar sesión
-                </TextLink>
-            </p>
+                </Link>
+            </div>
         </template>
 
     </AuthPremiumLayout>

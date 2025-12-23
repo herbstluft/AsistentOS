@@ -65,19 +65,8 @@ const systemNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child class="hover:bg-sidebar-accent transition-colors">
-                        <Link :href="dashboard()" class="flex items-center gap-3">
-                            <div class="relative">
-                                <div
-                                    class="absolute inset-0 bg-primary/30 blur-lg rounded-full animate-pulse-slow dark:opacity-100 opacity-50">
-                                </div>
-                                <div
-                                    class="w-10 h-10 rounded-xl bg-sidebar-accent border border-sidebar-border flex items-center justify-center relative shadow-inner group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:rounded-lg transition-all">
-                                    <Zap
-                                        class="w-5 h-5 text-primary group-data-[collapsible=icon]:w-4 group-data-[collapsible=icon]:h-4" />
-                                </div>
-                            </div>
-                            <span
-                                class="font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">AsistentOS</span>
+                        <Link :href="dashboard()">
+                            <AppLogo />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

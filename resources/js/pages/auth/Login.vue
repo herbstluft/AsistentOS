@@ -10,7 +10,7 @@ import AuthPremiumLayout from '@/layouts/auth/AuthPremiumLayout.vue';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Form, usePage } from '@inertiajs/vue3';
+import { Form, usePage, Link } from '@inertiajs/vue3';
 import { watch, computed } from 'vue';
 import { ElNotification } from 'element-plus';
 import { ArrowRight, CheckCircle2, User, Key } from 'lucide-vue-next';
@@ -86,7 +86,7 @@ watch(errors, (newErrors) => {
 
         <!-- Status Message -->
         <div v-if="status"
-            class="mb-6 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center text-xs font-medium text-emerald-400 flex items-center justify-center gap-2">
+            class="mb-6 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center text-xs font-medium text-blue-400 flex items-center justify-center gap-2">
             <CheckCircle2 class="w-4 h-4" />
             {{ status }}
         </div>
@@ -103,12 +103,12 @@ watch(errors, (newErrors) => {
                         class="text-muted-foreground text-xs uppercase tracking-wider font-semibold ml-1">Email</Label>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-purple-400 transition-colors">
                             <User class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" name="email" required autofocus :tabindex="1"
-                            autocomplete="email" placeholder="usuario@sistema.com"
-                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            autocomplete="email" placeholder="usuario@exo.com"
+                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.email" />
                 </div>
@@ -119,18 +119,18 @@ watch(errors, (newErrors) => {
                         <Label for="password"
                             class="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Contraseña</Label>
                         <TextLink v-if="canResetPassword" :href="request()"
-                            class="text-xs text-emerald-500/80 hover:text-emerald-400 transition-colors" :tabindex="5">
+                            class="text-xs text-blue-500/80 hover:text-blue-400 transition-colors" :tabindex="5">
                             ¿Olvidaste tu clave?
                         </TextLink>
                     </div>
                     <div class="relative group/input">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-emerald-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-purple-400 transition-colors">
                             <Key class="w-5 h-5" />
                         </div>
                         <Input id="password" type="password" name="password" required :tabindex="2"
                             autocomplete="current-password" placeholder="••••••••"
-                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all pl-12" />
+                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.password" />
                 </div>
@@ -139,7 +139,7 @@ watch(errors, (newErrors) => {
             <!-- Remember Me -->
             <div class="flex items-center space-x-3 my-1 ml-1">
                 <Checkbox id="remember" name="remember" :tabindex="3"
-                    class="border-border data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 w-5 h-5 rounded-md" />
+                    class="border-border data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 w-5 h-5 rounded-md" />
                 <Label for="remember"
                     class="text-sm text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
                     Mantener sesión activa
@@ -148,16 +148,16 @@ watch(errors, (newErrors) => {
 
             <!-- Submit Button -->
             <Button type="submit"
-                class="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-base shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300 relative overflow-hidden group/btn mt-2"
+                class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 relative overflow-hidden group/btn mt-2"
                 :tabindex="4" :disabled="processing" data-test="login-button">
                 <div
                     class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 ease-in-out">
                 </div>
 
                 <div class="relative flex items-center justify-center gap-2">
-                    <Spinner v-if="processing" class="text-black" />
+                    <Spinner v-if="processing" class="text-white" />
                     <span v-else class="flex items-center gap-2">
-                        Acceder al Sistema
+                        Acceder a Exo
                         <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
                     </span>
                 </div>
@@ -167,13 +167,15 @@ watch(errors, (newErrors) => {
 
         <!-- Footer Slot -->
         <template #footer>
-            <p class="text-muted-foreground text-sm" v-if="canRegister">
-                ¿No tienes cuenta?
-                <TextLink :href="register()" :tabindex="5"
-                    class="text-emerald-400 hover:text-emerald-300 font-medium ml-1 transition-colors underline underline-offset-4 decoration-emerald-500/30 hover:decoration-emerald-500">
+            <div class="flex flex-col gap-2 items-center">
+                <p class="text-muted-foreground text-sm">
+                    ¿No tienes cuenta en Exo?
+                </p>
+                <Link :href="register()"
+                    class="text-base font-semibold text-purple-400 hover:text-purple-300 transition-colors hover:underline underline-offset-4 decoration-purple-500/30">
                     Crear nueva cuenta
-                </TextLink>
-            </p>
+                </Link>
+            </div>
         </template>
 
     </AuthPremiumLayout>
