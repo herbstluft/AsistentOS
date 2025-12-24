@@ -4,6 +4,8 @@ import { Head } from '@inertiajs/vue3';
 import { ref, onMounted, computed, watch } from 'vue';
 import { User, Phone, Mail, Building, Search, Plus, X, Save, Edit2, Trash2, Users, MessageCircle, UploadCloud, Loader2, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
 import axios from 'axios';
+import { useConfirm } from '@/composables/useConfirm';
+import Pagination from '@/components/Pagination.vue';
 
 // Types
 interface Contact {
@@ -28,6 +30,12 @@ const form = ref<Contact>({
     company: '',
     notes: ''
 });
+
+const { confirm } = useConfirm();
+
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = 12;
 
 // Fetch Contacts
 const fetchContacts = async () => {
@@ -77,7 +85,15 @@ const updateContact = async () => {
 };
 
 const deleteContact = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
+    const confirmed = await confirm({
+        title: 'Eliminar contacto',
+        message: '¿Estás seguro de eliminar este contacto?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        type: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
         await axios.delete(`/api/contacts/${id}`);
@@ -125,6 +141,12 @@ const filteredContacts = computed(() => contacts.value);
 
 const contactsCountLabel = computed(() => {
     return filteredContacts.value.length === 1 ? 'contacto guardado' : 'contactos guardados';
+});
+
+const paginatedContacts = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredContacts.value.slice(start, end);
 });
 
 const modalTitle = computed(() => form.value.id ? 'Editar Contacto' : 'Nuevo Contacto');
@@ -316,33 +338,12 @@ const resetImport = () => {
                     <button @click="openModal" class="mt-4 text-indigo-500 hover:underline">Agregar el primero</button>
                 </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-                    <div v-for="contact in filteredContacts" :key="contact.id"
-                        class="group relative bg-card/80 hover:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[280px]">
-
-                        <!-- Actions Overlay -->
-                        <div
-                            class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                            <a :href="'tel:' + contact.phone" title="Llamar por teléfono"
-                                class="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 text-zinc-500 transition-all shadow-sm flex items-center justify-center hover:scale-110">
-                                <Phone class="w-5 h-5" />
-                            </a>
-                            <a :href="getWhatsappLink(contact.phone)" target="_blank" title="Enviar WhatsApp"
-                                class="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 text-zinc-500 transition-all shadow-sm flex items-center justify-center hover:scale-110">
-                                <MessageCircle class="w-5 h-5" />
-                            </a>
-                            <button @click.stop="editContact(contact)" title="Editar contacto"
-                                class="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-600 text-zinc-500 transition-all shadow-sm hover:scale-110">
-                                <Edit2 class="w-5 h-5" />
-                            </button>
-                            <button @click.stop="deleteContact(contact.id!)" title="Eliminar contacto"
-                                class="p-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 text-zinc-500 transition-all shadow-sm hover:scale-110">
-                                <Trash2 class="w-5 h-5" />
-                            </button>
-                        </div>
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div v-for="contact in paginatedContacts" :key="contact.id"
+                        class="group relative bg-card/80 hover:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[320px]">
 
                         <!-- Avatar & Name -->
-                        <div class="flex flex-col items-center mb-6 mt-2">
+                        <div class="flex flex-col items-center mb-4 mt-2">
                             <div
                                 class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 flex items-center justify-center text-2xl font-light text-indigo-500 mb-3 shadow-inner">
                                 {{ contact.name.charAt(0).toUpperCase() }}
@@ -358,7 +359,7 @@ const resetImport = () => {
                         </div>
 
                         <!-- Details -->
-                        <div class="flex-1 flex flex-col gap-3 px-2">
+                        <div class="flex-1 flex flex-col gap-4 px-2">
                             <div
                                 class="flex items-center gap-3 text-sm text-muted-foreground font-light bg-muted/30 p-2 rounded-lg">
                                 <Phone class="w-4 h-4 text-indigo-400" />
@@ -375,12 +376,32 @@ const resetImport = () => {
                             </div>
                         </div>
 
-                        <!-- Footer Color Bar -->
+                        <!-- Actions Bar at Bottom -->
                         <div
-                            class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity rounded-b-2xl">
+                            class="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-border/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                            <a :href="'tel:' + contact.phone" title="Llamar"
+                                class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 text-zinc-500 transition-all shadow-sm">
+                                <Phone class="w-4 h-4" />
+                            </a>
+                            <a :href="getWhatsappLink(contact.phone)" target="_blank" title="WhatsApp"
+                                class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 text-zinc-500 transition-all shadow-sm">
+                                <MessageCircle class="w-4 h-4" />
+                            </a>
+                            <button @click.stop="editContact(contact)" title="Editar"
+                                class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-600 text-zinc-500 transition-all shadow-sm">
+                                <Edit2 class="w-4 h-4" />
+                            </button>
+                            <button @click.stop="deleteContact(contact.id!)" title="Eliminar"
+                                class="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 text-zinc-500 transition-all shadow-sm">
+                                <Trash2 class="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Pagination -->
+                <Pagination v-if="filteredContacts.length > 0" v-model:currentPage="currentPage"
+                    :totalItems="filteredContacts.length" :itemsPerPage="itemsPerPage" />
 
             </div>
         </div>

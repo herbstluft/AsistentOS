@@ -4,6 +4,10 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, onMounted, computed } from 'vue';
 import { Plus, Search, Trash2, Edit2, X, Save, FileText, Calendar } from 'lucide-vue-next';
 import { useAssistantOrchestrator } from '@/composables/useAssistantOrchestrator';
+import { useConfirm } from '@/composables/useConfirm';
+import { useNotifications } from '@/composables/useNotifications';
+import axios from 'axios';
+import Pagination from '@/components/Pagination.vue';
 
 // Types
 interface Note {
@@ -20,21 +24,24 @@ const isModalOpen = ref(false);
 const isEditing = ref(false);
 const currentNote = ref<{ id?: number | null, title: string, content: string }>({ title: '', content: '' });
 
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = 12;
+
 // Use Assistant to speak actions
 const { speak } = useAssistantOrchestrator();
+const { confirm } = useConfirm();
+const { addNotification } = useNotifications();
 
 // Fetch Notes
 const fetchNotes = async () => {
     isLoading.value = true;
     try {
-        const res = await fetch('/api/notes', {
-            headers: { 'Accept': 'application/json' }
-        });
-        if (res.ok) {
-            notes.value = await res.json();
-        }
+        const response = await axios.get('/api/notes');
+        notes.value = response.data;
     } catch (e) {
         console.error("Error fetching notes", e);
+        addNotification('Error', 'No se pudieron cargar las notas', 'error');
     } finally {
         isLoading.value = false;
     }
@@ -58,6 +65,12 @@ const notesCountLabel = computed(() => {
     return filteredNotes.value.length === 1 ? 'nota guardada' : 'notas guardadas';
 });
 
+const paginatedNotes = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredNotes.value.slice(start, end);
+});
+
 // Actions
 const openCreateModal = () => {
     currentNote.value = { title: '', content: '' };
@@ -79,62 +92,44 @@ const closeModal = () => {
 const saveNote = async () => {
     if (!currentNote.value.title.trim() || !currentNote.value.content.trim()) return;
 
-    // Helper to get cookie
-    const getXSRFToken = () => {
-        const cookies = document.cookie.split(';');
-        for (let c of cookies) {
-            const [name, value] = c.trim().split('=');
-            if (name === 'XSRF-TOKEN') return decodeURIComponent(value);
-        }
-        return '';
-    };
-
     try {
-        const url = isEditing.value ? `/api/notes/${currentNote.value.id}` : '/api/notes';
-        const method = isEditing.value ? 'PUT' : 'POST';
-
-        const res = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getXSRFToken()
-            },
-            body: JSON.stringify(currentNote.value)
-        });
-
-        if (res.ok) {
-            await fetchNotes();
-            closeModal();
-            speak(isEditing.value ? "Nota actualizada." : "Nueva nota creada.");
+        if (isEditing.value) {
+            await axios.put(`/api/notes/${currentNote.value.id}`, currentNote.value);
+            addNotification('Nota actualizada', 'Los cambios se guardaron correctamente', 'success');
         } else {
-            const err = await res.json();
-            console.error('Error saving note:', err);
-            speak("No pude guardar la nota. Verificando credenciales.");
+            await axios.post('/api/notes', currentNote.value);
+            addNotification('Nota creada', 'La nota se creó exitosamente', 'success');
         }
+
+        await fetchNotes();
+        closeModal();
+        speak(isEditing.value ? "Nota actualizada." : "Nueva nota creada.");
     } catch (e) {
         console.error(e);
-        speak("Hubo un error de conexión al guardar la nota.");
+        addNotification('Error al guardar', 'No se pudo guardar la nota', 'error');
+        speak("Hubo un error al guardar la nota.");
     }
 };
 
 const deleteNote = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar esta nota?')) return;
+    const confirmed = await confirm({
+        title: 'Eliminar nota',
+        message: '¿Estás seguro de eliminar esta nota?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        type: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
-        const res = await fetch(`/api/notes/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content
-            }
-        });
-
-        if (res.ok) {
-            notes.value = notes.value.filter(n => n.id !== id);
-            speak("Nota eliminada.");
-        }
+        await axios.delete(`/api/notes/${id}`);
+        notes.value = notes.value.filter(n => n.id !== id);
+        addNotification('Nota eliminada', 'La nota se eliminó correctamente', 'success');
+        speak("Nota eliminada.");
     } catch (e) {
         console.error(e);
+        addNotification('Error al eliminar', 'No se pudo eliminar la nota', 'error');
     }
 };
 
@@ -200,12 +195,12 @@ const breadcrumbs = [
                         nota</button>
                 </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
-                    <div v-for="(note, index) in filteredNotes" :key="note.id"
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div v-for="(note, index) in paginatedNotes" :key="note.id"
                         class="group relative bg-card/80 hover:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[280px]">
                         <!-- Actions Overlay -->
                         <div
-                            class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            class="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                             <button @click.stop="openEditModal(note)"
                                 class="p-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:text-indigo-500 text-zinc-500 transition-colors shadow-sm">
                                 <Edit2 class="w-3.5 h-3.5" />
@@ -238,6 +233,10 @@ const breadcrumbs = [
                         </div>
                     </div>
                 </div>
+
+                <!-- Pagination -->
+                <Pagination v-if="filteredNotes.length > 0" v-model:currentPage="currentPage"
+                    :totalItems="filteredNotes.length" :itemsPerPage="itemsPerPage" />
 
             </div>
         </div>

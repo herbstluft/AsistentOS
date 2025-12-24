@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { useBiometrics } from '@/composables/useBiometrics';
-import { Pointer, Delete, Plus, Edit } from '@element-plus/icons-vue';
+import { Fingerprint, Plus, Edit2, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-vue-next';
+import { useNotifications } from '@/composables/useNotifications';
+import { useConfirm } from '@/composables/useConfirm';
 
 // Breadcrumbs
 const breadcrumbs = [
@@ -11,126 +13,135 @@ const breadcrumbs = [
 ];
 
 const { isAvailable, isAuthenticating, error, registeredCredentials, register, deleteCredential, updateCredentialName } = useBiometrics();
-import { ElNotification, ElMessageBox } from 'element-plus';
+const { addNotification } = useNotifications();
+const { confirm } = useConfirm();
 
 const handleRegister = async () => {
     const success = await register();
     if (success) {
-        ElNotification({
-            title: 'Éxito',
-            message: 'Huella digital registrada correctamente.',
-            type: 'success',
-        });
+        addNotification('Éxito', 'Huella digital registrada correctamente', 'success');
     }
 };
 
 const handleEditName = async (cred: any) => {
-    try {
-        const { value } = await ElMessageBox.prompt('Ingresa el nuevo nombre para este dispositivo', 'Renombrar', {
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            inputValue: cred.name,
-            inputPattern: /\S/,
-            inputErrorMessage: 'El nombre no puede estar vacío',
-            customClass: 'dark-message-box' // We'll need to style this if needed, or rely on global dark mode
-        });
+    const newName = prompt('Ingresa el nuevo nombre para este dispositivo:', cred.name);
 
-        if (value) {
-            await updateCredentialName(cred.id, value);
-            ElNotification({
-                title: 'Actualizado',
-                message: 'Nombre actualizado correctamente.',
-                type: 'success',
-            });
-        }
-    } catch {
-        // User cancelled
+    if (newName && newName.trim()) {
+        await updateCredentialName(cred.id, newName.trim());
+        addNotification('Actualizado', 'Nombre actualizado correctamente', 'success');
+    }
+};
+
+const handleDelete = async (credId: string) => {
+    const confirmed = await confirm({
+        title: 'Eliminar huella',
+        message: '¿Estás seguro de eliminar esta huella digital?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        type: 'danger'
+    });
+
+    if (confirmed) {
+        await deleteCredential(credId);
+        addNotification('Eliminado', 'Huella digital eliminada correctamente', 'success');
     }
 };
 </script>
 
 <template>
-    <AppSidebarLayout :breadcrumbs="breadcrumbs">
-        <div class="p-6 max-w-4xl mx-auto">
-            <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-                <div class="flex items-center justify-between mb-6">
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10">
+            <div class="max-w-4xl mx-auto space-y-6">
+
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <el-icon class="text-emerald-500">
-                                <Pointer />
-                            </el-icon>
-                            Configuración de Huella Digital
-                        </h2>
-                        <p class="text-gray-500 dark:text-gray-400 mt-1">
+                        <h1 class="text-3xl font-light tracking-tight text-foreground flex items-center gap-3">
+                            <Fingerprint class="w-8 h-8 text-indigo-500" />
+                            Huella Digital
+                        </h1>
+                        <p class="text-muted-foreground mt-2">
                             Gestiona tus dispositivos de acceso biométrico (Touch ID, Face ID, Windows Hello).
                         </p>
                     </div>
-                    <div v-if="isAvailable">
-                        <el-button type="primary" @click="handleRegister" :loading="isAuthenticating"
-                            class="bg-emerald-600 hover:bg-emerald-700 border-none">
-                            <el-icon class="mr-2">
-                                <Plus />
-                            </el-icon>
-                            Agregar Huella
-                        </el-button>
-                    </div>
+                    <button v-if="isAvailable" @click="handleRegister" :disabled="isAuthenticating"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Plus class="w-5 h-5" />
+                        <span class="font-medium">Agregar Huella</span>
+                    </button>
                 </div>
 
                 <!-- Availability Alert -->
                 <div v-if="!isAvailable"
-                    class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <p class="flex items-center gap-2">
-                        <span class="text-xl">⚠️</span>
-                        Tu dispositivo o navegador no soporta autenticación biométrica o no tienes configurada ninguna
-                        huella en el sistema operativo.
-                    </p>
+                    class="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-start gap-3">
+                    <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5" />
+                    <div>
+                        <p class="font-medium">Biometría no disponible</p>
+                        <p class="text-sm mt-1 opacity-90">
+                            Tu dispositivo o navegador no soporta autenticación biométrica o no tienes configurada
+                            ninguna
+                            huella en el sistema operativo.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Error Message -->
                 <div v-if="error"
-                    class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
-                    {{ error }}
+                    class="p-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl flex items-start gap-3">
+                    <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5" />
+                    <p>{{ error }}</p>
                 </div>
 
                 <!-- Credentials List -->
                 <div v-if="registeredCredentials.length > 0" class="space-y-4">
+                    <h2 class="text-lg font-medium text-foreground">Dispositivos registrados</h2>
+
                     <div v-for="cred in registeredCredentials" :key="cred.id"
-                        class="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400">
-                                <el-icon class="text-xl">
-                                    <Pointer />
-                                </el-icon>
+                        class="group bg-card border border-border rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-indigo-500/10 rounded-full text-indigo-500">
+                                    <Fingerprint class="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-medium text-foreground">{{ cred.name }}</h3>
+                                        <button @click="handleEditName(cred)"
+                                            class="opacity-0 group-hover:opacity-100 p-1 hover:bg-muted rounded-lg transition-all"
+                                            title="Editar nombre">
+                                            <Edit2 class="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                                        </button>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mt-0.5">
+                                        Registrado el {{ new Date(cred.created_at).toLocaleDateString('es-MX', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        }) }}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                    {{ cred.name }}
-                                    <el-icon class="cursor-pointer text-gray-400 hover:text-white transition-colors"
-                                        @click="handleEditName(cred)">
-                                        <Edit />
-                                    </el-icon>
-                                </h3>
-                                <p class="text-xs text-gray-500">Registrado el {{ new
-                                    Date(cred.created_at).toLocaleDateString() }}</p>
-                            </div>
+                            <button @click="handleDelete(cred.id)"
+                                class="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-all"
+                                title="Eliminar">
+                                <Trash2 class="w-5 h-5" />
+                            </button>
                         </div>
-                        <el-button type="danger" circle plain @click="deleteCredential(cred.id)">
-                            <el-icon>
-                                <Delete />
-                            </el-icon>
-                        </el-button>
                     </div>
                 </div>
 
-                <div v-else-if="isAvailable" class="text-center py-12 text-gray-400">
-                    <el-icon class="text-4xl mb-2 opacity-50">
-                        <Pointer />
-                    </el-icon>
-                    <p>No tienes huellas registradas.</p>
+                <!-- Empty State -->
+                <div v-else-if="isAvailable" class="text-center py-20 bg-card border border-border rounded-xl">
+                    <div class="inline-flex p-4 bg-muted rounded-full mb-4">
+                        <Fingerprint class="w-12 h-12 text-muted-foreground opacity-50" />
+                    </div>
+                    <p class="text-muted-foreground text-lg">No tienes huellas registradas</p>
+                    <p class="text-sm text-muted-foreground mt-2">
+                        Agrega tu primera huella digital para acceder más rápido
+                    </p>
                 </div>
 
             </div>
         </div>
-    </AppSidebarLayout>
+    </AppLayout>
 </template>

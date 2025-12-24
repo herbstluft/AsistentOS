@@ -82,7 +82,7 @@ getPreference.form = getPreferenceForm
 
 /**
 * @see \App\Http\Controllers\AssistantPreferenceController::savePreference
-* @see app/Http/Controllers/AssistantPreferenceController.php:26
+* @see app/Http/Controllers/AssistantPreferenceController.php:25
 * @route '/api/assistant/preference'
 */
 export const savePreference = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ savePreference.definition = {
 
 /**
 * @see \App\Http\Controllers\AssistantPreferenceController::savePreference
-* @see app/Http/Controllers/AssistantPreferenceController.php:26
+* @see app/Http/Controllers/AssistantPreferenceController.php:25
 * @route '/api/assistant/preference'
 */
 savePreference.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ savePreference.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AssistantPreferenceController::savePreference
-* @see app/Http/Controllers/AssistantPreferenceController.php:26
+* @see app/Http/Controllers/AssistantPreferenceController.php:25
 * @route '/api/assistant/preference'
 */
 savePreference.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ savePreference.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\AssistantPreferenceController::savePreference
-* @see app/Http/Controllers/AssistantPreferenceController.php:26
+* @see app/Http/Controllers/AssistantPreferenceController.php:25
 * @route '/api/assistant/preference'
 */
 const savePreferenceForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const savePreferenceForm = (options?: RouteQueryOptions): RouteFormDefinition<'p
 
 /**
 * @see \App\Http\Controllers\AssistantPreferenceController::savePreference
-* @see app/Http/Controllers/AssistantPreferenceController.php:26
+* @see app/Http/Controllers/AssistantPreferenceController.php:25
 * @route '/api/assistant/preference'
 */
 savePreferenceForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

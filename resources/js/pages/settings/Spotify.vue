@@ -1,24 +1,20 @@
 <script setup lang="ts">
-import { Head, usePage, router } from '@inertiajs/vue3';
-import HeadingSmall from '@/components/HeadingSmall.vue';
-import { Button } from '@/components/ui/button';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem } from '@/types';
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useSpotifyPlayer } from '@/composables/useSpotifyPlayer';
+import { useConfirm } from '@/composables/useConfirm';
+import { Music, CheckCircle2, AlertCircle, Loader2 } from 'lucide-vue-next';
 
 const { disconnectPlayer } = useSpotifyPlayer();
+const { confirm } = useConfirm();
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Configuración Spotify',
-        href: '/settings/spotify',
-    },
+const breadcrumbItems = [
+    { title: 'Ajustes', href: '/settings/profile' },
+    { title: 'Spotify', href: '/settings/spotify' },
 ];
 
-const page = usePage();
 const isConnected = ref(false);
 const spotifyName = ref('');
 const loading = ref(true);
@@ -40,7 +36,15 @@ const connect = () => {
 };
 
 const disconnect = async () => {
-    if (confirm('¿Estás seguro de que quieres desconectar Spotify?')) {
+    const confirmed = await confirm({
+        title: 'Desconectar Spotify',
+        message: '¿Estás seguro de que quieres desconectar Spotify?',
+        confirmText: 'Desconectar',
+        cancelText: 'Cancelar',
+        type: 'warning'
+    });
+
+    if (confirmed) {
         router.post('/api/spotify/disconnect', {}, {
             onSuccess: () => {
                 disconnectPlayer();
@@ -60,51 +64,77 @@ onMounted(() => {
 
         <Head title="Configuración Spotify" />
 
-        <SettingsLayout>
-            <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Spotify"
-                    description="Conecta tu cuenta de Spotify para reproducir música con el asistente." />
+        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10">
+            <div class="max-w-4xl mx-auto space-y-6">
 
-                <div v-if="loading" class="text-sm text-gray-500">
-                    Cargando estado...
+                <!-- Header -->
+                <div>
+                    <h1 class="text-3xl font-light tracking-tight text-foreground flex items-center gap-3">
+                        <Music class="w-8 h-8 text-green-500" />
+                        Spotify
+                    </h1>
+                    <p class="text-muted-foreground mt-2">
+                        Conecta tu cuenta de Spotify para reproducir música con el asistente.
+                    </p>
                 </div>
 
-                <div v-else class="space-y-4">
-                    <div v-if="isConnected"
-                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 gap-4">
-                        <div class="flex items-center space-x-3">
-                            <div
-                                class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" class="lucide lucide-music">
-                                    <path d="M9 18V5l12-2v13" />
-                                    <circle cx="6" cy="18" r="3" />
-                                    <circle cx="18" cy="16" r="3" />
-                                </svg>
+                <!-- Loading State -->
+                <div v-if="loading" class="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
+                    <Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
+                    <span class="text-muted-foreground">Cargando estado...</span>
+                </div>
+
+                <!-- Connected State -->
+                <div v-else-if="isConnected" class="space-y-4">
+                    <div class="p-6 bg-green-500/10 border border-green-500/20 rounded-xl">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-green-500 rounded-full text-white">
+                                    <CheckCircle2 class="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-green-600 dark:text-green-400">
+                                        Conectado a Spotify
+                                    </h3>
+                                    <p class="text-sm text-green-600/80 dark:text-green-400/80 mt-0.5">
+                                        ID: {{ spotifyName }}
+                                    </p>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <h3 class="font-medium text-green-900 dark:text-green-100 truncate">Conectado a Spotify
-                                </h3>
-                                <p class="text-sm text-green-700 dark:text-green-300 truncate">ID: {{ spotifyName }}</p>
-                            </div>
+                            <button @click="disconnect"
+                                class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg transition-all font-medium w-full sm:w-auto">
+                                Desconectar
+                            </button>
                         </div>
-                        <Button variant="destructive" @click="disconnect" class="w-full sm:w-auto">Desconectar</Button>
-                    </div>
-
-                    <div v-else
-                        class="flex flex-col items-start space-y-4 p-6 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800">
-                        <p class="text-neutral-600 dark:text-neutral-400">
-                            Conecta tu cuenta para permitir que el asistente controle la música.
-                            Necesitarás una cuenta Premium de Spotify para la reproducción completa.
-                        </p>
-                        <Button @click="connect"
-                            class="bg-[#1DB954] hover:bg-[#1ed760] text-white border-none w-full sm:w-auto">
-                            Conectar con Spotify
-                        </Button>
                     </div>
                 </div>
+
+                <!-- Disconnected State -->
+                <div v-else class="space-y-4">
+                    <div class="p-6 bg-card border border-border rounded-xl">
+                        <div class="flex flex-col items-center text-center space-y-4">
+                            <div class="p-4 bg-muted rounded-full">
+                                <Music class="w-12 h-12 text-muted-foreground opacity-50" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-medium text-foreground mb-2">
+                                    Conecta tu cuenta de Spotify
+                                </h3>
+                                <p class="text-muted-foreground max-w-md">
+                                    Conecta tu cuenta para permitir que el asistente controle la música.
+                                    Necesitarás una cuenta Premium de Spotify para la reproducción completa.
+                                </p>
+                            </div>
+                            <button @click="connect"
+                                class="px-8 py-3 bg-[#1DB954] hover:bg-[#1ed760] text-white rounded-xl shadow-lg transition-all font-medium flex items-center gap-2">
+                                <Music class="w-5 h-5" />
+                                Conectar con Spotify
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-        </SettingsLayout>
+        </div>
     </AppLayout>
 </template>

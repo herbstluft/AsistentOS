@@ -25,86 +25,56 @@ const passwordInput = useTemplateRef('passwordInput');
 
 <template>
     <div class="space-y-6">
-        <HeadingSmall
-            title="Delete account"
-            description="Delete your account and all of its resources"
-        />
-        <div
-            class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
-        >
+        <HeadingSmall title="Eliminar cuenta" description="Elimina tu cuenta y todos sus recursos" />
+        <div class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
             <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
-                <p class="font-medium">Warning</p>
+                <p class="font-medium">Advertencia</p>
                 <p class="text-sm">
-                    Please proceed with caution, this cannot be undone.
+                    Por favor procede con precaución, esta acción no se puede deshacer.
                 </p>
             </div>
             <Dialog>
                 <DialogTrigger as-child>
-                    <Button variant="destructive" data-test="delete-user-button"
-                        >Delete account</Button
-                    >
+                    <Button variant="destructive" data-test="delete-user-button">Eliminar cuenta</Button>
                 </DialogTrigger>
                 <DialogContent>
-                    <Form
-                        v-bind="ProfileController.destroy.form()"
-                        reset-on-success
-                        @error="() => passwordInput?.$el?.focus()"
-                        :options="{
+                    <Form v-bind="ProfileController.destroy.form()" reset-on-success
+                        @error="() => passwordInput?.$el?.focus()" :options="{
                             preserveScroll: true,
-                        }"
-                        class="space-y-6"
-                        v-slot="{ errors, processing, reset, clearErrors }"
-                    >
+                        }" class="space-y-6" v-slot="{ errors, processing, reset, clearErrors }">
                         <DialogHeader class="space-y-3">
-                            <DialogTitle
-                                >Are you sure you want to delete your
-                                account?</DialogTitle
-                            >
+                            <DialogTitle>¿Estás seguro de que deseas eliminar tu
+                                cuenta?</DialogTitle>
                             <DialogDescription>
-                                Once your account is deleted, all of its
-                                resources and data will also be permanently
-                                deleted. Please enter your password to confirm
-                                you would like to permanently delete your
-                                account.
+                                Una vez que tu cuenta sea eliminada, todos sus
+                                recursos y datos también serán eliminados permanentemente.
+                                Por favor ingresa tu contraseña para confirmar
+                                que deseas eliminar permanentemente tu cuenta.
                             </DialogDescription>
                         </DialogHeader>
 
                         <div class="grid gap-2">
-                            <Label for="password" class="sr-only"
-                                >Password</Label
-                            >
-                            <Input
-                                id="password"
-                                type="password"
-                                name="password"
-                                ref="passwordInput"
-                                placeholder="Password"
-                            />
+                            <Label for="password" class="sr-only">Contraseña</Label>
+                            <Input id="password" type="password" name="password" ref="passwordInput"
+                                placeholder="Contraseña" />
                             <InputError :message="errors.password" />
                         </div>
 
                         <DialogFooter class="gap-2">
                             <DialogClose as-child>
-                                <Button
-                                    variant="secondary"
-                                    @click="
-                                        () => {
-                                            clearErrors();
-                                            reset();
-                                        }
-                                    "
-                                >
-                                    Cancel
+                                <Button variant="secondary" @click="
+                                    () => {
+                                        clearErrors();
+                                        reset();
+                                    }
+                                ">
+                                    Cancelar
                                 </Button>
                             </DialogClose>
 
-                            <Button
-                                type="submit"
-                                variant="destructive"
-                                :disabled="processing"
-                                data-test="confirm-delete-user-button"
-                            >
-                                Delete account
+                            <Button type="submit" variant="destructive" :disabled="processing"
+                                data-test="confirm-delete-user-button">
+                                Eliminar cuenta
                             </Button>
                         </DialogFooter>
                     </Form>

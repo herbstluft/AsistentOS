@@ -30,6 +30,19 @@
         transition: none !important;
     }
 
+    /* REMOVE ALL FOCUS BORDERS AND OUTLINES */
+    *:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: inherit !important;
+    }
+
+    input:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        --tw-ring-shadow: none !important;
+    }
+
     .dark {
         --background: 222.2 84% 4.9%;
         --foreground: 210 40% 98%;

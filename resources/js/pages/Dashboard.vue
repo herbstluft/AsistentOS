@@ -340,7 +340,7 @@ const summaryState = computed(() => {
 
                             <div class="w-full max-w-3xl mx-auto">
                                 <div
-                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5 transition-all focus-within:ring-blue-500/50 focus-within:bg-[#0f172a]">
+                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5 transition-all focus-within:bg-[#0f172a]">
 
                                     <!-- Mic Toggle -->
                                     <button @click="toggleMic($event)"
@@ -355,7 +355,7 @@ const summaryState = computed(() => {
                                     <!-- Text Input -->
                                     <input v-model="textInput" @keyup.enter="handleTextSubmit" type="text"
                                         placeholder="¿En qué ayudo?"
-                                        class="flex-1 min-w-0 bg-transparent border-none text-base md:text-lg font-light text-white placeholder:text-slate-500 focus:ring-0 h-full px-2" />
+                                        class="flex-1 min-w-0 bg-transparent border-none outline-none text-base md:text-lg font-light text-white placeholder:text-slate-500 focus:ring-0 focus:outline-none h-full px-2" />
 
                                     <!-- Upload Button -->
                                     <button @click="openFilePicker"
@@ -448,7 +448,7 @@ const summaryState = computed(() => {
                 <!-- Spans full width on mobile, fills remaining spots on desktop -->
 
                 <!-- Notes / Text Gen -->
-                <div
+                <Link href="/notes"
                     class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-blue-500/30">
                     <div class="flex justify-between items-start">
                         <FileText class="w-6 h-6 text-blue-500" />
@@ -456,7 +456,7 @@ const summaryState = computed(() => {
                             class="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                     </div>
                     <span class="text-sm font-medium text-foreground/80">Notas & Docs</span>
-                </div>
+                </Link>
 
                 <!-- Image Gen -->
                 <Link href="/image-generation"

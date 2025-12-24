@@ -11,7 +11,6 @@ class AssistantPreference extends Model
 
     protected $fillable = [
         'user_id',
-        'palette_id',
         'assistant_name',
     ];
 

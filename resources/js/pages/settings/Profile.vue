@@ -91,7 +91,7 @@ const saveAssistant = async () => {
                             Tu dirección de correo no está verificada.
                             <Link :href="send()" as="button"
                                 class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500">
-                            Haz clic aquí para reenviar el correo de verificación.
+                                Haz clic aquí para reenviar el correo de verificación.
                             </Link>
                         </p>
 
@@ -117,21 +117,23 @@ const saveAssistant = async () => {
             <div class="flex flex-col space-y-6 pt-6 border-t">
                 <HeadingSmall title="Configuración del Asistente"
                     description="Personaliza cómo interactúas con tu IA" />
-                
+
                 <div class="space-y-6">
                     <div class="grid gap-2">
                         <Label for="assistant-name">Nombre del Asistente (Wake Word)</Label>
-                        <div class="flex gap-4">
-                            <Input id="assistant-name" class="mt-1 block w-full" v-model="assistantNameInput" 
-                                placeholder="Ej. Jarvis, Viernes, Computadora" />
-                            <Button @click="saveAssistant" :disabled="isSavingAssistant">
-                                {{ isSavingAssistant ? 'Guardando...' : 'Guardar Nombre' }}
-                            </Button>
-                        </div>
+                        <Input id="assistant-name" class="mt-1 block w-full" v-model="assistantNameInput"
+                            placeholder="Ej. Jarvis, Viernes, Computadora" />
                         <p class="text-sm text-muted-foreground">
-                            El asistente escuchará continuamente pero solo responderá cuando digas este nombre al inicio. 
+                            El asistente escuchará continuamente pero solo responderá cuando digas este nombre al
+                            inicio.
                             Ejemplo: "Jarvis, ¿qué hora es?"
                         </p>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <Button @click="saveAssistant" :disabled="isSavingAssistant">
+                            {{ isSavingAssistant ? 'Guardando...' : 'Guardar Nombre' }}
+                        </Button>
                     </div>
                 </div>
             </div>

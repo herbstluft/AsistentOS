@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import ToastNotifications from '@/components/ToastNotifications.vue';
 import type { BreadcrumbItemType } from '@/types';
 import { useAppointmentReminders } from '@/composables/useAppointmentReminders';
 
@@ -24,4 +26,6 @@ useAssistantReminders(speak, true); // Enable global checking
     <AppLayout :breadcrumbs="breadcrumbs">
         <slot />
     </AppLayout>
+    <ConfirmDialog />
+    <ToastNotifications />
 </template>

@@ -52,9 +52,9 @@ export function useNotifications() {
     // const { toast } = useToast(); // Removed unused toast
 
     const sounds = {
-        success: new Audio('https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3'),
-        error: new Audio('https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3'),
-        default: new Audio(notifySound)
+        success: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
+        error: new Audio('https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3'),
+        default: new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3')
     };
 
     // Preload sounds
@@ -77,6 +77,63 @@ export function useNotifications() {
         }
     };
 
+    // Native System Notifications
+    const requestNotificationPermission = async () => {
+        if (!('Notification' in window)) {
+            console.warn('Este navegador no soporta notificaciones de escritorio');
+            return false;
+        }
+
+        if (Notification.permission === 'granted') {
+            return true;
+        }
+
+        if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
+        }
+
+        return false;
+    };
+
+    const showSystemNotification = async (
+        title: string,
+        message: string,
+        type: 'info' | 'warning' | 'success' | 'error' = 'info'
+    ) => {
+        // Request permission if needed
+        const hasPermission = await requestNotificationPermission();
+
+        if (!hasPermission) {
+            console.warn('Permiso de notificaciones denegado');
+            return;
+        }
+
+        // Determine icon based on type and theme
+        const isDark = document.documentElement.classList.contains('dark');
+        const icons = {
+            success: '✓',
+            error: '✗',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        const notification = new Notification(`${icons[type]} ${title}`, {
+            body: message,
+            icon: '/favicon.ico',
+            tag: 'asistentOS-' + type,
+            requireInteraction: type === 'error',
+            badge: '/favicon.ico',
+        });
+
+        // Auto close after 5 seconds for non-error notifications
+        if (type !== 'error') {
+            setTimeout(() => notification.close(), 5000);
+        }
+
+        return notification;
+    };
+
     const addNotification = (title: string, message: string, type: 'info' | 'warning' | 'success' | 'error' = 'info') => {
         const newNotification: NotificationItem = {
             id: Date.now(),
@@ -89,6 +146,9 @@ export function useNotifications() {
 
         notifications.value.unshift(newNotification); // Add to top
         playSound(type);
+
+        // Show native system notification
+        showSystemNotification(title, message, type);
 
         // Limit history to 50 items
         if (notifications.value.length > 50) {

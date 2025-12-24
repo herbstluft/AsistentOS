@@ -2,7 +2,7 @@ import { ref, onMounted } from 'vue';
 
 // Singleton State
 const currentPalette = ref(1);
-const assistantName = ref('Assistant');
+const assistantName = ref('Exo');
 
 export function useAssistantPreferences() {
     const palettes = [

@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('assistant_preferences', function (Blueprint $table) {
-            if (!Schema::hasColumn('assistant_preferences', 'assistant_name')) {
-                $table->string('assistant_name')->default('Exo');
-            }
+            $table->dropForeign(['palette_id']);
+            $table->dropColumn('palette_id');
         });
     }
 
@@ -24,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('assistant_preferences', function (Blueprint $table) {
-            $table->dropColumn('assistant_name');
+            $table->foreignId('palette_id')->nullable()->constrained()->onDelete('cascade');
         });
     }
 };

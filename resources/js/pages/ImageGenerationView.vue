@@ -3,12 +3,15 @@ import { ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Sparkles, Image as ImageIcon, Download, Share2, Maximize2, X, Loader2 } from 'lucide-vue-next';
+import { useNotifications } from '@/composables/useNotifications';
 
 // State
 const prompt = ref('');
 const isGenerating = ref(false);
 const generatedImage = ref<string | null>(null);
 const isFullscreen = ref(false);
+
+const { addNotification } = useNotifications();
 
 // Functions
 const generate = () => {
@@ -67,7 +70,7 @@ const shareImage = async () => {
             });
         } else {
             await navigator.clipboard.writeText(generatedImage.value);
-            alert('Enlace copiado al portapapeles');
+            addNotification('Enlace copiado', 'El enlace se copió al portapapeles', 'success');
         }
     } catch (e: any) {
         if (e.name !== 'AbortError') {
@@ -139,7 +142,7 @@ const shareImage = async () => {
                                     class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin">
                                 </div>
                                 <span class="text-base md:text-lg">{{ isGenerating ? 'Creando...' : 'Generar Imagen'
-                                }}</span>
+                                    }}</span>
                             </button>
 
                             <!-- Tip Pro (Always visible, flows naturally) -->

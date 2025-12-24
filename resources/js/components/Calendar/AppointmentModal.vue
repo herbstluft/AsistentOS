@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import { Clock, Calendar as CalendarIcon, Bell, Trash2, CheckCircle, XCircle, Type, AlignLeft } from 'lucide-vue-next';
 import axios from 'axios';
+import { useNotifications } from '@/composables/useNotifications';
+import { useConfirm } from '@/composables/useConfirm';
 
 const props = defineProps<{
     isOpen: boolean;
@@ -15,6 +17,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['update:isOpen', 'saved', 'deleted']);
+
+const { addNotification } = useNotifications();
+const { confirm } = useConfirm();
 
 const form = ref({
     id: null as number | null,
@@ -114,19 +119,28 @@ const save = async () => {
         emit('update:isOpen', false);
     } catch (e) {
         console.error(e);
-        alert('Error al guardar la cita. Verifica los campos.');
+        addNotification('Error al guardar', 'Verifica los campos de la cita', 'error');
     }
 };
 
 const deleteAppointment = async () => {
-    if (!confirm('¿Estás seguro de eliminar esta cita?')) return;
+    const confirmed = await confirm({
+        title: 'Eliminar cita',
+        message: '¿Estás seguro de eliminar esta cita?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        type: 'danger'
+    });
+
+    if (!confirmed) return;
+
     try {
         await axios.delete(`/api/appointments/${form.value.id}`);
         emit('deleted');
         emit('update:isOpen', false);
     } catch (e) {
         console.error(e);
-        alert('Error al eliminar');
+        addNotification('Error al eliminar', 'No se pudo eliminar la cita', 'error');
     }
 };
 
@@ -285,8 +299,8 @@ const validateMinute = () => {
                 <div class="flex gap-2 w-full sm:w-auto">
                     <Button variant="outline" size="sm" @click="$emit('update:isOpen', false)"
                         class="flex-1 sm:flex-none border-border/60 rounded-lg h-9 text-sm hover:bg-background">Cancelar</Button>
-                    <Button size="sm" @click="save"
-                        class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md shadow-purple-500/20 h-9 px-6 text-sm">
+                    <Button size="sm" @click="save" :disabled="!form.title.trim()"
+                        class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-md shadow-purple-500/20 h-9 px-6 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         {{ isEditing ? 'Guardar' : 'Agendar' }}
                     </Button>
                 </div>
