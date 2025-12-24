@@ -256,7 +256,7 @@ const summaryState = computed(() => {
             </div>
 
             <!-- HEADER COMPACTO -->
-            <header class="flex justify-between items-end mb-6 relative z-10 shrink-0">
+            <header class="flex justify-between items-end mb-2 md:mb-6 relative z-10 shrink-0">
                 <div>
                     <p
                         class="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1 flex items-center gap-2">
@@ -264,7 +264,7 @@ const summaryState = computed(() => {
                             class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
                         AsistentOS Online
                     </p>
-                    <h1 class="text-3xl md:text-4xl font-light tracking-tight">
+                    <h1 class="text-2xl md:text-3xl lg:text-4xl font-light tracking-tight">
                         Hola, <span class="font-semibold text-foreground">{{ user.name }}</span>
                     </h1>
                 </div>
@@ -280,7 +280,7 @@ const summaryState = computed(() => {
                 class="flex flex-col lg:grid lg:grid-cols-12 lg:grid-rows-[2fr_1fr] gap-4 md:gap-6 flex-1 min-h-0 relative z-10 pb-20 lg:pb-0">
 
                 <!-- 1. AI COMMAND CENTER (Main Stage) -->
-                <div class="lg:col-span-8 lg:row-span-2 relative group min-h-[500px] lg:min-h-0"
+                <div class="lg:col-span-8 lg:row-span-2 relative group flex-1 min-h-[350px] md:min-h-[500px] lg:min-h-0 basis-auto"
                     @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
 
                     <div
@@ -288,7 +288,7 @@ const summaryState = computed(() => {
 
                         <!-- Visualizer Background -->
                         <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
-                            <div class="relative w-full max-w-[500px] aspect-square">
+                            <div class="relative w-[300px] h-[300px] md:w-full md:max-w-[500px] md:aspect-square">
                                 <!-- Idle Ring -->
                                 <div v-if="!isSpeaking"
                                     class="absolute inset-0 border border-slate-500/20 rounded-full animate-spin-slow">
@@ -299,7 +299,7 @@ const summaryState = computed(() => {
 
                                 <!-- Logo/Core -->
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <Brain v-if="!isSpeaking" class="w-24 h-24 text-slate-700/50" />
+                                    <Brain v-if="!isSpeaking" class="w-16 h-16 md:w-24 md:h-24 text-slate-700/50" />
                                 </div>
 
                                 <!-- Active Voice Wave -->
@@ -311,14 +311,14 @@ const summaryState = computed(() => {
                         </div>
 
                         <!-- Content Overlay -->
-                        <div class="absolute inset-0 flex flex-col justify-between p-8">
+                        <div class="absolute inset-0 flex flex-col justify-between p-4 md:p-8">
 
                             <!-- Top Status -->
                             <div class="flex justify-between items-start">
                                 <div
                                     class="px-4 py-1.5 rounded-full bg-black/20 border border-white/5 backdrop-blur-md text-xs font-medium text-slate-400 flex items-center gap-2">
                                     <Zap class="w-3 h-3 text-amber-500" />
-                                    <span>AI CORE V2.0</span>
+                                    <span class="uppercase">{{ assistantName || 'AI CORE' }}</span>
                                 </div>
 
                                 <!-- Document Active Indicator -->
@@ -338,14 +338,13 @@ const summaryState = computed(() => {
                                 <p class="text-lg font-light text-white">Analizando documento...</p>
                             </div>
 
-                            <!-- BOTTOM CONTROLS BAR -->
                             <div class="w-full max-w-3xl mx-auto">
                                 <div
-                                    class="relative flex items-center gap-3 p-2 pr-3 bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5 transition-all focus-within:ring-blue-500/50 focus-within:bg-[#0f172a]">
+                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5 transition-all focus-within:ring-blue-500/50 focus-within:bg-[#0f172a]">
 
                                     <!-- Mic Toggle -->
                                     <button @click="toggleMic($event)"
-                                        class="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 relative overflow-hidden group/mic"
+                                        class="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 relative overflow-hidden group/mic"
                                         :class="isListening ? 'bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'">
                                         <div v-if="isListening"
                                             class="absolute inset-0 bg-red-400 animate-ping opacity-20"></div>
@@ -355,19 +354,19 @@ const summaryState = computed(() => {
 
                                     <!-- Text Input -->
                                     <input v-model="textInput" @keyup.enter="handleTextSubmit" type="text"
-                                        placeholder="Pregúntame lo que sea..."
-                                        class="flex-1 bg-transparent border-none text-lg font-light text-white placeholder:text-slate-500 focus:ring-0 h-full px-2" />
+                                        placeholder="¿En qué ayudo?"
+                                        class="flex-1 min-w-0 bg-transparent border-none text-base md:text-lg font-light text-white placeholder:text-slate-500 focus:ring-0 h-full px-2" />
 
                                     <!-- Upload Button -->
                                     <button @click="openFilePicker"
-                                        class="p-2 text-slate-500 hover:text-blue-400 transition-colors"
+                                        class="p-2 text-slate-500 hover:text-blue-400 transition-colors shrink-0"
                                         title="Subir archivo">
                                         <FileText class="w-5 h-5" />
                                     </button>
 
                                     <!-- Send Button -->
                                     <button @click="handleTextSubmit" :disabled="!textInput.trim()"
-                                        class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center disabled:opacity-50 disabled:bg-slate-800 disabled:text-slate-600 transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 shadow-lg">
+                                        class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center disabled:opacity-50 disabled:bg-slate-800 disabled:text-slate-600 transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 shadow-lg shrink-0">
                                         <ArrowRight class="w-5 h-5" />
                                     </button>
                                 </div>

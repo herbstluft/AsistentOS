@@ -155,8 +155,8 @@ export function useAssistantOrchestrator() {
     // CRITICAL: Stop listening immediately when speaking starts to preventing echo
     watch(isSpeaking, (val) => {
         if (val && isListening.value) {
-            console.log('🔇 Asistente hablando: Pausando micrófono para evitar eco...');
-            stopSpeech();
+            console.log('🔇 Asistente hablando: (Micrófono activo - ALWAYS ON)');
+            // stopSpeech(); // DESHABILITADO: El usuario quiere "Always On" real.
         }
     });
 
@@ -1824,7 +1824,7 @@ export function useAssistantOrchestrator() {
     // Wrapper functions for external callers
     const triggerMicActivation = async (fromUserInteraction = false) => {
         const now = Date.now();
-        if (now - lastActivationTime < 2000) {
+        if (now - lastActivationTime < 500) {
             console.warn('🚦 Trigger bloqueado por throttle (demasiadas llamadas seguidas)');
             return;
         }

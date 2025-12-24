@@ -43,7 +43,7 @@ export function useSpeech(onSpeechResult?: (text: string) => void) {
 
         const recognizer = new SpeechRecognition();
         // Configuración conservadora para evitar bloqueos iniciales
-        recognizer.continuous = false; // Cambiaremos a true tras el primer éxito si es necesario
+        recognizer.continuous = true; // Mantener micrófono activo durante silencios
         recognizer.lang = 'es-MX';
         recognizer.interimResults = false; // Simplificado para probar
         recognizer.maxAlternatives = 1;
@@ -84,15 +84,15 @@ export function useSpeech(onSpeechResult?: (text: string) => void) {
                 silenceTimer = setTimeout(() => {
                     console.log('🔇 Silencio -> Procesando comando');
 
-                    // Detenemos momentáneamente para 'cortar' el comando limpiamente
-                    recognizer.stop();
+                    // NO detenemos el motor. Dejamos que siga escuchando (Continuous Mode).
+                    // recognizer.stop(); 
 
                     const textToSend = accumulatedTranscript.trim() || partialTranscript.value.trim();
                     if (textToSend) {
                         listeners.forEach(fn => fn(textToSend));
                     }
 
-                    // Limpieza
+                    // Limpieza de buffers para la siguiente frase
                     accumulatedTranscript = '';
                     partialTranscript.value = '';
                 }, 1200); // 1.2s de silencio para confirmar fin de frase
@@ -136,7 +136,7 @@ export function useSpeech(onSpeechResult?: (text: string) => void) {
                     }, 500);
                 }
             } else {
-                console.log('🛑 Motor detenido (Manual o Error Fatal)');
+                console.log('🛑 Motor en espera / Manual');
                 isListening.value = false;
                 if (!hasError.value) statusMessage.value = 'Pausado';
             }
@@ -150,29 +150,9 @@ export function useSpeech(onSpeechResult?: (text: string) => void) {
         if (isListening.value) return;
 
         // --- HARDWARE PRE-FLIGHT CHECK ---
-        try {
-            console.log('🔌 Verificando acceso a hardware de audio...');
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            // Si pasamos aquí, tenemos permiso y hardware
-            console.log('✅ Hardware de audio accesible.');
-
-            // Cerrar stream inmediatamente, solo lo queríamos para validar/desbloquear
-            stream.getTracks().forEach(track => track.stop());
-
-        } catch (err: any) {
-            console.error('🚫 Error FATAL de Hardware/Permisos:', err);
-            hasError.value = true;
-
-            if (err.name === 'NotFoundError') {
-                statusMessage.value = '🚫 No se encontró micrófono. Revisa conexión/configuración.';
-            } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                statusMessage.value = '🚫 Permiso denegado. Desbloquea el micrófono.';
-            } else {
-                statusMessage.value = `Error de Micrófono: ${err.name || err.message}`;
-            }
-            // Si falla getUserMedia, SpeechRecognition fallará seguro.
-            return;
-        }
+        // --- HARDWARE CHECK REMOVED ---
+        // El pre-chequeo con getUserMedia causaba retrasos y bloqueos en móviles/safari
+        // Dejamos que recognition.start() maneje el permiso nativamente.
         // ------------------------------------
 
         hasError.value = false;
