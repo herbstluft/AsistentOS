@@ -21,32 +21,6 @@ const subscriptionPrice = computed(() => {
     return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
 });
 
-// Función para esperar a que un elemento exista en el DOM
-const waitForElement = (selector: string, maxAttempts = 20, interval = 100): Promise<HTMLElement> => {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-
-        const checkElement = () => {
-            const element = document.querySelector(selector) as HTMLElement;
-
-            if (element) {
-                resolve(element);
-                return;
-            }
-
-            attempts++;
-            if (attempts >= maxAttempts) {
-                reject(new Error(`Elemento ${selector} no encontrado después de ${maxAttempts} intentos`));
-                return;
-            }
-
-            setTimeout(checkElement, interval);
-        };
-
-        checkElement();
-    });
-};
-
 onMounted(async () => {
     try {
         // Esperar a que el DOM esté completamente renderizado
@@ -74,8 +48,9 @@ onMounted(async () => {
                 hidePostalCode: false,
             });
 
-            // Esperar activamente a que el elemento #card-element exista en el DOM
-            await waitForElement('#card-element');
+            // El elemento #card-element ahora siempre está en el DOM
+            // Solo esperamos un momento para asegurar que Vue haya terminado de renderizar
+            await nextTick();
 
             // Montar el elemento de Stripe
             cardElement.value.mount('#card-element');
@@ -144,7 +119,7 @@ const handleSubmit = async () => {
             </button>
 
             <!-- Loading Step -->
-            <div v-if="step === 'loading'" class="text-center py-12">
+            <div v-show="step === 'loading'" class="text-center py-12">
                 <div class="inline-flex p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4 animate-pulse">
                     <Loader2 class="w-12 h-12 text-indigo-600 dark:text-indigo-400 animate-spin" />
                 </div>
@@ -157,7 +132,7 @@ const handleSubmit = async () => {
             </div>
 
             <!-- Card Step -->
-            <div v-else-if="step === 'card'">
+            <div v-show="step === 'card'">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
                         <CreditCard class="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
@@ -199,9 +174,6 @@ const handleSubmit = async () => {
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
                         Aceptamos Visa, Mastercard, American Express y más
                     </p>
-                    <div id="card-element"
-                        class="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 min-h-[44px]">
-                    </div>
                     <p v-if="cardErrors" class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
                         <AlertCircle class="w-4 h-4" />
                         {{ cardErrors }}
@@ -231,7 +203,7 @@ const handleSubmit = async () => {
             </div>
 
             <!-- Processing Step -->
-            <div v-else-if="step === 'processing'" class="text-center py-12">
+            <div v-show="step === 'processing'" class="text-center py-12">
                 <div class="inline-flex p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4 animate-pulse">
                     <Loader2 class="w-12 h-12 text-indigo-600 dark:text-indigo-400 animate-spin" />
                 </div>
@@ -244,7 +216,7 @@ const handleSubmit = async () => {
             </div>
 
             <!-- Success Step -->
-            <div v-else-if="step === 'success'" class="text-center py-12">
+            <div v-show="step === 'success'" class="text-center py-12">
                 <div class="inline-flex p-4 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
                     <CheckCircle2 class="w-12 h-12 text-green-600 dark:text-green-400" />
                 </div>
@@ -254,6 +226,12 @@ const handleSubmit = async () => {
                 <p class="text-gray-600 dark:text-gray-400">
                     Tu período de prueba ha comenzado
                 </p>
+            </div>
+
+            <!-- Card Element Container - Siempre en el DOM pero oculto -->
+            <div id="card-element"
+                class="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 min-h-[44px]"
+                :class="{ 'hidden': step !== 'card' }">
             </div>
         </div>
     </div>
