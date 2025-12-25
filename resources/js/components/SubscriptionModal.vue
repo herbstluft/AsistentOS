@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import axios from 'axios';
 import { X, CreditCard, AlertCircle, CheckCircle2, Clock } from 'lucide-vue-next';
@@ -15,6 +15,10 @@ const cardErrors = ref<string | null>(null);
 const step = ref<'card' | 'processing' | 'success'>('card');
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+const subscriptionPrice = computed(() => {
+    return import.meta.env.VITE_SUBSCRIPTION_PRICE || '250';
+});
 
 onMounted(async () => {
     try {
@@ -102,7 +106,7 @@ const handleSubmit = async () => {
                             Información de Pago
                         </h2>
                         <p class="text-sm text-gray-600 dark:text-gray-400">
-                            10 minutos gratis, luego ${{ import.meta.env.VITE_SUBSCRIPTION_PRICE || '250' }} MXN/mes
+                            10 minutos gratis, luego ${{ subscriptionPrice }} MXN/mes
                         </p>
                     </div>
                 </div>
@@ -119,8 +123,8 @@ const handleSubmit = async () => {
                             <ul class="text-blue-800 dark:text-blue-200 space-y-1">
                                 <li>• No se realizará ningún cargo ahora</li>
                                 <li>• Puedes cancelar en cualquier momento durante la prueba</li>
-                                <li>• Después de 10 min, se cobrará automáticamente ${{
-                                    import.meta.env.VITE_SUBSCRIPTION_PRICE || '250' }} MXN/mes</li>
+                                <li>• Después de 10 min, se cobrará automáticamente ${{ subscriptionPrice }} MXN/mes
+                                </li>
                             </ul>
                         </div>
                     </div>
