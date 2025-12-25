@@ -58,6 +58,6 @@ class Subscription extends Model
             return null;
         }
 
-        return max(0, $this->trial_ends_at->diffInSeconds(now()));
+        return max(0, now()->diffInSeconds($this->trial_ends_at, false));
     }
 }
