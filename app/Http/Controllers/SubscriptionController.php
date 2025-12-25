@@ -75,8 +75,19 @@ class SubscriptionController extends Controller
             }
 
             // Adjuntar método de pago al cliente
-            $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
-            $paymentMethod->attach(['customer' => $customerId]);
+            try {
+                $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
+                
+                // Solo adjuntar si no está ya adjunto a este customer
+                if (!$paymentMethod->customer || $paymentMethod->customer !== $customerId) {
+                    $paymentMethod->attach(['customer' => $customerId]);
+                }
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                // Si el payment method ya está adjunto, continuar
+                if (strpos($e->getMessage(), 'already been attached') === false) {
+                    throw $e;
+                }
+            }
 
             // Establecer como método de pago predeterminado
             Customer::update($customerId, [
@@ -106,7 +117,18 @@ class SubscriptionController extends Controller
                 'trial_ends_at' => $trialEndsAt->toIso8601String(),
                 'trial_seconds' => $subscription->trialTimeRemaining(),
             ]);
+        } catch (\Stripe\Exception\CardException $e) {
+            // Errores específicos de la tarjeta
+            \Log::error('Stripe Card Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            // Errores de la API de Stripe
+            \Log::error('Stripe API Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Error de Stripe: ' . $e->getMessage()], 500);
         } catch (\Exception $e) {
+            // Otros errores
+            \Log::error('Error starting trial: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
