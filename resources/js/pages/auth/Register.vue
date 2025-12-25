@@ -27,12 +27,9 @@ const handleRegisterClick = (e: Event) => {
     showSubscriptionModal.value = true;
 };
 
-const handleSubscriptionSuccess = (stripeToken: string, cardId: string) => {
-    // Ahora sí completar el registro con el token de Stripe
-    const form = useForm({
-        ...formData.value,
-        stripe_token: stripeToken,
-    });
+const handleSubscriptionSuccess = () => {
+    // Completar el registro
+    const form = useForm(formData.value);
 
     form.post('/register', {
         onSuccess: () => {
