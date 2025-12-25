@@ -12,8 +12,11 @@ import { login } from '@/routes';
 import { store } from '@/routes/register';
 import { Form, Link, useForm } from '@inertiajs/vue3';
 import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
+import axios from 'axios';
 
 const showSubscriptionModal = ref(false);
+const paymentMethodId = ref<string | null>(null);
+
 const formData = ref({
     name: '',
     email: '',
@@ -27,13 +30,28 @@ const handleRegisterClick = (e: Event) => {
     showSubscriptionModal.value = true;
 };
 
-const handleSubscriptionSuccess = () => {
+const handleSubscriptionSuccess = async (pmId: string) => {
+    // Guardar el payment method ID
+    paymentMethodId.value = pmId;
+
     // Completar el registro
     const form = useForm(formData.value);
 
     form.post('/register', {
-        onSuccess: () => {
-            router.visit('/dashboard');
+        onSuccess: async () => {
+            // Después del registro exitoso, iniciar el trial
+            try {
+                await axios.post('/api/subscription/start-trial', {
+                    payment_method_id: paymentMethodId.value,
+                });
+
+                // Redirigir al dashboard
+                router.visit('/dashboard');
+            } catch (error) {
+                console.error('Error starting trial:', error);
+                // Aún así redirigir al dashboard
+                router.visit('/dashboard');
+            }
         },
         onError: (errors) => {
             console.error('Registration errors:', errors);

@@ -52,7 +52,6 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'payment_method_id' => 'required|string',
-            'customer_id' => 'required|string',
         ]);
 
         $user = auth()->user();
@@ -63,12 +62,24 @@ class SubscriptionController extends Controller
         }
 
         try {
+            // Crear o recuperar cliente de Stripe
+            if (!$user->subscription || !$user->subscription->stripe_customer_id) {
+                $customer = Customer::create([
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ]);
+                
+                $customerId = $customer->id;
+            } else {
+                $customerId = $user->subscription->stripe_customer_id;
+            }
+
             // Adjuntar método de pago al cliente
             $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
-            $paymentMethod->attach(['customer' => $request->customer_id]);
+            $paymentMethod->attach(['customer' => $customerId]);
 
             // Establecer como método de pago predeterminado
-            Customer::update($request->customer_id, [
+            Customer::update($customerId, [
                 'invoice_settings' => [
                     'default_payment_method' => $request->payment_method_id,
                 ],
@@ -80,7 +91,7 @@ class SubscriptionController extends Controller
             $subscription = Subscription::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'stripe_customer_id' => $request->customer_id,
+                    'stripe_customer_id' => $customerId,
                     'stripe_payment_method_id' => $request->payment_method_id,
                     'status' => 'trial',
                     'trial_ends_at' => $trialEndsAt,

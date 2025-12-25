@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
 import { X, CreditCard, AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-vue-next';
-import { useSubscription } from '@/composables/useSubscription';
+import axios from 'axios';
 
 const emit = defineEmits<{
     close: [];
@@ -17,9 +17,6 @@ const step = ref<'loading' | 'card' | 'processing' | 'success'>('loading');
 const loading = ref(false);
 const error = ref<string | null>(null);
 const isElementReady = ref(false);
-const customerId = ref<string | null>(null);
-
-const { createSetupIntent, startTrial } = useSubscription();
 
 const subscriptionPrice = computed(() => {
     return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
@@ -34,10 +31,6 @@ onMounted(async () => {
         stripe.value = await loadStripe(stripeKey);
 
         if (stripe.value) {
-            // Crear setup intent en el backend
-            const setupData = await createSetupIntent();
-            customerId.value = setupData.customerId;
-
             elements.value = stripe.value.elements();
             cardElement.value = elements.value.create('card', {
                 style: {
@@ -80,7 +73,7 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
-    if (!stripe.value || !cardElement.value || !isElementReady.value || !customerId.value) {
+    if (!stripe.value || !cardElement.value || !isElementReady.value) {
         error.value = 'El sistema de pagos no está listo. Por favor espera un momento.';
         return;
     }
@@ -105,13 +98,12 @@ const handleSubmit = async () => {
             throw new Error('No se pudo procesar la tarjeta');
         }
 
-        // Iniciar el trial en el backend
-        await startTrial(paymentMethod.id, customerId.value);
-
+        // Guardar el payment method ID para usarlo después del registro
+        // Lo pasamos al componente padre
         step.value = 'success';
 
         setTimeout(() => {
-            emit('success');
+            emit('success', paymentMethod.id);
             emit('close');
         }, 1500);
     } catch (e: any) {
