@@ -51,12 +51,16 @@ onMounted(async () => {
 
 const handleSubmit = async () => {
     if (!stripe.value || !cardElement.value) {
+        error.value = 'El sistema de pagos no está listo. Por favor espera un momento.';
         return;
     }
 
     try {
         step.value = 'processing';
         loading.value = true;
+
+        // Esperar un momento para asegurar que el elemento esté completamente montado
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Crear token de la tarjeta
         const { token, error: stripeError } = await stripe.value.createToken(cardElement.value);
@@ -83,6 +87,7 @@ const handleSubmit = async () => {
         cardErrors.value = e.message || 'Error al procesar la tarjeta';
     }
 };
+
 
 </script>
 
