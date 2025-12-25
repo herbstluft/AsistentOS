@@ -103,6 +103,7 @@ Route::middleware([
     Route::post('/api/subscription/start-trial', [App\Http\Controllers\SubscriptionController::class, 'startTrial']);
     Route::post('/api/subscription/cancel-trial', [App\Http\Controllers\SubscriptionController::class, 'cancelTrial']);
     Route::post('/api/subscription/convert', [App\Http\Controllers\SubscriptionController::class, 'convertToSubscription']);
+    Route::post('/api/subscription/reactivate', [App\Http\Controllers\SubscriptionController::class, 'reactivate']);
 });
 
 require __DIR__.'/settings.php';

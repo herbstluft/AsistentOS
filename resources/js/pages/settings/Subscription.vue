@@ -124,7 +124,7 @@ const handleCancelTrial = async () => {
                                 Tiempo Restante
                             </h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                Tu período de prueba de 10 minutos
+                                Tu período de prueba de 1 minuto
                             </p>
                         </div>
                     </div>
@@ -148,7 +148,7 @@ const handleCancelTrial = async () => {
                                 'bg-gradient-to-r from-orange-500 to-red-500': isTrialExpiringSoon,
                                 'bg-gradient-to-r from-blue-500 to-purple-500': !isTrialExpiringSoon
                             }" :style="{
-                                width: `${(trialTimeRemaining / (10 * 60)) * 100}%`
+                                width: `${(trialTimeRemaining / 60) * 100}%`
                             }"></div>
                     </div>
 
@@ -169,7 +169,7 @@ const handleCancelTrial = async () => {
                         <span class="text-gray-600 dark:text-gray-400">Monto mensual:</span>
                         <span class="font-semibold text-gray-900 dark:text-white">
                             ${{ subscriptionStatus.amount || '1' }} {{ (subscriptionStatus.currency ||
-                            'MXN').toUpperCase() }}
+                                'MXN').toUpperCase() }}
                         </span>
                     </div>
 

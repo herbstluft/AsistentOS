@@ -68,7 +68,7 @@ const handleCancel = async () => {
             <!-- Barra de progreso -->
             <div class="h-1 bg-white/20">
                 <div class="h-full bg-white transition-all duration-1000 ease-linear" :style="{
-                    width: `${(trialTimeRemaining / (10 * 60)) * 100}%`
+                    width: `${(trialTimeRemaining / 60) * 100}%`
                 }"></div>
             </div>
         </div>

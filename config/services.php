@@ -55,7 +55,7 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'price' => env('SUBSCRIPTION_PRICE', 250.00),
         'currency' => env('SUBSCRIPTION_CURRENCY', 'mxn'),
-        'trial_minutes' => env('TRIAL_MINUTES', 10),
+        'trial_minutes' => env('TRIAL_MINUTES', 1),
     ],
 
 ];

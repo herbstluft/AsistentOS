@@ -203,6 +203,91 @@ class SubscriptionController extends Controller
         }
     }
 
+    public function reactivate(Request $request)
+    {
+        $request->validate([
+            'payment_method_id' => 'required|string',
+        ]);
+
+        $user = auth()->user();
+        $subscription = $user->subscription;
+
+        if (!$subscription) {
+            return response()->json(['error' => 'No tienes una suscripción'], 400);
+        }
+
+        if (!in_array($subscription->status, ['canceled', 'expired'])) {
+            return response()->json(['error' => 'Tu suscripción ya está activa'], 400);
+        }
+
+        try {
+            $customerId = $subscription->stripe_customer_id;
+
+            // Si no tiene customer ID, crear uno nuevo
+            if (!$customerId) {
+                $customer = Customer::create([
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ]);
+                $customerId = $customer->id;
+            }
+
+            // Adjuntar nuevo método de pago
+            try {
+                $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
+                
+                if (!$paymentMethod->customer || $paymentMethod->customer !== $customerId) {
+                    $paymentMethod->attach(['customer' => $customerId]);
+                }
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                if (strpos($e->getMessage(), 'already been attached') === false) {
+                    throw $e;
+                }
+            }
+
+            // Establecer como método de pago predeterminado
+            Customer::update($customerId, [
+                'invoice_settings' => [
+                    'default_payment_method' => $request->payment_method_id,
+                ],
+            ]);
+
+            // Crear suscripción en Stripe
+            $stripeSubscription = \Stripe\Subscription::create([
+                'customer' => $customerId,
+                'items' => [
+                    ['price' => config('services.stripe.price_id')],
+                ],
+                'default_payment_method' => $request->payment_method_id,
+            ]);
+
+            // Actualizar suscripción local
+            $subscription->update([
+                'stripe_customer_id' => $customerId,
+                'stripe_subscription_id' => $stripeSubscription->id,
+                'stripe_payment_method_id' => $request->payment_method_id,
+                'status' => 'active',
+                'subscription_ends_at' => now()->addMonth(),
+                'trial_ends_at' => null,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Suscripción reactivada exitosamente',
+            ]);
+        } catch (\Stripe\Exception\CardException $e) {
+            \Log::error('Stripe Card Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            \Log::error('Stripe API Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Error de Stripe: ' . $e->getMessage()], 500);
+        } catch (\Exception $e) {
+            \Log::error('Error reactivating subscription: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function status()
     {
         $user = auth()->user();
@@ -224,6 +309,8 @@ class SubscriptionController extends Controller
             'subscription_ends_at' => $subscription->subscription_ends_at?->toIso8601String(),
             'trial_seconds_remaining' => $subscription->trialTimeRemaining(),
             'trial_used' => $subscription->trial_used,
+            'amount' => $subscription->amount,
+            'currency' => $subscription->currency,
         ]);
     }
 }
