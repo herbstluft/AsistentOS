@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { CreditCard, AlertCircle, Lock } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
@@ -15,6 +15,10 @@ const cardElement = ref<any>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const showPaymentForm = ref(false);
+
+const subscriptionPrice = computed(() => {
+    return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
+});
 
 const statusMessage = {
     canceled: {
@@ -121,7 +125,7 @@ const handleReactivate = async () => {
                     <!-- Información de Precio -->
                     <div class="text-center mb-6">
                         <div class="text-5xl font-bold text-gray-900 dark:text-white mb-2">
-                            ${{ import.meta.env.VITE_SUBSCRIPTION_PRICE || '1' }} MXN
+                            ${{ subscriptionPrice }} MXN
                         </div>
                         <div class="text-gray-600 dark:text-gray-400">
                             por mes
