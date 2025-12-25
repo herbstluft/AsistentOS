@@ -21,6 +21,32 @@ const subscriptionPrice = computed(() => {
     return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
 });
 
+// Función para esperar a que un elemento exista en el DOM
+const waitForElement = (selector: string, maxAttempts = 20, interval = 100): Promise<HTMLElement> => {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+
+        const checkElement = () => {
+            const element = document.querySelector(selector) as HTMLElement;
+
+            if (element) {
+                resolve(element);
+                return;
+            }
+
+            attempts++;
+            if (attempts >= maxAttempts) {
+                reject(new Error(`Elemento ${selector} no encontrado después de ${maxAttempts} intentos`));
+                return;
+            }
+
+            setTimeout(checkElement, interval);
+        };
+
+        checkElement();
+    });
+};
+
 onMounted(async () => {
     try {
         // Esperar a que el DOM esté completamente renderizado
@@ -48,25 +74,20 @@ onMounted(async () => {
                 hidePostalCode: false,
             });
 
-            // Esperar un poco más para asegurar que el elemento está en el DOM
-            await nextTick();
-            await new Promise(resolve => setTimeout(resolve, 150));
+            // Esperar activamente a que el elemento #card-element exista en el DOM
+            await waitForElement('#card-element');
 
-            const cardContainer = document.getElementById('card-element');
-            if (cardContainer) {
-                cardElement.value.mount('#card-element');
+            // Montar el elemento de Stripe
+            cardElement.value.mount('#card-element');
 
-                cardElement.value.on('ready', () => {
-                    isElementReady.value = true;
-                    step.value = 'card';
-                });
+            cardElement.value.on('ready', () => {
+                isElementReady.value = true;
+                step.value = 'card';
+            });
 
-                cardElement.value.on('change', (event: any) => {
-                    cardErrors.value = event.error ? event.error.message : null;
-                });
-            } else {
-                throw new Error('Card container not found');
-            }
+            cardElement.value.on('change', (event: any) => {
+                cardErrors.value = event.error ? event.error.message : null;
+            });
         }
     } catch (e: any) {
         console.error('Error initializing Stripe:', e);
