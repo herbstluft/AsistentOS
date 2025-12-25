@@ -97,7 +97,8 @@ class SubscriptionController extends Controller
             ]);
 
             // Crear o actualizar suscripción
-            $trialEndsAt = now()->addMinutes(config('services.stripe.trial_minutes', 10));
+            $trialMinutes = (int) config('services.stripe.trial_minutes', 10);
+            $trialEndsAt = now()->addMinutes($trialMinutes);
 
             $subscription = Subscription::updateOrCreate(
                 ['user_id' => $user->id],
