@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
 import { X, CreditCard, AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-vue-next';
+import { useSubscription } from '@/composables/useSubscription';
 
 const emit = defineEmits<{
     close: [];
@@ -16,6 +17,9 @@ const step = ref<'loading' | 'card' | 'processing' | 'success'>('loading');
 const loading = ref(false);
 const error = ref<string | null>(null);
 const isElementReady = ref(false);
+const customerId = ref<string | null>(null);
+
+const { createSetupIntent, startTrial } = useSubscription();
 
 const subscriptionPrice = computed(() => {
     return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
@@ -30,6 +34,10 @@ onMounted(async () => {
         stripe.value = await loadStripe(stripeKey);
 
         if (stripe.value) {
+            // Crear setup intent en el backend
+            const setupData = await createSetupIntent();
+            customerId.value = setupData.customerId;
+
             elements.value = stripe.value.elements();
             cardElement.value = elements.value.create('card', {
                 style: {
@@ -72,7 +80,7 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
-    if (!stripe.value || !cardElement.value || !isElementReady.value) {
+    if (!stripe.value || !cardElement.value || !isElementReady.value || !customerId.value) {
         error.value = 'El sistema de pagos no está listo. Por favor espera un momento.';
         return;
     }
@@ -83,16 +91,22 @@ const handleSubmit = async () => {
         error.value = null;
         cardErrors.value = null;
 
-        // Crear token de la tarjeta
-        const { token, error: stripeError } = await stripe.value.createToken(cardElement.value);
+        // Crear payment method con Stripe
+        const { paymentMethod, error: stripeError } = await stripe.value.createPaymentMethod({
+            type: 'card',
+            card: cardElement.value,
+        });
 
         if (stripeError) {
             throw new Error(stripeError.message);
         }
 
-        if (!token) {
+        if (!paymentMethod) {
             throw new Error('No se pudo procesar la tarjeta');
         }
+
+        // Iniciar el trial en el backend
+        await startTrial(paymentMethod.id, customerId.value);
 
         step.value = 'success';
 
