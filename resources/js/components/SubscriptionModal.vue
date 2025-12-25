@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
 import { X, CreditCard, AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-vue-next';
 
@@ -23,6 +23,9 @@ const subscriptionPrice = computed(() => {
 
 onMounted(async () => {
     try {
+        // Esperar a que el DOM esté completamente renderizado
+        await nextTick();
+
         const stripeKey = import.meta.env.VITE_STRIPE_KEY || 'pk_test_51SiAvdH00XbXWNt8SmwRvKvmQwTRFepHbArcIe1RtoRbGJyTdiDyWRld9v48ROELD4yXNh0ACcQnp21Tgzd8otO700bGMU2dBF';
         stripe.value = await loadStripe(stripeKey);
 
@@ -45,8 +48,9 @@ onMounted(async () => {
                 hidePostalCode: false,
             });
 
-            // Esperar a que el DOM esté listo
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Esperar un poco más para asegurar que el elemento está en el DOM
+            await nextTick();
+            await new Promise(resolve => setTimeout(resolve, 150));
 
             const cardContainer = document.getElementById('card-element');
             if (cardContainer) {
