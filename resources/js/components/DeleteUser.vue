@@ -26,10 +26,10 @@ const passwordInput = useTemplateRef('passwordInput');
 <template>
     <div class="space-y-6">
         <HeadingSmall title="Eliminar cuenta" description="Elimina tu cuenta y todos sus recursos" />
-        <div class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
-            <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
-                <p class="font-medium">Advertencia</p>
-                <p class="text-sm">
+        <div class="space-y-4 rounded-lg py-4">
+            <div class="relative space-y-0.5">
+                <p class="font-semibold text-black-900 dark:text-black-200">Advertencia</p>
+                <p class="text-sm text-black-800 dark:text-black-300">
                     Por favor procede con precaución, esta acción no se puede deshacer.
                 </p>
             </div>

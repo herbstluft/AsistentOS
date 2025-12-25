@@ -96,6 +96,13 @@ Route::middleware([
 
     // Gemini Proxy
     Route::post('/api/gemini/proxy', [App\Http\Controllers\GeminiController::class, 'proxy']);
+
+    // Subscription Routes
+    Route::get('/api/subscription/status', [App\Http\Controllers\SubscriptionController::class, 'status']);
+    Route::post('/api/subscription/setup-intent', [App\Http\Controllers\SubscriptionController::class, 'setupIntent']);
+    Route::post('/api/subscription/start-trial', [App\Http\Controllers\SubscriptionController::class, 'startTrial']);
+    Route::post('/api/subscription/cancel-trial', [App\Http\Controllers\SubscriptionController::class, 'cancelTrial']);
+    Route::post('/api/subscription/convert', [App\Http\Controllers\SubscriptionController::class, 'convertToSubscription']);
 });
 
 require __DIR__.'/settings.php';

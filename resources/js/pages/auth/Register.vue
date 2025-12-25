@@ -1,15 +1,49 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthPremiumLayout from '@/layouts/auth/AuthPremiumLayout.vue';
+import SubscriptionModal from '@/components/SubscriptionModal.vue';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
-import { Form, Link } from '@inertiajs/vue3';
+import { Form, Link, useForm } from '@inertiajs/vue3';
 import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
+
+const showSubscriptionModal = ref(false);
+const formData = ref({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const handleRegisterClick = (e: Event) => {
+    e.preventDefault();
+    // Mostrar modal de suscripción antes de registrar
+    showSubscriptionModal.value = true;
+};
+
+const handleSubscriptionSuccess = (stripeToken: string, cardId: string) => {
+    // Ahora sí completar el registro con el token de Stripe
+    const form = useForm({
+        ...formData.value,
+        stripe_token: stripeToken,
+    });
+
+    form.post('/register', {
+        onSuccess: () => {
+            router.visit('/dashboard');
+        },
+        onError: (errors) => {
+            console.error('Registration errors:', errors);
+            showSubscriptionModal.value = false;
+        },
+    });
+};
 </script>
 
 <template>
@@ -30,7 +64,7 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                             <User class="w-5 h-5" />
                         </div>
                         <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" name="name"
-                            placeholder="Tu nombre"
+                            v-model="formData.name" placeholder="Tu nombre"
                             class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.name" />
@@ -47,7 +81,7 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                             <Mail class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" required :tabindex="2" autocomplete="email" name="email"
-                            placeholder="correo@ejemplo.com"
+                            v-model="formData.email" placeholder="correo@ejemplo.com"
                             class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.email" />
@@ -63,7 +97,7 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                             <Lock class="w-5 h-5" />
                         </div>
                         <Input id="password" type="password" required :tabindex="3" autocomplete="new-password"
-                            name="password" placeholder="••••••••"
+                            name="password" v-model="formData.password" placeholder="••••••••"
                             class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.password" />
@@ -80,14 +114,15 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                             <Key class="w-5 h-5" />
                         </div>
                         <Input id="password_confirmation" type="password" required :tabindex="4"
-                            autocomplete="new-password" name="password_confirmation" placeholder="••••••••"
+                            autocomplete="new-password" name="password_confirmation"
+                            v-model="formData.password_confirmation" placeholder="••••••••"
                             class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
                     <InputError :message="errors.password_confirmation" />
                 </div>
             </div>
 
-            <Button type="submit"
+            <Button type="button" @click="handleRegisterClick"
                 class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 relative overflow-hidden group/btn mt-4"
                 tabindex="5" :disabled="processing" data-test="register-user-button">
                 <div
@@ -96,7 +131,7 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
                 <div class="relative flex items-center justify-center gap-2">
                     <Spinner v-if="processing" class="text-white" />
                     <span v-else class="flex items-center gap-2">
-                        Crear Cuenta
+                        Continuar al Pago
                         <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
                     </span>
                 </div>
@@ -117,4 +152,8 @@ import { ArrowRight, User, Mail, Lock, Key } from 'lucide-vue-next';
         </template>
 
     </AuthPremiumLayout>
+
+    <!-- Subscription Modal -->
+    <SubscriptionModal v-if="showSubscriptionModal" @close="showSubscriptionModal = false"
+        @success="handleSubscriptionSuccess" />
 </template>

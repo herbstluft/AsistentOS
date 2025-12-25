@@ -38,6 +38,7 @@
         "@mediapipe/drawing_utils": "^0.3.1675466124",
         "@mediapipe/hands": "^0.4.1675469240",
         "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
+        "@stripe/stripe-js": "^8.6.0",
         "@tiptap/extension-color": "^3.13.0",
         "@tiptap/extension-font-family": "^3.13.0",
         "@tiptap/extension-text-align": "^3.13.0",

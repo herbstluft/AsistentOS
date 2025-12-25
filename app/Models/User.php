@@ -53,6 +53,21 @@ class User extends Authenticatable
         return $this->hasMany(Appointment::class);
     }
 
+    public function subscription()
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscription && $this->subscription->isActive();
+    }
+
+    public function isOnTrial(): bool
+    {
+        return $this->subscription && $this->subscription->isOnTrial();
+    }
+
     protected function casts(): array
     {
         return [
