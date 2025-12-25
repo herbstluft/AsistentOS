@@ -8,7 +8,7 @@ import { edit as editProfile } from '@/routes/profile';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Music } from 'lucide-vue-next';
+import { Music, CreditCard } from 'lucide-vue-next';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -22,6 +22,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Apariencia',
         href: editAppearance(),
+    },
+    {
+        title: 'Suscripción',
+        href: '/settings/subscription',
+        icon: CreditCard,
     },
     {
         title: 'Spotify',
