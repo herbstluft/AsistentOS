@@ -11,6 +11,8 @@ interface SubscriptionStatus {
     subscription_ends_at?: string;
     trial_seconds_remaining?: number;
     trial_used?: boolean;
+    amount?: number;
+    currency?: string;
 }
 
 export function useSubscription() {
