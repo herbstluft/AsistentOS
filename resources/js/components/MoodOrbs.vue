@@ -29,7 +29,8 @@ const {
     feedbackState,
     isProcessing,
     processTextQuery,
-    partialTranscript // Add this
+    partialTranscript,
+    serverResponse
 } = useAssistantOrchestrator();
 
 // --- DYNAMIC PALETTE LOGIC ---
@@ -87,7 +88,17 @@ const handleFloatingInteraction = () => {
 
         <!-- Controls Overlay - Bottom Center -->
         <div class="z-50 absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none">
-            <div class="pointer-events-auto flex flex-col items-center gap-2">
+            <div class="pointer-events-auto flex flex-col items-center gap-4 w-full max-w-2xl px-4">
+
+                <!-- AI RESPONSE DISPLAY (TYPEWRITER HUD) -->
+                <div v-if="serverResponse"
+                    class="bg-slate-950/60 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.15)] animate-in fade-in zoom-in duration-500 w-full max-w-xl">
+                    <p
+                        class="text-lg md:text-xl text-cyan-50 font-light leading-relaxed text-center tracking-wide text-balance">
+                        <span class="text-cyan-400/50 mr-2">◈</span>{{ serverResponse }}
+                    </p>
+                </div>
+
                 <!-- PARTIAL TRANSCRIPT (SUBTITLES) -->
                 <div v-if="partialTranscript"
                     class="text-white/80 text-lg font-medium px-4 py-2 bg-black/30 backdrop-blur-md rounded-full animate-pulse transition-all">

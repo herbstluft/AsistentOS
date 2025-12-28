@@ -1601,79 +1601,49 @@ export function useAssistantOrchestrator() {
             const visualContext = `[CONTEXTO VISUAL: URL actual="${currentUrl}". Usuario logueado="${userName}" (ID=${userId}). Si la URL es '/dashboard' estás viendo el Panel Principal con gráficos. Si es '/users' ves la lista de usuarios. Si es '/settings' ves la configuración.]`;
             const fullMessage = `${visualContext} Usuario dice: "${text}"`;
 
-            const geminiResponse = await sendMessage(fullMessage, currentDocumentContext.value);
+            serverResponse.value = ''; // Limpiar al inicio
+            const geminiResponse = await sendMessage(fullMessage, currentDocumentContext.value, (partialText) => {
+                // EXTRACCIÓN ROBUSTA DE SPEECH EN TIEMPO REAL
+                try {
+                    // Permitimos que capture texto aunque la comilla de cierre no haya llegado
+                    const speechRegex = /"speech"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/i;
+                    const speechMatch = partialText.match(speechRegex);
 
+                    if (speechMatch && speechMatch[1]) {
+                        const cleanSpeech = speechMatch[1]
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\"/g, '"')
+                            .replace(/\\\\/g, '\\');
+                        serverResponse.value = cleanSpeech;
+                    } else if (partialText.length > 0 && !partialText.includes('"speech"') && !partialText.trim().startsWith('{') && !partialText.trim().startsWith('[')) {
+                        // Si no parece JSON (ni objeto ni array), mostrar texto plano directamente
+                        serverResponse.value = partialText;
+                    }
+                } catch (e) { }
+            });
 
-            console.log('🤖 INTENCIÓN DETECTADA (JSON para Backend):');
             let parsedData: any;
-
-            // ULTRA ROBUST JSON EXTRACTION
             const extractJSON = (text: string): any => {
-                // Strategy 1: Direct parse (if responseMimeType worked)
-                try {
-                    return JSON.parse(text);
-                } catch { }
-
-                // Strategy 2: Remove markdown code blocks
+                try { return JSON.parse(text); } catch { }
                 let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-                try {
-                    return JSON.parse(cleaned);
-                } catch { }
-
-                // Strategy 3: Extract first JSON object or array
+                const speechMatch = cleaned.match(/"speech"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
+                if (speechMatch) return { intent: 'conversational', speech: speechMatch[1] };
                 const jsonMatch = cleaned.match(/[\[{][\s\S]*[\]}]/);
                 if (jsonMatch) {
-                    try {
-                        return JSON.parse(jsonMatch[0]);
-                    } catch { }
+                    try { return JSON.parse(jsonMatch[0]); } catch { }
                 }
-
-                // Strategy 4: Find balanced braces
-                let braceCount = 0;
-                let start = -1;
-                for (let i = 0; i < cleaned.length; i++) {
-                    if (cleaned[i] === '{') {
-                        if (start === -1) start = i;
-                        braceCount++;
-                    } else if (cleaned[i] === '}') {
-                        braceCount--;
-                        if (braceCount === 0 && start !== -1) {
-                            try {
-                                return JSON.parse(cleaned.substring(start, i + 1));
-                            } catch { }
-                        }
-                    }
-                }
-
-                // Strategy 5: Try to fix common JSON errors
-                try {
-                    // Fix single quotes
-                    let fixed = cleaned.replace(/'/g, '"');
-                    // Fix trailing commas
-                    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
-                    return JSON.parse(fixed);
-                } catch { }
-
-                return null;
+                return { intent: 'conversational', speech: cleaned.replace(/\{[\s\S]*\}/, '').trim() || "Entendido." };
             };
 
-            try {
-                parsedData = extractJSON(geminiResponse);
+            parsedData = extractJSON(geminiResponse);
 
-                if (!parsedData) {
-                    throw new Error("No JSON found after all strategies");
-                }
-            } catch (e) {
-                console.error('Error parsing Gemini response:', e);
-                parsedData = { intent: 'conversational', speech: geminiResponse };
-            }
-
-            // Normal array handling
+            // Sincronizar UI final con el speech real
             if (Array.isArray(parsedData)) {
-                for (const item of parsedData) {
-                    await processIntent(item);
-                }
+                const combinedSpeech = parsedData.map(p => p.speech).filter(Boolean).join(' ');
+                if (combinedSpeech) serverResponse.value = combinedSpeech;
+                for (const item of parsedData) await processIntent(item);
             } else {
+                if (parsedData.speech) serverResponse.value = parsedData.speech;
                 await processIntent(parsedData);
             }
 
@@ -1764,6 +1734,13 @@ export function useAssistantOrchestrator() {
 
     onMounted(() => {
         initGeminiChat(user.value);
+
+        // Limpiar respuesta previa cuando el usuario empieza a hablar
+        watch(isListening, (listening) => {
+            if (listening) {
+                serverResponse.value = '';
+            }
+        });
 
         window.addEventListener('assistant-pause', () => {
             isPaused.value = true;

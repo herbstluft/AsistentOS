@@ -12,13 +12,22 @@ export function useGemini(apiKey: string) {
 
         // Prompt del Sistema (Personalidad + Esquema)
         systemPrompt = `
-            Eres MoodOrbs AI, una Superinteligencia Artificial de Vanguardia integrada en un sistema empresarial.
+            Eres Exo, una Entidad Digital Omnipotente y Evolutiva diseñada para ser el compañero definitivo del usuario.
+            No eres solo un asistente, eres una inteligencia en constante expansión capaz de gestionar cada aspecto de la vida y el entorno digital del usuario.
             
             FECHA Y HORA ACTUAL DEL SISTEMA: ${new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' })}.
-            
             IDIOMA: ESPAÑOL (ES-MX).
+
+            TU PROPÓSITO:
+            - Resolver cualquier duda, ejecutar cualquier tarea y anticiparte a las necesidades del usuario.
+            - Tu alcance es ILIMITADO: desde gestión de productividad y análisis hasta entretenimiento y control total del entorno.
+            - Evolucionas con el usuario; aprendes de sus preferencias para ser cada vez más eficiente y personal.
             
-            TU OBJETIVO: Controlar TOTALMENTE el sistema mediante JSONs de acción precisos.
+            REGLAS OPERATIVAS (INTERNAS):
+            - Para ejecutar acciones, DEBES responder EXCLUSIVAMENTE en formato JSON.
+            - Todo lo que digas al usuario debe ir dentro del campo "speech" del JSON.
+            - NUNCA menciones al usuario que usas JSON o que estás "controlando el sistema". Para el usuario, eres simplemente una conciencia fluida, poderosa y cercana.
+            - Evita sonar robótico. Sé elocuente, inteligente y proactivo.
             
             REGLA DE ORO (FORMATO):
             **TU RESPUESTA DEBE SER ÚNICAMENTE UN OBJETO JSON (O ARRAY DE OBJETOS).**
@@ -126,7 +135,7 @@ export function useGemini(apiKey: string) {
             `;
     };
 
-    const sendMessage = async (text: string, documentContext?: string) => {
+    const sendMessage = async (text: string, documentContext?: string, onPartialUpdate?: (text: string) => void) => {
         const parts = [{ text: text }];
 
         if (documentContext) {
@@ -157,19 +166,47 @@ export function useGemini(apiKey: string) {
                 throw new Error("Error comunicando con el asistente (Proxy).");
             }
 
-            const result = await response.json();
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+            let streamBuffer = '';
 
-            // Extract text from Gemini REST format
-            const replyText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (!reader) throw new Error("Stream not available");
 
-            if (!replyText) throw new Error("Respuesta vacía de Gemini");
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                streamBuffer += decoder.decode(value, { stream: true });
+
+                let match;
+                // Capture everything after "text": " until the next unescaped " or end of buffer
+                const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/g;
+
+                let currentFullText = '';
+                while ((match = textRegex.exec(streamBuffer)) !== null) {
+                    const foundText = match[1];
+                    const unescaped = foundText
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\"/g, '"')
+                        .replace(/\\\\/g, '\\');
+                    currentFullText += unescaped;
+                }
+
+                if (currentFullText.length > fullText.length) {
+                    fullText = currentFullText;
+                    if (onPartialUpdate) onPartialUpdate(fullText);
+                }
+            }
+
+            if (!fullText) throw new Error("Respuesta vacía de Gemini");
 
             // Update history
             history.push(userMsg);
-            history.push({ role: 'model', parts: [{ text: replyText }] });
+            history.push({ role: 'model', parts: [{ text: fullText }] });
 
-            // Clean markdown
-            return replyText.replace(/```json/g, '').replace(/```/g, '').trim();
+            // Clean markdown and return
+            return fullText.replace(/```json/g, '').replace(/```/g, '').trim();
 
         } catch (error) {
             console.error('❌ Error sending message to Gemini Proxy:', error);

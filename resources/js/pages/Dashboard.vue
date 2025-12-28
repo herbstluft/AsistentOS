@@ -37,7 +37,7 @@ const user = computed(() => page.props.auth.user);
 
 // Composable usage for real status
 // Composable usage for real status
-const { isListening, isSpeaking, triggerMicActivation, stopMicrophone, reportState, isProcessing, processTextQuery, exportCurrentReport, stopSpeaking, setDocumentContext, statusMessage } = useAssistantOrchestrator();
+const { isListening, isSpeaking, triggerMicActivation, stopMicrophone, reportState, isProcessing, processTextQuery, exportCurrentReport, stopSpeaking, setDocumentContext, statusMessage, serverResponse } = useAssistantOrchestrator();
 const { analyzeFile, documentName, documentContent, isAnalyzing, analysisError, resetDocument } = useDocumentAnalyzer();
 const { reminders } = useAssistantReminders(() => { }, false); // Just read access
 
@@ -374,6 +374,26 @@ const summaryState = computed(() => {
                                 </div>
                             </div>
 
+                            <!-- AI Response HUD (Responsive Premium Subtitles) -->
+                            <div v-if="serverResponse"
+                                class="absolute bottom-24 left-0 right-0 flex justify-center px-4 md:px-10 z-30 pointer-events-none">
+                                <div
+                                    class="w-full max-w-2xl bg-slate-950/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 md:p-6 shadow-2xl border-t-cyan-500/30 pointer-events-auto transition-all duration-500">
+                                    <div class="max-h-[140px] md:max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <p
+                                            class="text-sm md:text-base lg:text-lg text-slate-200 font-light leading-relaxed text-center md:text-left tracking-tight text-pretty">
+                                            <span
+                                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] mr-2 border border-cyan-500/20 shrink-0">AI</span>
+                                            {{ serverResponse }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-cyan-500/40 rounded-full blur-[1px]">
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
                     </div>
                     <!-- Drag Overlay -->
@@ -573,5 +593,29 @@ const summaryState = computed(() => {
 .animate-pulse-glow {
     animation: pulse-glow 3s ease-in-out infinite;
     will-change: transform, opacity;
+}
+</style>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(6, 182, 212, 0.2);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(6, 182, 212, 0.4);
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(6, 182, 212, 0.2) transparent;
 }
 </style>

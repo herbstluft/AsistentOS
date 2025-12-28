@@ -130,7 +130,7 @@ const scrollToFeatures = () => {
                         class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-blue-500"></span>
                 </span>
-                Inteligencia Artificial v2.0
+                Inteligencia Artificial
             </div>
 
             <h1

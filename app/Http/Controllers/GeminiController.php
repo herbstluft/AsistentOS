@@ -41,17 +41,28 @@ class GeminiController extends Controller
             ];
         }
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={$apiKey}", $payload);
+        // Endpoint for streaming
+        $model = env('GEMINI_MODEL', 'gemini-2.0-flash');
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:streamGenerateContent?key={$apiKey}";
 
-        if ($response->failed()) {
-            return response()->json([
-                'error' => 'Gemini API Error',
-                'details' => $response->json()
-            ], $response->status());
-        }
+        return response()->stream(function () use ($payload, $url) {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post($url, [
+                'json' => $payload,
+                'stream' => true,
+            ]);
 
-        return $response->json();
+            $body = $response->getBody();
+            while (!$body->eof()) {
+                $chunk = $body->read(1024);
+                echo $chunk;
+                if (connection_aborted()) break;
+                flush();
+            }
+        }, 200, [
+            'Cache-Control' => 'no-cache',
+            'Content-Type' => 'text/event-stream',
+            'X-Accel-Buffering' => 'no', // For Nginx
+        ]);
     }
 }
