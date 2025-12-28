@@ -13,3 +13,9 @@ Schedule::command('subscriptions:convert-expired-trials')
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Renovar suscripciones activas que están por expirar
+Schedule::command('subscriptions:renew')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();

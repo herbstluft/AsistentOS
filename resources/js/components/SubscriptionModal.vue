@@ -6,7 +6,7 @@ import axios from 'axios';
 
 const emit = defineEmits<{
     close: [];
-    success: [];
+    success: [paymentMethodId: string];
 }>();
 
 const stripe = ref<Stripe | null>(null);
@@ -31,15 +31,18 @@ onMounted(async () => {
         stripe.value = await loadStripe(stripeKey);
 
         if (stripe.value) {
+            // Detectar si está en modo oscuro
+            const isDark = document.documentElement.classList.contains('dark');
+
             elements.value = stripe.value.elements();
             cardElement.value = elements.value.create('card', {
                 style: {
                     base: {
                         fontSize: '16px',
-                        color: '#1f2937',
+                        color: isDark ? '#f3f4f6' : '#1f2937', // Claro en dark, oscuro en light
                         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                         '::placeholder': {
-                            color: '#9ca3af',
+                            color: isDark ? '#9ca3af' : '#6b7280',
                         },
                     },
                     invalid: {
@@ -117,7 +120,8 @@ const handleSubmit = async () => {
 
 <template>
     <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+        <div
+            class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto">
             <!-- Close Button -->
             <button @click="emit('close')"
                 class="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -144,42 +148,47 @@ const handleSubmit = async () => {
                         <CreditCard class="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                             Información de Pago
                         </h2>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            10 minutos gratis, luego ${{ subscriptionPrice }} MXN/mes
+                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                            1 minuto gratis, luego ${{ subscriptionPrice }} MXN/mes
                         </p>
                     </div>
                 </div>
 
                 <!-- Trial Info -->
                 <div
-                    class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                    <div class="flex items-start gap-3">
-                        <Clock class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                        <div class="text-sm">
+                    class="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <div class="flex items-start gap-2 sm:gap-3">
+                        <Clock class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div class="text-xs sm:text-sm">
                             <p class="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                                Período de Prueba de 10 Minutos
+                                Período de Prueba de 1 Minuto
                             </p>
-                            <ul class="text-blue-800 dark:text-blue-200 space-y-1">
+                            <ul class="text-blue-800 dark:text-blue-200 space-y-0.5">
                                 <li>• No se realizará ningún cargo ahora</li>
-                                <li>• Puedes cancelar en cualquier momento durante la prueba</li>
-                                <li>• Después de 10 min, se cobrará automáticamente ${{ subscriptionPrice }} MXN/mes
-                                </li>
+                                <li>• Puedes cancelar en cualquier momento</li>
+                                <li>• Después de 1 min, se cobrará ${{ subscriptionPrice }} MXN/mes</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card Input -->
-                <div class="mb-6">
+                <div class="mb-4 sm:mb-6">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Tarjeta de Crédito o Débito
                     </label>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
                         Aceptamos Visa, Mastercard, American Express y más
                     </p>
+
+                    <!-- Card Element -->
+                    <div id="card-element"
+                        class="p-2 sm:p-3 md:p-4 border-2 border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 min-h-[44px] min-w-[280px] overflow-x-auto">
+                    </div>
+
                     <p v-if="cardErrors" class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
                         <AlertCircle class="w-4 h-4" />
                         {{ cardErrors }}
@@ -232,12 +241,6 @@ const handleSubmit = async () => {
                 <p class="text-gray-600 dark:text-gray-400">
                     Tu período de prueba ha comenzado
                 </p>
-            </div>
-
-            <!-- Card Element Container - Siempre en el DOM pero oculto -->
-            <div id="card-element"
-                class="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 min-h-[44px]"
-                :class="{ 'hidden': step !== 'card' }">
             </div>
         </div>
     </div>

@@ -11,6 +11,15 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+// Ruta pública para validar payment methods (antes del registro)
+Route::post('/api/subscription/validate-payment', [App\Http\Controllers\SubscriptionController::class, 'validatePayment']);
+
+// Ruta pública para verificar si un email ya está en uso
+Route::post('/api/check-email', function (Illuminate\Http\Request $request) {
+    $exists = App\Models\User::where('email', $request->email)->exists();
+    return response()->json(['exists' => $exists]);
+});
+
 Route::middleware([
     'auth',
     config('jetstream.auth_session'),
@@ -104,6 +113,7 @@ Route::middleware([
     Route::post('/api/subscription/cancel-trial', [App\Http\Controllers\SubscriptionController::class, 'cancelTrial']);
     Route::post('/api/subscription/convert', [App\Http\Controllers\SubscriptionController::class, 'convertToSubscription']);
     Route::post('/api/subscription/reactivate', [App\Http\Controllers\SubscriptionController::class, 'reactivate']);
+    Route::post('/api/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel']);
 });
 
 require __DIR__.'/settings.php';

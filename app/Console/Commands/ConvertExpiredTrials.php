@@ -15,13 +15,17 @@ class ConvertExpiredTrials extends Command
 
     public function handle()
     {
+        // Configurar Stripe API key
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
         $this->info('Buscando trials expirados...');
 
-        // Buscar suscripciones en trial que ya expiraron
-        $expiredTrials = Subscription::where('status', 'trial')
+        // Buscar suscripciones en trial que ya expiraron O que están marcadas como expired
+        $expiredTrials = Subscription::whereIn('status', ['trial', 'expired'])
             ->where('trial_ends_at', '<=', now())
             ->whereNotNull('stripe_customer_id')
             ->whereNotNull('stripe_payment_method_id')
+            ->whereNull('stripe_subscription_id') // No tienen suscripción activa en Stripe
             ->get();
 
         if ($expiredTrials->isEmpty()) {
@@ -38,29 +42,37 @@ class ConvertExpiredTrials extends Command
             try {
                 $this->info("Convirtiendo trial del usuario ID: {$subscription->user_id}");
 
-                // Crear suscripción en Stripe
+                // Primero, crear un producto en Stripe
+                $product = \Stripe\Product::create([
+                    'name' => 'Exo - Suscripción Mensual',
+                ]);
+
+                // Luego, crear un precio para ese producto
+                $price = \Stripe\Price::create([
+                    'product' => $product->id,
+                    'unit_amount' => (int)($subscription->amount * 100), // Stripe usa centavos
+                    'currency' => $subscription->currency,
+                    'recurring' => ['interval' => 'month'],
+                ]);
+
+                // Finalmente, crear la suscripción con el precio
                 $stripeSubscription = StripeSubscription::create([
                     'customer' => $subscription->stripe_customer_id,
-                    'items' => [[
-                        'price_data' => [
-                            'currency' => $subscription->currency,
-                            'product_data' => [
-                                'name' => 'Exo - Suscripción Mensual',
-                            ],
-                            'unit_amount' => $subscription->amount * 100, // Stripe usa centavos
-                            'recurring' => [
-                                'interval' => 'month',
-                            ],
-                        ],
-                    ]],
+                    'items' => [['price' => $price->id]],
                     'default_payment_method' => $subscription->stripe_payment_method_id,
                 ]);
 
                 // Actualizar suscripción local
+                // Para testing: establecer expiración en 1 minuto
+                // En producción: cambiar addMinute() por addMonth()
+                $endDate = isset($stripeSubscription['current_period_end']) 
+                    ? Carbon::createFromTimestamp($stripeSubscription['current_period_end'])
+                    : now()->addMinute(); // TESTING: 1 minuto | PRODUCCIÓN: addMonth()
+
                 $subscription->update([
                     'stripe_subscription_id' => $stripeSubscription->id,
                     'status' => 'active',
-                    'subscription_ends_at' => Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                    'subscription_ends_at' => $endDate,
                     'trial_ends_at' => null,
                 ]);
 

@@ -1,7 +1,63 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
+* @see \App\Http\Controllers\SubscriptionController::validatePayment
+* @see app/Http/Controllers/SubscriptionController.php:51
+* @route '/api/subscription/validate-payment'
+*/
+export const validatePayment = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: validatePayment.url(options),
+    method: 'post',
+})
+
+validatePayment.definition = {
+    methods: ["post"],
+    url: '/api/subscription/validate-payment',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::validatePayment
+* @see app/Http/Controllers/SubscriptionController.php:51
+* @route '/api/subscription/validate-payment'
+*/
+validatePayment.url = (options?: RouteQueryOptions) => {
+    return validatePayment.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::validatePayment
+* @see app/Http/Controllers/SubscriptionController.php:51
+* @route '/api/subscription/validate-payment'
+*/
+validatePayment.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: validatePayment.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::validatePayment
+* @see app/Http/Controllers/SubscriptionController.php:51
+* @route '/api/subscription/validate-payment'
+*/
+const validatePaymentForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: validatePayment.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::validatePayment
+* @see app/Http/Controllers/SubscriptionController.php:51
+* @route '/api/subscription/validate-payment'
+*/
+validatePaymentForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: validatePayment.url(options),
+    method: 'post',
+})
+
+validatePayment.form = validatePaymentForm
+
+/**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 export const status = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +72,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 status.url = (options?: RouteQueryOptions) => {
@@ -25,7 +81,7 @@ status.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +91,7 @@ status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +101,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +111,7 @@ const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +121,7 @@ statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:172
+* @see app/Http/Controllers/SubscriptionController.php:418
 * @route '/api/subscription/status'
 */
 statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -138,7 +194,7 @@ setupIntent.form = setupIntentForm
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::startTrial
-* @see app/Http/Controllers/SubscriptionController.php:51
+* @see app/Http/Controllers/SubscriptionController.php:127
 * @route '/api/subscription/start-trial'
 */
 export const startTrial = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -153,7 +209,7 @@ startTrial.definition = {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::startTrial
-* @see app/Http/Controllers/SubscriptionController.php:51
+* @see app/Http/Controllers/SubscriptionController.php:127
 * @route '/api/subscription/start-trial'
 */
 startTrial.url = (options?: RouteQueryOptions) => {
@@ -162,7 +218,7 @@ startTrial.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::startTrial
-* @see app/Http/Controllers/SubscriptionController.php:51
+* @see app/Http/Controllers/SubscriptionController.php:127
 * @route '/api/subscription/start-trial'
 */
 startTrial.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -172,7 +228,7 @@ startTrial.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::startTrial
-* @see app/Http/Controllers/SubscriptionController.php:51
+* @see app/Http/Controllers/SubscriptionController.php:127
 * @route '/api/subscription/start-trial'
 */
 const startTrialForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -182,7 +238,7 @@ const startTrialForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::startTrial
-* @see app/Http/Controllers/SubscriptionController.php:51
+* @see app/Http/Controllers/SubscriptionController.php:127
 * @route '/api/subscription/start-trial'
 */
 startTrialForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -194,7 +250,7 @@ startTrial.form = startTrialForm
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::cancelTrial
-* @see app/Http/Controllers/SubscriptionController.php:103
+* @see app/Http/Controllers/SubscriptionController.php:213
 * @route '/api/subscription/cancel-trial'
 */
 export const cancelTrial = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -209,7 +265,7 @@ cancelTrial.definition = {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::cancelTrial
-* @see app/Http/Controllers/SubscriptionController.php:103
+* @see app/Http/Controllers/SubscriptionController.php:213
 * @route '/api/subscription/cancel-trial'
 */
 cancelTrial.url = (options?: RouteQueryOptions) => {
@@ -218,7 +274,7 @@ cancelTrial.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::cancelTrial
-* @see app/Http/Controllers/SubscriptionController.php:103
+* @see app/Http/Controllers/SubscriptionController.php:213
 * @route '/api/subscription/cancel-trial'
 */
 cancelTrial.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -228,7 +284,7 @@ cancelTrial.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::cancelTrial
-* @see app/Http/Controllers/SubscriptionController.php:103
+* @see app/Http/Controllers/SubscriptionController.php:213
 * @route '/api/subscription/cancel-trial'
 */
 const cancelTrialForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -238,7 +294,7 @@ const cancelTrialForm = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::cancelTrial
-* @see app/Http/Controllers/SubscriptionController.php:103
+* @see app/Http/Controllers/SubscriptionController.php:213
 * @route '/api/subscription/cancel-trial'
 */
 cancelTrialForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -250,7 +306,7 @@ cancelTrial.form = cancelTrialForm
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::convertToSubscription
-* @see app/Http/Controllers/SubscriptionController.php:128
+* @see app/Http/Controllers/SubscriptionController.php:238
 * @route '/api/subscription/convert'
 */
 export const convertToSubscription = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -265,7 +321,7 @@ convertToSubscription.definition = {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::convertToSubscription
-* @see app/Http/Controllers/SubscriptionController.php:128
+* @see app/Http/Controllers/SubscriptionController.php:238
 * @route '/api/subscription/convert'
 */
 convertToSubscription.url = (options?: RouteQueryOptions) => {
@@ -274,7 +330,7 @@ convertToSubscription.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::convertToSubscription
-* @see app/Http/Controllers/SubscriptionController.php:128
+* @see app/Http/Controllers/SubscriptionController.php:238
 * @route '/api/subscription/convert'
 */
 convertToSubscription.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -284,7 +340,7 @@ convertToSubscription.post = (options?: RouteQueryOptions): RouteDefinition<'pos
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::convertToSubscription
-* @see app/Http/Controllers/SubscriptionController.php:128
+* @see app/Http/Controllers/SubscriptionController.php:238
 * @route '/api/subscription/convert'
 */
 const convertToSubscriptionForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -294,7 +350,7 @@ const convertToSubscriptionForm = (options?: RouteQueryOptions): RouteFormDefini
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::convertToSubscription
-* @see app/Http/Controllers/SubscriptionController.php:128
+* @see app/Http/Controllers/SubscriptionController.php:238
 * @route '/api/subscription/convert'
 */
 convertToSubscriptionForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -304,6 +360,118 @@ convertToSubscriptionForm.post = (options?: RouteQueryOptions): RouteFormDefinit
 
 convertToSubscription.form = convertToSubscriptionForm
 
-const SubscriptionController = { status, setupIntent, startTrial, cancelTrial, convertToSubscription }
+/**
+* @see \App\Http\Controllers\SubscriptionController::reactivate
+* @see app/Http/Controllers/SubscriptionController.php:319
+* @route '/api/subscription/reactivate'
+*/
+export const reactivate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: reactivate.url(options),
+    method: 'post',
+})
+
+reactivate.definition = {
+    methods: ["post"],
+    url: '/api/subscription/reactivate',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::reactivate
+* @see app/Http/Controllers/SubscriptionController.php:319
+* @route '/api/subscription/reactivate'
+*/
+reactivate.url = (options?: RouteQueryOptions) => {
+    return reactivate.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::reactivate
+* @see app/Http/Controllers/SubscriptionController.php:319
+* @route '/api/subscription/reactivate'
+*/
+reactivate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: reactivate.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::reactivate
+* @see app/Http/Controllers/SubscriptionController.php:319
+* @route '/api/subscription/reactivate'
+*/
+const reactivateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reactivate.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::reactivate
+* @see app/Http/Controllers/SubscriptionController.php:319
+* @route '/api/subscription/reactivate'
+*/
+reactivateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: reactivate.url(options),
+    method: 'post',
+})
+
+reactivate.form = reactivateForm
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::cancel
+* @see app/Http/Controllers/SubscriptionController.php:283
+* @route '/api/subscription/cancel'
+*/
+export const cancel = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: cancel.url(options),
+    method: 'post',
+})
+
+cancel.definition = {
+    methods: ["post"],
+    url: '/api/subscription/cancel',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::cancel
+* @see app/Http/Controllers/SubscriptionController.php:283
+* @route '/api/subscription/cancel'
+*/
+cancel.url = (options?: RouteQueryOptions) => {
+    return cancel.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::cancel
+* @see app/Http/Controllers/SubscriptionController.php:283
+* @route '/api/subscription/cancel'
+*/
+cancel.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: cancel.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::cancel
+* @see app/Http/Controllers/SubscriptionController.php:283
+* @route '/api/subscription/cancel'
+*/
+const cancelForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancel.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SubscriptionController::cancel
+* @see app/Http/Controllers/SubscriptionController.php:283
+* @route '/api/subscription/cancel'
+*/
+cancelForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: cancel.url(options),
+    method: 'post',
+})
+
+cancel.form = cancelForm
+
+const SubscriptionController = { validatePayment, status, setupIntent, startTrial, cancelTrial, convertToSubscription, reactivate, cancel }
 
 export default SubscriptionController

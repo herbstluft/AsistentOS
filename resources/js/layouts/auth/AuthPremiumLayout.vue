@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import ToastNotifications from '@/components/ToastNotifications.vue';
 import { ArrowLeft } from 'lucide-vue-next';
 
 defineProps<{
@@ -88,6 +89,9 @@ defineProps<{
             </div>
 
         </div>
+
+        <!-- Toast Notifications -->
+        <ToastNotifications />
     </div>
 </template>
 

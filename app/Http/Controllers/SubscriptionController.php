@@ -48,6 +48,82 @@ class SubscriptionController extends Controller
         }
     }
 
+    public function validatePayment(Request $request)
+    {
+        $request->validate([
+            'payment_method_id' => 'required|string',
+        ]);
+
+        try {
+            // Recuperar el payment method
+            $paymentMethod = PaymentMethod::retrieve($request->payment_method_id);
+
+            // Verificar que existe
+            if (!$paymentMethod || !$paymentMethod->id) {
+                return response()->json([
+                    'valid' => false,
+                    'error' => 'Método de pago inválido',
+                ], 400);
+            }
+
+            // Verificar el tipo
+            if ($paymentMethod->type !== 'card') {
+                return response()->json([
+                    'valid' => false,
+                    'error' => 'Solo se aceptan tarjetas',
+                ], 400);
+            }
+
+            // IMPORTANTE: Crear un SetupIntent y confirmarlo
+            // Esto realmente valida la tarjeta con Stripe
+            // y detecta si es una tarjeta real en modo test
+            $setupIntent = \Stripe\SetupIntent::create([
+                'payment_method' => $request->payment_method_id,
+                'confirm' => true,
+                'payment_method_types' => ['card'],
+            ]);
+
+            // Si llegamos aquí sin excepción, la tarjeta es válida
+            if ($setupIntent->status === 'succeeded') {
+                return response()->json([
+                    'valid' => true,
+                    'payment_method' => [
+                        'id' => $paymentMethod->id,
+                        'type' => $paymentMethod->type,
+                        'card' => [
+                            'brand' => $paymentMethod->card->brand,
+                            'last4' => $paymentMethod->card->last4,
+                        ],
+                    ],
+                ]);
+            } else {
+                return response()->json([
+                    'valid' => false,
+                    'error' => 'La tarjeta no pudo ser validada',
+                ], 400);
+            }
+
+        } catch (\Stripe\Exception\CardException $e) {
+            // Error específico de la tarjeta (declinada, fondos insuficientes, etc.)
+            return response()->json([
+                'valid' => false,
+                'error' => $e->getMessage(),
+            ], 400);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            // Tarjeta inválida o no encontrada
+            return response()->json([
+                'valid' => false,
+                'error' => 'Tarjeta inválida: ' . $e->getMessage(),
+            ], 400);
+        } catch (\Exception $e) {
+            \Log::error('Error validating payment: ' . $e->getMessage());
+            return response()->json([
+                'valid' => false,
+                'error' => 'Error al validar el método de pago: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function startTrial(Request $request)
     {
         $request->validate([
@@ -188,16 +264,53 @@ class SubscriptionController extends Controller
             ]);
 
             // Actualizar suscripción local
+            // TESTING: Forzar 1 minuto para pruebas, ignorar fecha de Stripe
             $subscription->update([
                 'stripe_subscription_id' => $stripeSubscription->id,
                 'status' => 'active',
-                'subscription_ends_at' => Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                'subscription_ends_at' => now()->addMinute(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'subscription_ends_at' => $subscription->subscription_ends_at->toIso8601String(),
             ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function cancel()
+    {
+        $user = auth()->user();
+        $subscription = $user->subscription;
+
+        if (!$subscription || !$subscription->isActive()) {
+            return response()->json(['error' => 'No tienes una suscripción activa'], 400);
+        }
+
+        try {
+            // Si hay ID de suscripción en Stripe, cancelar allá también
+            if ($subscription->stripe_subscription_id) {
+                try {
+                    $stripeSub = StripeSubscription::retrieve($subscription->stripe_subscription_id);
+                    $stripeSub->cancel();
+                } catch (\Exception $e) {
+                    \Log::error('Error cancelling Stripe subscription: ' . $e->getMessage());
+                    // Continuamos para cancelar localmente de todos modos
+                }
+            }
+
+            // Cancelar suscripción local
+            $subscription->update([
+                'status' => 'canceled',
+                'subscription_ends_at' => now(), // Termina inmediatamente
+            ]);
+
+            // Cerrar sesión del usuario
+            auth()->logout();
+
+            return response()->json(['success' => true, 'message' => 'Suscripción cancelada exitosamente']);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -252,22 +365,36 @@ class SubscriptionController extends Controller
                 ],
             ]);
 
-            // Crear suscripción en Stripe
+            // Crear producto en Stripe
+            $product = \Stripe\Product::create([
+                'name' => 'Exo - Suscripción Mensual',
+            ]);
+
+            // Crear precio para ese producto
+            $price = \Stripe\Price::create([
+                'product' => $product->id,
+                'unit_amount' => (int)($subscription->amount * 100), // Stripe usa centavos
+                'currency' => $subscription->currency,
+                'recurring' => ['interval' => 'month'],
+            ]);
+
+            // Crear suscripción en Stripe con el precio
             $stripeSubscription = \Stripe\Subscription::create([
                 'customer' => $customerId,
-                'items' => [
-                    ['price' => config('services.stripe.price_id')],
-                ],
+                'items' => [['price' => $price->id]],
                 'default_payment_method' => $request->payment_method_id,
             ]);
 
             // Actualizar suscripción local
+            // TESTING: Forzar 1 minuto para pruebas
+            $endDate = now()->addMinute();
+
             $subscription->update([
                 'stripe_customer_id' => $customerId,
                 'stripe_subscription_id' => $stripeSubscription->id,
                 'stripe_payment_method_id' => $request->payment_method_id,
                 'status' => 'active',
-                'subscription_ends_at' => now()->addMonth(),
+                'subscription_ends_at' => $endDate,
                 'trial_ends_at' => null,
             ]);
 
