@@ -68,7 +68,7 @@ class GrantLifetimeAccess extends Command
         $subscription->stripe_subscription_id = 'sub_lifetime_' . uniqid();
         $subscription->stripe_payment_method_id = 'pm_admin_bypass';
         $subscription->status = 'active';
-        $subscription->plan_type = 'lifetime'; // Opcional
+        // $subscription->plan_type = 'lifetime'; // Eliminado porque la columna no existe
         $subscription->subscription_ends_at = Carbon::now()->addYears(100); 
         $subscription->trial_ends_at = null;
         $subscription->trial_used = true;
