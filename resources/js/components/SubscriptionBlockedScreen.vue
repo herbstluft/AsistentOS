@@ -6,7 +6,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import axios from 'axios';
 
 const props = defineProps<{
-    status: 'canceled' | 'expired';
+    status: 'canceled' | 'expired' | 'past_due';
     trialUsed: boolean;
 }>();
 
@@ -28,6 +28,10 @@ const statusMessage = {
     expired: {
         title: '⏰ Suscripción Expirada',
         description: 'Tu período de prueba ha terminado. Para continuar usando Exo, necesitas activar tu suscripción.',
+    },
+    past_due: {
+        title: '💳 Pago Pendiente',
+        description: 'No pudimos procesar tu último pago. Por favor actualiza tu método de pago para restaurar el acceso.',
     },
 };
 

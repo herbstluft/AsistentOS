@@ -116,7 +116,8 @@ onUnmounted(() => {
 const isBlocked = computed(() => {
     if (!subscriptionStatus.value) return false;
     return subscriptionStatus.value.status === 'canceled' ||
-        subscriptionStatus.value.status === 'expired';
+        subscriptionStatus.value.status === 'expired' ||
+        subscriptionStatus.value.status === 'past_due';
 });
 
 const blockedStatus = computed(() => {
