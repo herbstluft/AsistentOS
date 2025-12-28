@@ -63,11 +63,10 @@ class ConvertExpiredTrials extends Command
                 ]);
 
                 // Actualizar suscripción local
-                // Para testing: establecer expiración en 1 minuto
-                // En producción: cambiar addMinute() por addMonth()
+                // PRODUCCIÓN: Usar fecha real de Stripe o sumar 1 mes
                 $endDate = isset($stripeSubscription['current_period_end']) 
                     ? Carbon::createFromTimestamp($stripeSubscription['current_period_end'])
-                    : now()->addMinute(); // TESTING: 1 minuto | PRODUCCIÓN: addMonth()
+                    : now()->addMonth();
 
                 $subscription->update([
                     'stripe_subscription_id' => $stripeSubscription->id,
@@ -76,7 +75,7 @@ class ConvertExpiredTrials extends Command
                     'trial_ends_at' => null,
                 ]);
 
-                $this->info("✓ Trial convertido exitosamente. Cobro realizado.");
+                $this->info("✓ Trial convertido exitosamente. Suscripción activa por 1 mes.");
                 $converted++;
 
             } catch (\Stripe\Exception\CardException $e) {

@@ -264,11 +264,11 @@ class SubscriptionController extends Controller
             ]);
 
             // Actualizar suscripción local
-            // TESTING: Forzar 1 minuto para pruebas, ignorar fecha de Stripe
+            // PRODUCCIÓN: 1 Mes
             $subscription->update([
                 'stripe_subscription_id' => $stripeSubscription->id,
                 'status' => 'active',
-                'subscription_ends_at' => now()->addMinute(),
+                'subscription_ends_at' => now()->addMonth(),
             ]);
 
             return response()->json([
@@ -384,7 +384,7 @@ class SubscriptionController extends Controller
                     $subscription->update([
                         'stripe_payment_method_id' => $request->payment_method_id,
                         'status' => 'active',
-                        'subscription_ends_at' => now()->addMinute(), // TESTING: 1 minuto
+                        'subscription_ends_at' => now()->addMonth(),
                     ]);
                     
                     return response()->json([
@@ -420,8 +420,8 @@ class SubscriptionController extends Controller
             ]);
 
             // Actualizar suscripción local
-            // TESTING: Forzar 1 minuto para pruebas
-            $endDate = now()->addMinute();
+            // PRODUCCIÓN: 1 Mes
+            $endDate = now()->addMonth();
 
             $subscription->update([
                 'stripe_customer_id' => $customerId,
