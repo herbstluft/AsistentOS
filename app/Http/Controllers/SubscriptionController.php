@@ -329,7 +329,7 @@ class SubscriptionController extends Controller
             return response()->json(['error' => 'No tienes una suscripción'], 400);
         }
 
-        if (!in_array($subscription->status, ['canceled', 'expired'])) {
+        if (!in_array($subscription->status, ['canceled', 'expired', 'past_due'])) {
             return response()->json(['error' => 'Tu suscripción ya está activa'], 400);
         }
 
@@ -365,6 +365,40 @@ class SubscriptionController extends Controller
                 ],
             ]);
 
+            // Lógica inteligente según el estado
+            if ($subscription->status === 'past_due' && $subscription->stripe_subscription_id) {
+                // CASO 1: Pago atrasado - Pagar la factura pendiente de la suscripción existente
+                try {
+                    $stripeSub = \Stripe\Subscription::retrieve($subscription->stripe_subscription_id);
+                    $latestInvoiceId = $stripeSub->latest_invoice;
+                    
+                    if ($latestInvoiceId) {
+                        $invoice = \Stripe\Invoice::retrieve($latestInvoiceId);
+                        
+                        if ($invoice->status !== 'paid') {
+                            $invoice->pay(['payment_method' => $request->payment_method_id]);
+                        }
+                    }
+                    
+                    // Actualizar localmente
+                    $subscription->update([
+                        'stripe_payment_method_id' => $request->payment_method_id,
+                        'status' => 'active',
+                        'subscription_ends_at' => now()->addMinute(), // TESTING: 1 minuto
+                    ]);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pago procesado y suscripción reactivada',
+                    ]);
+                    
+                } catch (\Exception $e) {
+                    // Si falla pagar la existente, caer en logic de crear nueva (fallback)
+                    \Log::error('Error pagando invoice pendiente, creando nueva suscripción: ' . $e->getMessage());
+                }
+            }
+
+            // CASO 2: Cancelada/Expirada o Fallo en Caso 1 - Crear NUEVA suscripción
             // Crear producto en Stripe
             $product = \Stripe\Product::create([
                 'name' => 'Exo - Suscripción Mensual',

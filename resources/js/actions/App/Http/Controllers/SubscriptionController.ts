@@ -57,7 +57,7 @@ validatePayment.form = validatePaymentForm
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 export const status = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -72,7 +72,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 status.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ status.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -91,7 +91,7 @@ status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -101,7 +101,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -111,7 +111,7 @@ const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -121,7 +121,7 @@ statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SubscriptionController::status
-* @see app/Http/Controllers/SubscriptionController.php:418
+* @see app/Http/Controllers/SubscriptionController.php:452
 * @route '/api/subscription/status'
 */
 statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
