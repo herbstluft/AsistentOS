@@ -7,7 +7,7 @@ import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import SiriWave from '@/components/SiriWave.vue';
 import ReportModal from '@/components/Assistant/ReportModal.vue';
 import MicrophonePermissionModal from '@/components/Assistant/MicrophonePermissionModal.vue';
-import TrialTimer from '@/components/TrialTimer.vue';
+
 import {
     Fingerprint,
     User,
@@ -244,8 +244,6 @@ const summaryState = computed(() => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- Trial Timer -->
-        <TrialTimer />
 
         <!-- Main Container: Scrollable on Mobile, Fixed on Desktop -->
         <div
