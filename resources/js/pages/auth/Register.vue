@@ -27,6 +27,8 @@ const formData = ref({
     password_confirmation: '',
 });
 
+const isProcessingRegistration = ref(false);
+
 // Estados de validación
 const emailValidation = ref<{
     isValid: boolean;
@@ -172,6 +174,10 @@ const handleSubscriptionSuccess = async (pmId: string) => {
     // Guardar el payment method ID
     paymentMethodId.value = pmId;
 
+    // Activar estado de carga y cerrar modal
+    isProcessingRegistration.value = true;
+    showSubscriptionModal.value = false;
+
     // PRIMERO: Validar que el payment method sea válido
     // Esto lo hacemos ANTES de crear la cuenta
     try {
@@ -218,6 +224,8 @@ const handleSubscriptionSuccess = async (pmId: string) => {
             },
             onError: (errors) => {
                 console.error('Registration errors:', errors);
+                // Si falla, permitimos intentar de nuevo
+                isProcessingRegistration.value = false;
                 showSubscriptionModal.value = false;
             },
         });
@@ -225,6 +233,8 @@ const handleSubscriptionSuccess = async (pmId: string) => {
     } catch (error: any) {
         // Error en la validación de la tarjeta
         // NO creamos la cuenta
+        isProcessingRegistration.value = false; // Desbloquear UI
+
         const errorMessage = error.response?.data?.error ||
             error.message ||
             'Error al validar la tarjeta';
@@ -235,7 +245,7 @@ const handleSubscriptionSuccess = async (pmId: string) => {
             'error'
         );
 
-        // Cerrar el modal para que el usuario pueda intentar de nuevo
+        // Ya cerramos el modal arriba, pero aseguramos
         showSubscriptionModal.value = false;
     }
 };
@@ -243,6 +253,14 @@ const handleSubscriptionSuccess = async (pmId: string) => {
 
 <template>
     <AuthPremiumLayout title="Crear Cuenta" description="Únete a la plataforma hoy mismo">
+
+        <!-- Overlay de carga durante creación de cuenta -->
+        <div v-if="isProcessingRegistration"
+            class="absolute inset-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Creando tu cuenta...</h3>
+            <p class="text-gray-500 text-sm mt-2">Por favor no cierres esta página</p>
+        </div>
 
         <Form v-bind="store.form()" :reset-on-success="['password', 'password_confirmation']"
             v-slot="{ errors, processing }" class="flex flex-col gap-5">

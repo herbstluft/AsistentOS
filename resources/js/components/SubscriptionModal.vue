@@ -22,12 +22,22 @@ const subscriptionPrice = computed(() => {
     return import.meta.env.VITE_SUBSCRIPTION_PRICE || '1';
 });
 
+const trialText = computed(() => {
+    const minutes = import.meta.env.VITE_TRIAL_MINUTES || '60';
+    return minutes == '60' ? '1 hora' : `${minutes} minutos`;
+});
+
 onMounted(async () => {
     try {
         // Esperar a que el DOM esté completamente renderizado
         await nextTick();
 
-        const stripeKey = import.meta.env.VITE_STRIPE_KEY || 'pk_test_51SiAvdH00XbXWNt8SmwRvKvmQwTRFepHbArcIe1RtoRbGJyTdiDyWRld9v48ROELD4yXNh0ACcQnp21Tgzd8otO700bGMU2dBF';
+        const stripeKey = import.meta.env.VITE_STRIPE_KEY;
+        if (!stripeKey) {
+            console.error('Falta VITE_STRIPE_KEY en el archivo .env');
+            error.value = 'Error de configuración del sistema de pagos';
+            return;
+        }
         stripe.value = await loadStripe(stripeKey);
 
         if (stripe.value) {
@@ -152,7 +162,7 @@ const handleSubmit = async () => {
                             Información de Pago
                         </h2>
                         <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                            1 minuto gratis, luego ${{ subscriptionPrice }} MXN/mes
+                            {{ trialText }} gratis, luego ${{ subscriptionPrice }} MXN/mes
                         </p>
                     </div>
                 </div>
@@ -164,12 +174,12 @@ const handleSubmit = async () => {
                         <Clock class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                         <div class="text-xs sm:text-sm">
                             <p class="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                                Período de Prueba de 1 Minuto
+                                Período de Prueba de {{ trialText }}
                             </p>
                             <ul class="text-blue-800 dark:text-blue-200 space-y-0.5">
                                 <li>• No se realizará ningún cargo ahora</li>
                                 <li>• Puedes cancelar en cualquier momento</li>
-                                <li>• Después de 1 min, se cobrará ${{ subscriptionPrice }} MXN/mes</li>
+                                <li>• Después de {{ trialText }}, se cobrará ${{ subscriptionPrice }} MXN/mes</li>
                             </ul>
                         </div>
                     </div>
