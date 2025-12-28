@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import ToastNotifications from '@/components/ToastNotifications.vue';
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft, Zap } from 'lucide-vue-next';
 
 defineProps<{
     title?: string;
@@ -12,69 +12,63 @@ defineProps<{
 
 <template>
     <div
-        class="min-h-screen w-full bg-background text-foreground flex flex-col items-center justify-center relative overflow-y-auto overflow-x-hidden selection:bg-blue-500/30 font-sans p-4 sm:p-0">
+        class="min-h-screen w-full bg-[#020617] text-white flex flex-col items-center justify-center relative overflow-hidden selection:bg-blue-500/30 font-sans p-4 sm:p-0">
 
         <!-- Back to Home Button -->
-        <!-- Back to Home Button -->
-        <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-50">
+        <div class="absolute top-4 left-4 sm:top-8 sm:left-8 z-50">
             <Link href="/"
-                class="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-background/50 backdrop-blur-md border border-border/50 hover:bg-background/80 hover:border-purple-500/50 transition-all duration-300 group text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground">
-                <ArrowLeft class="w-3 h-3 sm:w-4 sm:h-4 group-hover:-translate-x-1 transition-transform" />
-                <span class="hidden sm:inline">Volver al inicio</span>
-                <span class="sm:hidden">Volver</span>
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-blue-500/50 transition-all duration-300 group text-xs sm:text-sm font-bold text-slate-400 hover:text-white shadow-2xl">
+                <ArrowLeft class="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Volver</span>
             </Link>
         </div>
 
         <Head :title="title" />
 
-        <!-- Optimized Ambient Background (Static Gradients instead of heavy blurs) -->
-        <div class="fixed inset-0 pointer-events-none" style="z-index: 0;">
-            <div class="absolute inset-0 bg-gradient-to-br from-background via-background to-background"></div>
+        <!-- BACKGROUND DYNAMICS -->
+        <div class="fixed inset-0 pointer-events-none z-0">
             <div
-                class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-3xl transform-gpu">
+                class="absolute top-[-10%] left-[-10%] w-[70vw] h-[70vw] bg-blue-600/10 rounded-full blur-[120px] opacity-50">
             </div>
             <div
-                class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 rounded-full blur-3xl transform-gpu">
+                class="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] bg-purple-600/10 rounded-full blur-[120px] opacity-50">
+            </div>
+            <div
+                class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:60px_60px]">
             </div>
         </div>
 
         <!-- Main Card Container -->
-        <div class="w-full max-w-[420px] relative z-10 py-12 sm:py-6">
+        <div class="w-full max-w-[440px] relative z-10 py-12 sm:py-6 animate-fade-in">
 
-            <!-- High Performance Card (No 3D Tilt, simplified shadows) -->
-            <div class="relative group">
-
-                <!-- Simple Glow Behind (No animation) -->
+            <div class="relative">
+                <!-- Inner Glass Card -->
                 <div
-                    class="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-[2rem] blur-lg">
-                </div>
+                    class="relative rounded-[2.5rem] bg-[#030712]/60 backdrop-blur-3xl border border-white/10 p-8 sm:p-10 shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden">
 
-                <!-- Glass Card Content (Reduced backdrop-blur for speed) -->
-                <div
-                    class="relative rounded-2xl sm:rounded-[1.8rem] bg-card/90 backdrop-blur-md border border-border/50 p-6 sm:p-8 shadow-xl overflow-hidden">
-
-                    <!-- Top Shine (Static) -->
-                    <div
-                        class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent">
-                    </div>
+                    <!-- Decorative Glows -->
+                    <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 blur-[60px] rounded-full"></div>
+                    <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[60px] rounded-full"></div>
 
                     <!-- Header -->
-                    <div class="flex flex-col items-center mb-8">
-                        <div class="relative mb-6">
-                            <!-- Logo Container (Simplified) -->
-                            <div class="absolute inset-0 bg-blue-500/20 blur-lg rounded-full"></div>
+                    <div class="flex flex-col items-center mb-10">
+                        <div class="relative mb-8 group">
+                            <div
+                                class="absolute inset-0 bg-blue-500/30 blur-2xl rounded-2xl group-hover:blur-3xl transition-all duration-500">
+                            </div>
                             <Link href="/">
                                 <div
-                                    class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center relative shadow-lg hover:scale-105 transition-transform duration-200 transform-gpu">
-                                    <AppLogoIcon class="w-10 h-10 text-white" />
+                                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center relative shadow-2xl ring-1 ring-white/20 transition-transform duration-500 group-hover:scale-110">
+                                    <Zap class="w-8 h-8 text-white shrink-0" />
                                 </div>
                             </Link>
                         </div>
-                        <h1 v-if="title" class="text-2xl font-medium tracking-tight text-foreground text-center">{{
-                            title }}
+                        <h1 v-if="title"
+                            class="text-3xl font-black tracking-tight text-white text-center leading-tight">{{ title }}
                         </h1>
-                        <p v-if="description" class="text-muted-foreground text-sm mt-2 text-center">{{ description }}
-                        </p>
+                        <p v-if="description"
+                            class="text-slate-400 font-bold text-sm mt-3 text-center uppercase tracking-widest">{{
+                            description }}</p>
                     </div>
 
                     <!-- Content Slot -->
@@ -83,8 +77,8 @@ defineProps<{
                 </div>
             </div>
 
-            <!-- Footer Slot (for links like 'Back to login') -->
-            <div class="text-center mt-8">
+            <!-- Footer Slot -->
+            <div class="text-center mt-10">
                 <slot name="footer" />
             </div>
 
@@ -96,41 +90,19 @@ defineProps<{
 </template>
 
 <style scoped>
-@keyframes fadeInUp {
+.animate-fade-in {
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(20px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 0.5;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.8;
-        transform: scale(1.1);
-    }
-}
-
-.perspective-1000 {
-    perspective: 1000px;
 }
 </style>

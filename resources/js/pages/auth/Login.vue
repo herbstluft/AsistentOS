@@ -13,7 +13,7 @@ import { request } from '@/routes/password';
 import { Form, usePage, Link } from '@inertiajs/vue3';
 import { watch, computed } from 'vue';
 import { ElNotification } from 'element-plus';
-import { ArrowRight, CheckCircle2, User, Key } from 'lucide-vue-next';
+import { ArrowRight, CheckCircle2, User, Key, Mail, Lock } from 'lucide-vue-next';
 
 defineProps<{
     status?: string;
@@ -82,55 +82,56 @@ watch(errors, (newErrors) => {
 </script>
 
 <template>
-    <AuthPremiumLayout title="Bienvenido de nuevo" description="Ingresa al panel de control">
+    <AuthPremiumLayout title="Bienvenido" description="Panel de Control v2.4">
 
         <!-- Status Message -->
         <div v-if="status"
-            class="mb-6 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center text-xs font-medium text-blue-400 flex items-center justify-center gap-2">
+            class="mb-6 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-center text-xs font-black text-blue-400 flex items-center justify-center gap-3 uppercase tracking-widest italic animate-pulse">
             <CheckCircle2 class="w-4 h-4" />
             {{ status }}
         </div>
 
         <!-- Form -->
         <Form v-bind="store.form()" :reset-on-success="['password']" v-slot="{ errors, processing }"
-            class="flex flex-col gap-5">
+            class="flex flex-col gap-6">
 
-            <div class="space-y-4">
+            <div class="space-y-5">
                 <!-- Email -->
-                <!-- Email -->
-                <div class="space-y-1.5">
+                <div class="space-y-2">
                     <Label for="email"
-                        class="text-muted-foreground text-xs uppercase tracking-wider font-semibold ml-1">Email</Label>
-                    <div class="relative group/input">
+                        class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Correo
+                        Electrónico</Label>
+                    <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-purple-400 transition-colors">
-                            <User class="w-5 h-5" />
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                            <Mail class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" name="email" required autofocus :tabindex="1"
-                            autocomplete="email" placeholder="usuario@exo.com"
-                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
+                            autocomplete="email" placeholder="tu@email.com"
+                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-14 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 font-medium" />
                     </div>
                     <InputError :message="errors.email" />
                 </div>
 
                 <!-- Password -->
-                <div class="space-y-1.5">
+                <div class="space-y-2">
                     <div class="flex items-center justify-between ml-1">
                         <Label for="password"
-                            class="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Contraseña</Label>
-                        <TextLink v-if="canResetPassword" :href="request()"
-                            class="text-xs text-blue-500/80 hover:text-blue-400 transition-colors" :tabindex="5">
+                            class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black">Contraseña</Label>
+                        <Link v-if="canResetPassword" :href="request()"
+                            class="text-[10px] font-black uppercase tracking-widest text-blue-500/80 hover:text-blue-400 transition-colors"
+                            :tabindex="5">
                             ¿Olvidaste tu clave?
-                        </TextLink>
+                        </Link>
                     </div>
-                    <div class="relative group/input">
+                    <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within/input:text-purple-400 transition-colors">
-                            <Key class="w-5 h-5" />
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                            <Lock class="w-5 h-5" />
                         </div>
                         <Input id="password" type="password" name="password" required :tabindex="2"
                             autocomplete="current-password" placeholder="••••••••"
-                            class="bg-secondary/50 border-border text-foreground placeholder:text-muted-foreground h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
+                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-14 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 font-medium" />
                     </div>
                     <InputError :message="errors.password" />
                 </div>
@@ -139,26 +140,22 @@ watch(errors, (newErrors) => {
             <!-- Remember Me -->
             <div class="flex items-center space-x-3 my-1 ml-1">
                 <Checkbox id="remember" name="remember" :tabindex="3"
-                    class="border-border data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 w-5 h-5 rounded-md" />
+                    class="border-white/10 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 w-5 h-5 rounded-md" />
                 <Label for="remember"
-                    class="text-sm text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
+                    class="text-sm text-slate-400 font-bold cursor-pointer select-none hover:text-white transition-colors">
                     Mantener sesión activa
                 </Label>
             </div>
 
             <!-- Submit Button -->
             <Button type="submit"
-                class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 relative overflow-hidden group/btn mt-2"
-                :tabindex="4" :disabled="processing" data-test="login-button">
-                <div
-                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 ease-in-out">
-                </div>
-
-                <div class="relative flex items-center justify-center gap-2">
-                    <Spinner v-if="processing" class="text-white" />
+                class="w-full h-14 rounded-2xl bg-white text-black hover:bg-slate-200 font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 mt-2"
+                :tabindex="4" :disabled="processing">
+                <div class="relative flex items-center justify-center gap-3">
+                    <Spinner v-if="processing" class="text-black" />
                     <span v-else class="flex items-center gap-2">
-                        Acceder a Exo
-                        <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                        Acceder a la Red
+                        <ArrowRight class="w-5 h-5" />
                     </span>
                 </div>
             </Button>
@@ -167,14 +164,15 @@ watch(errors, (newErrors) => {
 
         <!-- Footer Slot -->
         <template #footer>
-            <div class="flex flex-col gap-2 items-center">
-                <p class="text-muted-foreground text-sm">
-                    ¿No tienes cuenta en Exo?
-                </p>
-                <Link :href="register()"
-                    class="text-base font-semibold text-purple-400 hover:text-purple-300 transition-colors hover:underline underline-offset-4 decoration-purple-500/30">
-                    Crear nueva cuenta
-                </Link>
+            <div class="flex flex-col gap-4 items-center">
+                <div class="h-px w-20 bg-white/5"></div>
+                <div class="flex flex-col gap-1 items-center">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">¿No tienes cuenta?</p>
+                    <Link :href="register()"
+                        class="text-lg font-black text-blue-500 hover:text-blue-400 transition-colors italic">
+                        Crear nueva cuenta
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -184,35 +182,38 @@ watch(errors, (newErrors) => {
 <style>
 /* Notification Styles */
 .premium-notification-error {
-    background: rgba(20, 20, 20, 0.95) !important;
+    background: rgba(3, 7, 18, 0.95) !important;
     border: 1px solid rgba(239, 68, 68, 0.2) !important;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.4) !important;
-    border-radius: 16px !important;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8) !important;
+    border-radius: 20px !important;
 }
 
 .premium-notification-error .el-notification__title {
     color: #f87171 !important;
+    font-weight: 900 !important;
 }
 
 .premium-notification-error .el-notification__content {
-    color: #d4d4d4 !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
 }
 
 .premium-notification-warning {
-    background: rgba(20, 20, 20, 0.95) !important;
+    background: rgba(3, 7, 18, 0.95) !important;
     border: 1px solid rgba(245, 158, 11, 0.2) !important;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 10px 40px -10px rgba(245, 158, 11, 0.4) !important;
-    border-radius: 16px !important;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8) !important;
+    border-radius: 20px !important;
 }
 
 .premium-notification-warning .el-notification__title {
     color: #fbbf24 !important;
+    font-weight: 900 !important;
 }
 
 .premium-notification-warning .el-notification__content {
-    color: #d4d4d4 !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
 }
 </style>
-```

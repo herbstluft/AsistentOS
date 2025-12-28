@@ -11,7 +11,7 @@ import SubscriptionModal from '@/components/SubscriptionModal.vue';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 import { Form, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, User, Mail, Lock, Key, CheckCircle, XCircle, Loader2 } from 'lucide-vue-next';
+import { ArrowRight, User, Mail, Lock, Key, CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-vue-next';
 import axios from 'axios';
 import { useNotifications } from '@/composables/useNotifications';
 
@@ -49,75 +49,38 @@ let emailCheckTimeout: number | null = null;
 
 // Validar email en tiempo real
 const validateEmail = async (email: string) => {
-    // Limpiar timeout anterior
-    if (emailCheckTimeout) {
-        clearTimeout(emailCheckTimeout);
-    }
+    if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
 
-    // Si el email está vacío, resetear
     if (!email) {
-        emailValidation.value = {
-            isValid: false,
-            isChecking: false,
-            message: '',
-            status: 'idle',
-        };
+        emailValidation.value = { isValid: false, isChecking: false, message: '', status: 'idle' };
         return;
     }
 
-    // Validar formato primero
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        emailValidation.value = {
-            isValid: false,
-            isChecking: false,
-            message: 'Formato de email inválido',
-            status: 'invalid',
-        };
+        emailValidation.value = { isValid: false, isChecking: false, message: 'Formato inválido', status: 'invalid' };
         return;
     }
 
-    // Mostrar estado de carga
     emailValidation.value.status = 'checking';
     emailValidation.value.isChecking = true;
 
-    // Debounce: esperar 500ms antes de verificar en BD
     emailCheckTimeout = setTimeout(async () => {
         try {
             const response = await axios.post('/api/check-email', { email });
-
             if (response.data.exists) {
-                emailValidation.value = {
-                    isValid: false,
-                    isChecking: false,
-                    message: 'Este email ya está registrado',
-                    status: 'invalid',
-                };
+                emailValidation.value = { isValid: false, isChecking: false, message: 'Email en uso', status: 'invalid' };
             } else {
-                emailValidation.value = {
-                    isValid: true,
-                    isChecking: false,
-                    message: 'Email disponible',
-                    status: 'valid',
-                };
+                emailValidation.value = { isValid: true, isChecking: false, message: 'Email libre', status: 'valid' };
             }
         } catch (error) {
-            emailValidation.value = {
-                isValid: false,
-                isChecking: false,
-                message: 'Error al verificar email',
-                status: 'invalid',
-            };
+            emailValidation.value = { isValid: false, isChecking: false, message: 'Error de red', status: 'invalid' };
         }
     }, 500);
 };
 
-// Watch para validar email en tiempo real
-watch(() => formData.value.email, (newEmail) => {
-    validateEmail(newEmail);
-});
+watch(() => formData.value.email, (newEmail) => validateEmail(newEmail));
 
-// Watch para validar coincidencia de contraseñas
 watch([() => formData.value.password, () => formData.value.password_confirmation], ([password, confirmation]) => {
     if (!password || !confirmation) {
         passwordMatch.value = null;
@@ -128,138 +91,68 @@ watch([() => formData.value.password, () => formData.value.password_confirmation
 
 const handleRegisterClick = async (e: Event) => {
     e.preventDefault();
-
-    // Limpiar errores previos (no se usa form aquí, se manejan con addNotification)
-    // form.clearErrors();
-
-    // Validar que todos los campos estén completos
     if (!formData.value.name || !formData.value.email || !formData.value.password || !formData.value.password_confirmation) {
-        addNotification('Por favor completa todos los campos', 'error');
+        addNotification('Completa todos los campos', 'error');
         return;
     }
-
-    // Validar que las contraseñas coincidan
     if (formData.value.password !== formData.value.password_confirmation) {
-        // form.setError('password_confirmation', 'Las contraseñas no coinciden');
         addNotification('Las contraseñas no coinciden', 'error');
         return;
     }
-
-    // Validar longitud mínima de contraseña
     if (formData.value.password.length < 8) {
-        // form.setError('password', 'La contraseña debe tener al menos 8 caracteres');
-        addNotification('La contraseña debe tener al menos 8 caracteres', 'error');
+        addNotification('Mínimo 8 caracteres', 'error');
         return;
     }
-
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.value.email)) {
-        // form.setError('email', 'Por favor ingresa un email válido');
-        addNotification('Por favor ingresa un email válido', 'error');
-        return;
-    }
-
-    // Verificar que el email sea válido (ya validado en tiempo real)
     if (emailValidation.value.status !== 'valid') {
-        addNotification(emailValidation.value.message || 'Por favor verifica tu email', 'error');
+        addNotification(emailValidation.value.message || 'Verifica tu email', 'error');
         return;
     }
-
-    // Si todas las validaciones pasan, mostrar modal de suscripción
     showSubscriptionModal.value = true;
 };
 
 const handleSubscriptionSuccess = async (pmId: string) => {
-    // Guardar el payment method ID
     paymentMethodId.value = pmId;
-
-    // Activar estado de carga y cerrar modal
     isProcessingRegistration.value = true;
     showSubscriptionModal.value = false;
 
-    // PRIMERO: Validar que el payment method sea válido
-    // Esto lo hacemos ANTES de crear la cuenta
     try {
-        // Intentar crear un SetupIntent para validar la tarjeta
-        // sin cobrar aún
-        const validationResponse = await axios.post('/api/subscription/validate-payment', {
-            payment_method_id: pmId,
-        });
+        const validationResponse = await axios.post('/api/subscription/validate-payment', { payment_method_id: pmId });
+        if (!validationResponse.data.valid) throw new Error(validationResponse.data.error || 'Tarjeta inválida');
 
-        if (!validationResponse.data.valid) {
-            throw new Error(validationResponse.data.error || 'Tarjeta inválida');
-        }
-
-        // Si llegamos aquí, la tarjeta es válida
-        // AHORA SÍ creamos la cuenta
         const form = useForm(formData.value);
-
         form.post('/register', {
             onSuccess: async () => {
-                // Después del registro exitoso, iniciar el trial
                 try {
-                    await axios.post('/api/subscription/start-trial', {
-                        payment_method_id: paymentMethodId.value,
-                    });
-
-                    // Redirigir al dashboard
+                    await axios.post('/api/subscription/start-trial', { payment_method_id: paymentMethodId.value });
                     router.visit('/dashboard');
                 } catch (error: any) {
-                    console.error('Error starting trial:', error);
-
-                    const errorMessage = error.response?.data?.error ||
-                        'Error al iniciar el trial';
-
-                    addNotification(
-                        'Error al Iniciar Suscripción',
-                        `${errorMessage}\n\nPor favor contacta a soporte.`,
-                        'error'
-                    );
-
-                    // Cerrar sesión
+                    addNotification('Error al Iniciar Suscripción', 'Contacta a soporte.', 'error');
                     await axios.post('/logout');
                     window.location.href = '/login';
                 }
             },
-            onError: (errors) => {
-                console.error('Registration errors:', errors);
-                // Si falla, permitimos intentar de nuevo
-                isProcessingRegistration.value = false;
-                showSubscriptionModal.value = false;
-            },
+            onError: () => isProcessingRegistration.value = false,
         });
-
     } catch (error: any) {
-        // Error en la validación de la tarjeta
-        // NO creamos la cuenta
-        isProcessingRegistration.value = false; // Desbloquear UI
-
-        const errorMessage = error.response?.data?.error ||
-            error.message ||
-            'Error al validar la tarjeta';
-
-        addNotification(
-            'Error al Validar Tarjeta',
-            `${errorMessage}\n\nPor favor verifica tu tarjeta e intenta de nuevo.`,
-            'error'
-        );
-
-        // Ya cerramos el modal arriba, pero aseguramos
-        showSubscriptionModal.value = false;
+        isProcessingRegistration.value = false;
+        addNotification('Error al Validar Tarjeta', 'Verifica tus datos e intenta de nuevo.', 'error');
     }
 };
 </script>
 
 <template>
-    <AuthPremiumLayout title="Crear Cuenta" description="Únete a la plataforma hoy mismo">
+    <AuthPremiumLayout title="Nueva Cuenta" description="Únete a la Red Exo v2.4">
 
-        <!-- Overlay de carga durante creación de cuenta -->
+        <!-- Overlay de carga -->
         <div v-if="isProcessingRegistration"
-            class="absolute inset-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Creando tu cuenta...</h3>
-            <p class="text-gray-500 text-sm mt-2">Por favor no cierres esta página</p>
+            class="absolute inset-0 z-50 bg-[#020617]/90 backdrop-blur-xl flex flex-col items-center justify-center rounded-[2.5rem] p-10 text-center animate-fade-in">
+            <div class="relative mb-8">
+                <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse"></div>
+                <Loader2 class="w-16 h-16 text-blue-500 animate-spin relative" />
+            </div>
+            <h3 class="text-2xl font-black text-white italic">Sincronizando...</h3>
+            <p class="text-slate-500 font-bold text-sm mt-3 uppercase tracking-widest">Creando tu espacio personal en la
+                red.</p>
         </div>
 
         <Form v-bind="store.form()" :reset-on-success="['password', 'password_confirmation']"
@@ -269,122 +162,118 @@ const handleSubscriptionSuccess = async (pmId: string) => {
                 <!-- Name -->
                 <div class="space-y-1.5">
                     <Label for="name"
-                        class="text-neutral-400 text-xs uppercase tracking-wider font-semibold ml-1">Nombre
+                        class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Nombre
                         Completo</Label>
-                    <div class="relative group/input">
+                    <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
                             <User class="w-5 h-5" />
                         </div>
                         <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" name="name"
                             v-model="formData.name" placeholder="Tu nombre"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
+                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-12 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 font-medium" />
                     </div>
-                    <InputError :message="errors.name" />
                 </div>
 
                 <!-- Email -->
                 <div class="space-y-1.5">
                     <Label for="email"
-                        class="text-neutral-400 text-xs uppercase tracking-wider font-semibold ml-1">Correo
+                        class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Correo
                         Electrónico</Label>
-                    <div class="relative group/input">
+                    <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
                             <Mail class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" required :tabindex="2" autocomplete="email" name="email"
-                            v-model="formData.email" placeholder="correo@ejemplo.com"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12 pr-12" />
+                            v-model="formData.email" placeholder="tu@email.com"
+                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-12 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 pr-12 font-medium" />
 
-                        <!-- Icono de validación -->
                         <div class="absolute right-4 top-1/2 -translate-y-1/2">
                             <Loader2 v-if="emailValidation.status === 'checking'"
-                                class="w-5 h-5 text-blue-400 animate-spin" />
+                                class="w-4 h-4 text-blue-400 animate-spin" />
                             <CheckCircle v-else-if="emailValidation.status === 'valid'"
-                                class="w-5 h-5 text-green-500" />
-                            <XCircle v-else-if="emailValidation.status === 'invalid'" class="w-5 h-5 text-red-500" />
+                                class="w-4 h-4 text-emerald-500" />
+                            <XCircle v-else-if="emailValidation.status === 'invalid'" class="w-4 h-4 text-red-500" />
                         </div>
                     </div>
-
-                    <!-- Mensaje de validación -->
-                    <p v-if="emailValidation.message" class="text-xs ml-1" :class="{
-                        'text-green-500': emailValidation.status === 'valid',
-                        'text-red-500': emailValidation.status === 'invalid'
-                    }">
-                        {{ emailValidation.message }}
-                    </p>
-
-                    <InputError :message="errors.email" />
+                    <p v-if="emailValidation.message" class="text-[9px] font-black uppercase tracking-widest ml-1"
+                        :class="{
+                            'text-emerald-500': emailValidation.status === 'valid',
+                            'text-red-500': emailValidation.status === 'invalid'
+                        }">{{ emailValidation.message }}</p>
                 </div>
 
-                <!-- Password -->
-                <div class="space-y-1.5">
-                    <Label for="password"
-                        class="text-neutral-400 text-xs uppercase tracking-wider font-semibold ml-1">Contraseña</Label>
-                    <div class="relative group/input">
-                        <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
-                            <Lock class="w-5 h-5" />
+                <!-- Password Group -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <Label for="password"
+                            class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Clave</Label>
+                        <div class="relative group">
+                            <Input id="password" type="password" required :tabindex="3" autocomplete="new-password"
+                                name="password" v-model="formData.password" placeholder="••••••••"
+                                class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-11 rounded-xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-4 font-medium" />
                         </div>
-                        <Input id="password" type="password" required :tabindex="3" autocomplete="new-password"
-                            name="password" v-model="formData.password" placeholder="••••••••"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
-                    <InputError :message="errors.password" />
-                </div>
-
-                <!-- Confirm Password -->
-                <div class="space-y-1.5">
-                    <Label for="password_confirmation"
-                        class="text-neutral-400 text-xs uppercase tracking-wider font-semibold ml-1">Confirmar
-                        Contraseña</Label>
-                    <div class="relative group/input">
-                        <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within/input:text-purple-400 transition-colors">
-                            <Key class="w-5 h-5" />
+                    <div class="space-y-1.5">
+                        <Label for="password_confirmation"
+                            class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Confirmar</Label>
+                        <div class="relative group">
+                            <Input id="password_confirmation" type="password" required :tabindex="4"
+                                autocomplete="new-password" name="password_confirmation"
+                                v-model="formData.password_confirmation" placeholder="••••••••"
+                                class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-11 rounded-xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-4 font-medium" />
                         </div>
-                        <Input id="password_confirmation" type="password" required :tabindex="4"
-                            autocomplete="new-password" name="password_confirmation"
-                            v-model="formData.password_confirmation" placeholder="••••••••"
-                            class="bg-neutral-900/50 border-white/5 text-white placeholder:text-neutral-600 h-12 rounded-xl focus:border-purple-500/50 focus:ring-purple-500/20 transition-all pl-12" />
                     </div>
-                    <InputError :message="errors.password_confirmation" />
                 </div>
+                <InputError :message="errors.password" />
             </div>
 
             <Button type="button" @click="handleRegisterClick"
-                class="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-300 relative overflow-hidden group/btn mt-4"
-                tabindex="5" :disabled="processing" data-test="register-user-button">
-                <div
-                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700 ease-in-out">
-                </div>
+                class="w-full h-14 rounded-2xl bg-white text-black hover:bg-slate-200 font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 mt-4"
+                tabindex="5" :disabled="processing">
                 <div class="relative flex items-center justify-center gap-2">
-                    <Spinner v-if="processing" class="text-white" />
+                    <Spinner v-if="processing" class="text-black" />
                     <span v-else class="flex items-center gap-2">
-                        Continuar al Pago
-                        <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                        Verificar Tarjeta
+                        <Sparkles class="w-5 h-5" />
                     </span>
                 </div>
             </Button>
         </Form>
 
-        <!-- Footer Slot -->
+        <!-- Footer -->
         <template #footer>
-            <div class="flex flex-col gap-2 items-center">
-                <p class="text-neutral-500 text-sm">
-                    ¿Ya tienes una cuenta en Exo?
-                </p>
-                <Link :href="login()"
-                    class="text-base font-semibold text-purple-400 hover:text-purple-300 transition-colors hover:underline underline-offset-4 decoration-purple-500/30">
-                    Iniciar sesión
-                </Link>
+            <div class="flex flex-col gap-4 items-center">
+                <div class="h-px w-20 bg-white/5"></div>
+                <div class="flex flex-col gap-1 items-center">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">¿Ya tienes cuenta?</p>
+                    <Link :href="login()"
+                        class="text-lg font-black text-blue-500 hover:text-blue-400 transition-colors italic">
+                        Iniciar sesión
+                    </Link>
+                </div>
             </div>
         </template>
 
     </AuthPremiumLayout>
 
-    <!-- Subscription Modal -->
     <SubscriptionModal v-if="showSubscriptionModal" @close="showSubscriptionModal = false"
         @success="handleSubscriptionSuccess" />
 </template>
+
+<style scoped>
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+</style>
