@@ -365,7 +365,8 @@ const scrollToFeatures = () => {
                         </div>
                         <h3 class="text-2xl md:text-3xl font-black text-white mb-4 italic">Control de Ritmo</h3>
                         <p class="text-slate-400 font-medium leading-relaxed text-lg">
-                            Sincronización total con Spotify. Cambia de canción, crea listas y ajusta el volumen usando
+                            Sincronización total con Spotify. Cambia de canción, agrega favoritos, elimina favoritos y
+                            ajusta el volumen usando
                             solo tu voz.
                         </p>
                     </div>
@@ -407,8 +408,7 @@ const scrollToFeatures = () => {
                     </div>
                     <div class="pt-6 border-t border-white/5 mt-6 flex justify-between items-center">
                         <Zap class="w-5 h-5 text-slate-700 group-hover:text-purple-400 transition-colors" />
-                        <span class="text-[9px] font-black text-slate-600 uppercase tracking-tighter">AI Core
-                            v2.4</span>
+                        <span class="text-[9px] font-black text-slate-600 uppercase tracking-tighter">AI Core</span>
                     </div>
                 </div>
 

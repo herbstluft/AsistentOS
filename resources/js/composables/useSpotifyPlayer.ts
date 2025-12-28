@@ -66,6 +66,7 @@ const checkStatus = async () => {
 
         if (response.data.connected === false) {
             isConnected.value = false;
+            // Si no estamos conectados, no necesitamos seguir intentándolo agresivamente
             return;
         }
         isConnected.value = true;
@@ -89,6 +90,16 @@ const checkStatus = async () => {
         }
 
     } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            // Sesión expirada o no autorizado
+            isConnected.value = false;
+            if (pollingInterval.value) {
+                clearTimeout(pollingInterval.value);
+                pollingInterval.value = null;
+            }
+            return;
+        }
+
         if (error.response && error.response.status !== 404) {
             console.error('Error checking Spotify status', error);
         }
@@ -310,7 +321,11 @@ const init = async () => {
     // Only init once
     if (pollingInterval.value) return;
 
-    checkStatus();
+    // Verificar si estamos en un contexto autenticado (evitar 401 en Welcome page)
+    // Usamos una verificación sencilla: si no hay un meta tag de CSRF o similar (aunque axios suele manejarlo)
+    // O mejor, intentamos una vez y si falla con 401 nos detenemos.
+
+    await checkStatus();
 
     // Dynamic polling loop
     const pollLoop = async () => {
@@ -335,14 +350,15 @@ const init = async () => {
     window.addEventListener('spotify-volume-change', ((e: CustomEvent) => {
         setVolume(e.detail);
     }) as EventListener);
-
     try {
         const res = await axios.get('/api/spotify/token');
         if (res.data.token) {
             initializePlayer(res.data.token);
         }
-    } catch (e) {
-        console.log('Could not init player', e);
+    } catch (e: any) {
+        if (e.response && e.response.status !== 401) {
+            console.log('Could not init player', e);
+        }
     }
 };
 

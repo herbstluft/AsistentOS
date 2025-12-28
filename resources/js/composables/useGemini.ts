@@ -7,7 +7,6 @@ export function useGemini(apiKey: string) {
     let systemPrompt: string = '';
 
     const initGeminiChat = async (user: any) => {
-        console.log('🧠 Initializing Gemini AI via Proxy...');
         history = [];
 
         // Prompt del Sistema (Personalidad + Esquema)

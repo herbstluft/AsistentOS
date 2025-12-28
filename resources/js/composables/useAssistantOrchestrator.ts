@@ -161,7 +161,7 @@ export function useAssistantOrchestrator() {
     });
 
     // --- Audio Ducking (Spotify) ---
-    const { setVolume, volume: spotifyVolume, isPlaying: isSpotifyPlaying } = useSpotifyPlayer();
+    const { setVolume, volume: spotifyVolume, isPlaying: isSpotifyPlaying, isConnected: isSpotifyConnected } = useSpotifyPlayer();
     const originalVolume = ref(50);
     const isDucked = ref(false);
     let duckTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -880,6 +880,13 @@ export function useAssistantOrchestrator() {
         // 5. SPOTIFY CONTROL
         if (parsed.intent === 'spotify') {
             console.log('🎵 Spotify Intent:', parsed);
+
+            if (!isSpotifyConnected.value) {
+                speak("Tu cuenta de Spotify aún no está conectada. No puedo realizar esta acción sin acceso.");
+                triggerFeedback('error', 'Spotify no vinculado');
+                return;
+            }
+
             speak(parsed.speech || "Entendido.");
             triggerFeedback('spotify', 'Controlando Spotify...');
 
@@ -1391,18 +1398,18 @@ export function useAssistantOrchestrator() {
         if (parsed.intent === 'macro_goodmorning') {
             speak(`¡Buenos días ${user.value?.name}! Empezando tu rutina.`);
 
-            // 1. Trigger Spotify (Chill Morning)
-            // Using direct fetch to avoid UI dependency issues, or emit event?
-            // Let's use the fetch directly as we do in the 'spotify' intent block
-            triggerFeedback('spotify', 'Iniciando música relajante...');
-
-            try {
-                await fetch('/api/spotify/play', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
-                    body: JSON.stringify({ query: 'Morning Coffee Jazz', type: 'playlist' })
-                });
-            } catch (e) { console.error('Spotify error', e); }
+            // 1. Spotify Morning Mix
+            if (isSpotifyConnected.value) {
+                try {
+                    await fetch('/api/spotify/play', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
+                        body: JSON.stringify({ query: 'Morning Coffee Jazz', type: 'playlist' })
+                    });
+                } catch (e) { console.error('Spotify error', e); }
+            } else {
+                speak("Nota: Tu cuenta de Spotify no está conectada, así que omitiré la música.");
+            }
 
             // 2. Agenda Summary
             const dateStr = new Date().toISOString().split('T')[0];
@@ -1429,14 +1436,18 @@ export function useAssistantOrchestrator() {
             switchPalette(4); // Matrix/Dark
 
             // 2. Spotify Lo-Fi
-            triggerFeedback('spotify', 'Reproduciendo Lofi Girl...');
-            try {
-                await fetch('/api/spotify/play', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
-                    body: JSON.stringify({ query: 'lofi girl', type: 'playlist' })
-                });
-            } catch (e) { console.error('Spotify error', e); }
+            if (isSpotifyConnected.value) {
+                triggerFeedback('spotify', 'Reproduciendo Lofi Girl...');
+                try {
+                    await fetch('/api/spotify/play', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
+                        body: JSON.stringify({ query: 'lofi girl', type: 'playlist' })
+                    });
+                } catch (e) { console.error('Spotify error', e); }
+            } else {
+                speak("Como no tienes Spotify vinculado, omitiré la música de fondo.");
+            }
 
             return;
         }
