@@ -55,7 +55,7 @@ class RenewSubscriptions extends Command
                 // Agregar el item de suscripción
                 \Stripe\InvoiceItem::create([
                     'customer' => $customerId,
-                    'amount' => (int)config('services.stripe.subscription_price') * 100, // En centavos
+                    'amount' => (int)config('services.stripe.price') * 100, // En centavos
                     'currency' => config('services.stripe.subscription_currency'),
                     'description' => 'Renovación de suscripción mensual',
                     'invoice' => $invoice->id,
