@@ -47,6 +47,14 @@ Route::middleware([
         return Inertia::render('settings/Spotify');
     })->name('settings.spotify');
 
+    // Deepgram Token (for secure WebSocket connection)
+    Route::get('/api/deepgram/token', [App\Http\Controllers\DeepgramController::class, 'token']);
+
+    // ElevenLabs Token (for TTS)
+    Route::get('/api/elevenlabs/token', function () {
+        return response()->json(['token' => config('services.elevenlabs.api_key')]);
+    });
+
     // Rutas de Preferencias del Asistente
     Route::get('/api/assistant/preference', [App\Http\Controllers\AssistantPreferenceController::class, 'getPreference']);
     Route::post('/api/assistant/preference', [App\Http\Controllers\AssistantPreferenceController::class, 'savePreference']);

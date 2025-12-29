@@ -58,4 +58,12 @@ return [
         'trial_minutes' => env('TRIAL_MINUTES', 1),
     ],
 
+    'deepgram' => [
+        'api_key' => env('DEEPGRAM_API_KEY'),
+    ],
+
+    'elevenlabs' => [
+        'api_key' => env('ELEVENLABS_API_KEY'),
+    ],
+
 ];

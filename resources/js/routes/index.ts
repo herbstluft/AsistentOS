@@ -514,7 +514,7 @@ capabilitiesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 capabilities.form = capabilitiesForm
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 export const contacts = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -528,7 +528,7 @@ contacts.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 contacts.url = (options?: RouteQueryOptions) => {
@@ -536,7 +536,7 @@ contacts.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 contacts.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -545,7 +545,7 @@ contacts.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 contacts.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -554,7 +554,7 @@ contacts.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 const contactsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -563,7 +563,7 @@ const contactsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 })
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 contactsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -572,7 +572,7 @@ contactsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 })
 
 /**
-* @see routes/web.php:91
+* @see routes/web.php:99
 * @route '/contacts'
 */
 contactsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

@@ -1,9 +1,9 @@
 import { ref, computed, onMounted, watch, shallowRef } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { useVoice } from '@/composables/useVoice';
+import { useDeepgramVoice } from '@/composables/useDeepgramVoice';
 import { useAudioVisualizer } from '@/composables/useAudioVisualizer';
 import { useGemini } from '@/composables/useGemini';
-import { useSpeech } from '@/composables/useSpeech';
+import { useDeepgramSpeech } from '@/composables/useDeepgramSpeech';
 import { useAssistantSecurity } from '@/composables/useAssistantSecurity';
 import { useAssistantUserOps } from '@/composables/useAssistantUserOps';
 import { useAssistantReminders } from '@/composables/useAssistantReminders';
@@ -20,7 +20,8 @@ export function useAssistantOrchestrator() {
     const user = computed(() => page.props.auth.user);
 
     // --- Core Composables ---
-    const { isSpeaking, speak, stopSpeaking, unlockAudio } = useVoice();
+    // Using Deepgram for natural voice output (production test)
+    const { isSpeaking, speak, stopSpeaking, unlockAudio } = useDeepgramVoice();
     const { audioLevel, isRecording, startVisualization, stopVisualization } = useAudioVisualizer();
     const { initGeminiChat, sendMessage, summarizeResults } = useGemini(API_KEY);
 
@@ -72,11 +73,11 @@ export function useAssistantOrchestrator() {
 
         // Wake Word Logic (Unless explicitly manually text input, but this function is used for both)
         // Assume text input (typing) implies intent, but Voice implies need for wake word.
-        // We can distinguish? processUserQuery is called by useSpeech.
+        // We can distinguish? processUserQuery is called by useDeepgramSpeech.
         // Let's add a check: If it comes from speech (we can infer or pass a flag, but simple check is):
         // If the user types "Jarvis...", good. If they type "Hola", fine.
         // But for VOICE, we need stricter rules.
-        // Since we don't have a "source" flag easily here without refactoring `useSpeech` signature:
+        // Since we don't have a "source" flag easily here without refactoring `useDeepgramSpeech` signature:
         // We will enforce Wake Word for everything OR we assume the user types commands directly?
         // User said: "only respond to orders when told by the assistant name".
 
@@ -118,7 +119,16 @@ export function useAssistantOrchestrator() {
         }
     }
 
-    const { isListening, statusMessage: speechStatus, hasError, startListening: startSpeech, stopListening: stopSpeech, partialTranscript } = useSpeech(processUserQuery);
+    // Use Deepgram for professional, stable speech recognition
+    const {
+        isListening,
+        isConnecting,
+        statusMessage: speechStatus,
+        hasError,
+        startListening: startSpeech,
+        stopListening: stopSpeech,
+        partialTranscript
+    } = useDeepgramSpeech(processUserQuery);
 
 
     // Computed status message that prioritizes sub-tasks

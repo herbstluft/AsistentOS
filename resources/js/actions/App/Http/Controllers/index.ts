@@ -1,4 +1,5 @@
 import SubscriptionController from './SubscriptionController'
+import DeepgramController from './DeepgramController'
 import AssistantPreferenceController from './AssistantPreferenceController'
 import BiometricController from './BiometricController'
 import SpotifyController from './SpotifyController'
@@ -11,6 +12,7 @@ import AiQueryController from './AiQueryController'
 
 const Controllers = {
     SubscriptionController: Object.assign(SubscriptionController, SubscriptionController),
+    DeepgramController: Object.assign(DeepgramController, DeepgramController),
     AssistantPreferenceController: Object.assign(AssistantPreferenceController, AssistantPreferenceController),
     BiometricController: Object.assign(BiometricController, BiometricController),
     SpotifyController: Object.assign(SpotifyController, SpotifyController),
