@@ -1,6 +1,6 @@
 import { ref, computed, onMounted, watch, shallowRef } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { useDeepgramVoice } from '@/composables/useDeepgramVoice';
+import { useElevenLabsVoice } from '@/composables/useElevenLabsVoice';
 import { useAudioVisualizer } from '@/composables/useAudioVisualizer';
 import { useGemini } from '@/composables/useGemini';
 import { useDeepgramSpeech } from '@/composables/useDeepgramSpeech';
@@ -20,8 +20,8 @@ export function useAssistantOrchestrator() {
     const user = computed(() => page.props.auth.user);
 
     // --- Core Composables ---
-    // Using Deepgram for natural voice output (production test)
-    const { isSpeaking, speak, stopSpeaking, unlockAudio } = useDeepgramVoice();
+    // Using ElevenLabs for fastest TTS (~200ms latency)
+    const { isSpeaking, speak, stopSpeaking, unlockAudio } = useElevenLabsVoice();
     const { audioLevel, isRecording, startVisualization, stopVisualization } = useAudioVisualizer();
     const { initGeminiChat, sendMessage, summarizeResults } = useGemini(API_KEY);
 
