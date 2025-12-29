@@ -290,7 +290,7 @@ const resetImport = () => {
     <Head title="Mis Contactos" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10 relative overflow-hidden">
+        <div class="min-h-full w-full bg-transparent text-foreground p-6 md:p-10 relative overflow-hidden">
 
             <div class="max-w-7xl mx-auto relative z-10 flex flex-col gap-8 h-full">
 
@@ -340,7 +340,7 @@ const resetImport = () => {
 
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <div v-for="contact in paginatedContacts" :key="contact.id"
-                        class="group relative bg-card/80 hover:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[320px]">
+                        class="group relative bg-card/50 backdrop-blur-sm hover:bg-card/80 border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[320px]">
 
                         <!-- Avatar & Name -->
                         <div class="flex flex-col items-center mb-4 mt-2">

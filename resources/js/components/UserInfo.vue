@@ -22,17 +22,24 @@ const showAvatar = computed(
 </script>
 
 <template>
-    <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
-        <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
-        <AvatarFallback class="rounded-lg text-foreground">
-            {{ getInitials(user.name) }}
-        </AvatarFallback>
-    </Avatar>
+    <!-- Avatar with gradient ring -->
+    <div class="relative">
+        <div
+            class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl opacity-50 blur-[2px]">
+        </div>
+        <Avatar class="relative h-9 w-9 overflow-hidden rounded-lg ring-1 ring-white/10">
+            <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
+            <AvatarFallback
+                class="rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-foreground font-medium">
+                {{ getInitials(user.name) }}
+            </AvatarFallback>
+        </Avatar>
+    </div>
 
     <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">{{ user.name }}</span>
+        <span class="truncate font-semibold text-foreground">{{ user.name }}</span>
         <span v-if="showEmail" class="truncate text-xs text-muted-foreground">{{
             user.email
-            }}</span>
+        }}</span>
     </div>
 </template>

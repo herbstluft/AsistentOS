@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, shallowRef } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import { useVoice } from '@/composables/useVoice';
 import { useAudioVisualizer } from '@/composables/useAudioVisualizer';
@@ -36,12 +36,12 @@ export function useAssistantOrchestrator() {
 
     // --- Feedback State for UI ---
     // --- Feedback State for UI ---
-    const isProcessing = ref(false); // New explicit processing state
-    const transcript = ref(''); // Added back transcript
-    const serverResponse = ref(''); // Response from Gemini
-    const currentIntent = ref(''); // Current parsed intent
-    const visualState = ref('idle'); // Visual state for orbs
-    const currentDocumentContext = ref<string>(''); // Document context for analysis
+    const isProcessing = ref(false);
+    const transcript = shallowRef(''); // Optimized: No deep reactivity needed for text
+    const serverResponse = shallowRef(''); // Optimized
+    const currentIntent = shallowRef(''); // Optimized
+    const visualState = shallowRef('idle'); // Optimized
+    const currentDocumentContext = shallowRef<string>(''); // Optimized: Context can be very large
 
     const feedbackState = ref<{
         type: 'idle' | 'listening' | 'processing' | 'success' | 'error' | 'spotify';

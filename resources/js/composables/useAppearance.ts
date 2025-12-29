@@ -1,25 +1,14 @@
 import { onMounted, ref } from 'vue';
 
-type Appearance = 'light' | 'dark' | 'system';
+type Appearance = 'dark'; // Dark mode is the ONLY option
 
-export function updateTheme(value: Appearance) {
+export function updateTheme(_value: Appearance) {
     if (typeof window === 'undefined') {
         return;
     }
 
-    if (value === 'system') {
-        const mediaQueryList = window.matchMedia(
-            '(prefers-color-scheme: dark)',
-        );
-        const systemTheme = mediaQueryList.matches ? 'dark' : 'light';
-
-        document.documentElement.classList.toggle(
-            'dark',
-            systemTheme === 'dark',
-        );
-    } else {
-        document.documentElement.classList.toggle('dark', value === 'dark');
-    }
+    // ALWAYS use dark mode - no exceptions
+    document.documentElement.classList.add('dark');
 }
 
 const setCookie = (name: string, value: string, days = 365) => {
@@ -32,64 +21,37 @@ const setCookie = (name: string, value: string, days = 365) => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
-const mediaQuery = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const getStoredAppearance = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return localStorage.getItem('appearance') as Appearance | null;
-};
-
-const handleSystemThemeChange = () => {
-    const currentAppearance = getStoredAppearance();
-
-    updateTheme(currentAppearance || 'system');
-};
-
 export function initializeTheme() {
     if (typeof window === 'undefined') {
         return;
     }
 
-    // Initialize theme from saved preference or default to system...
-    const savedAppearance = getStoredAppearance();
-    updateTheme(savedAppearance || 'system');
-
-    // Set up system theme change listener...
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+    // ALWAYS initialize to dark mode
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('appearance', 'dark');
+    setCookie('appearance', 'dark');
 }
 
-const appearance = ref<Appearance>('system');
+const appearance = ref<Appearance>('dark');
 
 export function useAppearance() {
     onMounted(() => {
-        const savedAppearance = localStorage.getItem(
-            'appearance',
-        ) as Appearance | null;
-
-        if (savedAppearance) {
-            appearance.value = savedAppearance;
-        }
+        // Force dark mode on mount
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('appearance', 'dark');
     });
 
-    function updateAppearance(value: Appearance) {
-        appearance.value = value;
+    function updateAppearance(_value: Appearance) {
+        // Ignore any attempts to change - always stay dark
+        appearance.value = 'dark';
 
         // Store in localStorage for client-side persistence...
-        localStorage.setItem('appearance', value);
+        localStorage.setItem('appearance', 'dark');
 
         // Store in cookie for SSR...
-        setCookie('appearance', value);
+        setCookie('appearance', 'dark');
 
-        updateTheme(value);
+        updateTheme('dark');
     }
 
     return {
@@ -97,3 +59,4 @@ export function useAppearance() {
         updateAppearance,
     };
 }
+

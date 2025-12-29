@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
         'security_nip',
         'is_admin',
         'preferred_voice',

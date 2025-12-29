@@ -3,10 +3,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
-import SiriWave from '@/components/SiriWave.vue';
-import ReportModal from '@/components/Assistant/ReportModal.vue';
-import MicrophonePermissionModal from '@/components/Assistant/MicrophonePermissionModal.vue';
+import { ref, onMounted, computed, watch, onBeforeUnmount, defineAsyncComponent } from 'vue';
+
+const SiriWave = defineAsyncComponent(() => import('@/components/SiriWave.vue'));
+const ReportModal = defineAsyncComponent(() => import('@/components/Assistant/ReportModal.vue'));
+const MicrophonePermissionModal = defineAsyncComponent(() => import('@/components/Assistant/MicrophonePermissionModal.vue'));
 
 import {
     Fingerprint,
@@ -245,17 +246,9 @@ const summaryState = computed(() => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
 
-        <!-- Main Container: Scrollable on Mobile, Fixed on Desktop -->
+        <!-- Main Container: Optimized for 120Hz/60Hz zero-lag scrolling -->
         <div
-            class="w-full bg-background text-foreground p-4 md:p-6 lg:p-8 relative flex flex-col min-h-[100dvh] lg:h-full lg:overflow-hidden overflow-y-auto">
-
-            <!-- Ambient Background Glows -->
-            <div
-                class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none">
-            </div>
-            <div
-                class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none">
-            </div>
+            class="w-full bg-transparent text-foreground p-4 md:p-6 lg:p-8 relative flex flex-col min-h-[100dvh] lg:h-full lg:overflow-hidden overflow-y-auto gpu overscroll-none scroll-smooth">
 
             <!-- HEADER COMPACTO -->
             <header class="flex justify-between items-end mb-2 md:mb-6 relative z-10 shrink-0">
@@ -426,6 +419,7 @@ const summaryState = computed(() => {
 
                             <div v-if="summaryState.reminders.length > 0" class="space-y-4 flex-1">
                                 <div v-for="(rem, idx) in summaryState.reminders" :key="idx"
+                                    v-memo="[rem.time, rem.text]"
                                     class="flex gap-4 items-start p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                                     <span
                                         class="text-xs font-mono text-amber-500 mt-1 shrink-0 bg-amber-500/10 px-2 py-0.5 rounded">{{
@@ -446,7 +440,7 @@ const summaryState = computed(() => {
                     </div>
 
                     <!-- B. Calendar Access -->
-                    <Link href="/calendar"
+                    <Link href="/calendar" prefetch
                         class="h-[140px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex items-center justify-between relative overflow-hidden group hover:border-emerald-500/30 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.1)]">
                         <div class="relative z-10">
                             <h3
@@ -470,7 +464,7 @@ const summaryState = computed(() => {
                 <!-- Spans full width on mobile, fills remaining spots on desktop -->
 
                 <!-- Notes / Text Gen -->
-                <Link href="/notes"
+                <Link href="/notes" prefetch
                     class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-blue-500/30">
                     <div class="flex justify-between items-start">
                         <FileText class="w-6 h-6 text-blue-500" />
@@ -480,20 +474,9 @@ const summaryState = computed(() => {
                     <span class="text-sm font-medium text-foreground/80">Notas & Docs</span>
                 </Link>
 
-                <!-- Image Gen -->
-                <Link href="/image-generation"
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-purple-500/30">
-                    <div class="flex justify-between items-start">
-                        <ImageIcon class="w-6 h-6 text-purple-500" />
-                        <ArrowRight
-                            class="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <span class="text-sm font-medium text-foreground/80">Generar Imagen</span>
-                </Link>
-
                 <!-- Reports -->
                 <div @click="handleOpenReports"
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-amber-500/30">
+                    class="lg:col-span-6 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-amber-500/30">
                     <div class="flex justify-between items-start">
                         <Activity class="w-6 h-6 text-amber-500" />
                         <ArrowRight
@@ -503,7 +486,7 @@ const summaryState = computed(() => {
                 </div>
 
                 <!-- Settings / Profile -->
-                <Link href="/settings/profile"
+                <Link href="/settings/profile" prefetch
                     class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-slate-500/30">
                     <div class="flex justify-between items-start">
                         <User class="w-6 h-6 text-slate-400" />

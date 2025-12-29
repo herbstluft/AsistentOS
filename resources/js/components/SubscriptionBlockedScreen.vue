@@ -138,7 +138,8 @@ const handleLogout = async () => {
                 </div>
 
                 <!-- Tarjeta de Reactivación -->
-                <div class="bg-card border border-border rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8">
+                <div
+                    class="bg-card/50 backdrop-blur-sm border border-border rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8">
                     <div v-if="!showPaymentForm">
                         <!-- Información de Precio -->
                         <div class="text-center mb-6">

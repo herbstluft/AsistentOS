@@ -44,11 +44,6 @@ const mainNavItems: NavItem[] = [
         href: '/contacts',
         icon: Users,
     },
-    {
-        title: 'Generar Imágenes',
-        href: '/image-generation',
-        icon: ImageIcon,
-    },
 ];
 
 const systemNavItems: NavItem[] = [
@@ -62,7 +57,7 @@ const systemNavItems: NavItem[] = [
 
 <template>
     <Sidebar collapsible="icon" variant="inset"
-        class="bg-sidebar border-r border-sidebar-border relative overflow-hidden">
+        class="bg-sidebar border-r border-sidebar-border relative overflow-hidden gpu contain-paint">
 
 
 
@@ -70,7 +65,7 @@ const systemNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child class="hover:bg-sidebar-accent transition-colors">
-                        <Link :href="dashboard()">
+                        <Link :href="dashboard()" prefetch="hover">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

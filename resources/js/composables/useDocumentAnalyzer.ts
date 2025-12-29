@@ -1,12 +1,4 @@
 import { ref } from 'vue';
-import * as pdfjsLib from 'pdfjs-dist';
-import * as mammoth from 'mammoth';
-import { read, utils } from 'xlsx';
-
-// Configure PDF.js worker for Vite - using a more compatible approach
-// @ts-ignore
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export const useDocumentAnalyzer = () => {
     const isAnalyzing = ref(false);
@@ -101,6 +93,13 @@ export const useDocumentAnalyzer = () => {
 
     const extractPdfText = async (file: File): Promise<string> => {
         const arrayBuffer = await file.arrayBuffer();
+
+        // Dynamic Import
+        const pdfjsLib = await import('pdfjs-dist');
+        // @ts-ignore
+        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
 
@@ -121,6 +120,9 @@ export const useDocumentAnalyzer = () => {
 
     const extractDocxText = async (file: File): Promise<string> => {
         const arrayBuffer = await file.arrayBuffer();
+
+        // Dynamic Import
+        const mammoth = await import('mammoth');
         const result = await mammoth.extractRawText({ arrayBuffer });
 
         if (!result.value) {
@@ -166,11 +168,14 @@ export const useDocumentAnalyzer = () => {
 
     const extractExcelText = async (file: File): Promise<string> => {
         const arrayBuffer = await file.arrayBuffer();
+
+        // Dynamic Import
+        const { read, utils } = await import('xlsx');
         const workbook = read(arrayBuffer, { type: 'array' });
 
         let fullText = '';
 
-        workbook.SheetNames.forEach((sheetName) => {
+        workbook.SheetNames.forEach((sheetName: string) => {
             const sheet = workbook.Sheets[sheetName];
             const data = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
 

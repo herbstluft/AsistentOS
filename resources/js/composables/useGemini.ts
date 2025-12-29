@@ -204,6 +204,11 @@ export function useGemini(apiKey: string) {
             history.push(userMsg);
             history.push({ role: 'model', parts: [{ text: fullText }] });
 
+            // QUANTUM OPTIMIZATION: Keep history lean (Max 15 messages)
+            if (history.length > 15) {
+                history = history.slice(-15);
+            }
+
             // Clean markdown and return
             return fullText.replace(/```json/g, '').replace(/```/g, '').trim();
 

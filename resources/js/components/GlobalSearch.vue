@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Search, Command, FileText, User, Settings, Calendar, Home, ArrowRight, MessageSquare, Lock, Palette, Fingerprint, Music, MessageCircle, Shield, Zap, Users, LogOut, Image as ImageIcon } from 'lucide-vue-next';
+import { Search, Command, FileText, User, Settings, Calendar, Home, ArrowRight, MessageSquare, Lock, Palette, Fingerprint, Music, MessageCircle, Shield, Zap, Users, LogOut } from 'lucide-vue-next';
 import { Link, router } from '@inertiajs/vue3';
 
 const open = ref(false);
@@ -12,7 +12,7 @@ const links = [
     // General
     { title: 'Dashboard', href: '/dashboard', icon: Home, category: 'General', description: 'Panel principal con resumen' },
     { title: 'Funcionalidades', href: '/capabilities', icon: Zap, category: 'General', description: 'Explora lo que puede hacer tu IA' },
-    { title: 'Generar Imágenes', href: '/image-generation', icon: ImageIcon, category: 'General', description: 'Crea arte visual con IA' },
+
 
     // Aplicaciones
     { title: 'Calendario', href: '/calendar', icon: Calendar, category: 'Aplicaciones', description: 'Gestiona tus eventos y citas' },

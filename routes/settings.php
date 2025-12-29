@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
@@ -12,6 +13,10 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Avatar routes
+    Route::post('settings/avatar', [AvatarController::class, 'update'])->name('avatar.update');
+    Route::delete('settings/avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('user-password.edit');
 
@@ -33,3 +38,4 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/assistant', [App\Http\Controllers\Settings\AssistantController::class, 'edit'])->name('assistant.edit');
     Route::patch('settings/assistant', [App\Http\Controllers\Settings\AssistantController::class, 'update'])->name('assistant.update');
 });
+

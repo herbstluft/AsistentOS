@@ -116,7 +116,7 @@ defineExpose({ fetchAppointments });
 <template>
     <!-- Main Container: h-auto on mobile to allow scrolling, h-full on desktop -->
     <div
-        class="flex flex-col md:h-full h-auto bg-card text-card-foreground rounded-3xl shadow-xl border border-border ring-1 ring-border/50 relative overflow-hidden">
+        class="flex flex-col md:h-full h-auto bg-card/50 backdrop-blur-sm text-card-foreground rounded-3xl shadow-xl border border-border ring-1 ring-border/50 relative overflow-hidden">
 
         <!-- Header -->
         <div

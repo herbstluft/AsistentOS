@@ -52,8 +52,9 @@ onUnmounted(() => {
     <Head title="Calendario" />
 
     <AppLayout>
-        <div class="h-full p-4 sm:p-6 lg:p-8">
-            <ModernCalendar ref="calendarRef" @add-appointment="openModal" @edit-appointment="openEditModal" />
+        <div class="h-full p-4 sm:p-6 lg:p-8 relative overflow-hidden bg-transparent">
+            <ModernCalendar ref="calendarRef" @add-appointment="openModal" @edit-appointment="openEditModal"
+                class="relative z-10" />
 
             <AppointmentModal v-model:isOpen="showModal" :initialDate="selectedDate"
                 :appointmentToEdit="appointmentToEdit" @saved="refreshCalendar" @deleted="refreshCalendar" />

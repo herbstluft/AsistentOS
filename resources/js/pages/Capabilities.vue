@@ -154,7 +154,8 @@ const breadcrumbs = [
     <Head title="Funcionalidades del Asistente" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="min-h-full w-full bg-background p-6 md:p-10 overflow-y-auto custom-scrollbar">
+        <div
+            class="min-h-full w-full bg-transparent p-6 md:p-10 hide-scrollbar overflow-y-auto custom-scrollbar relative">
 
             <div class="max-w-7xl mx-auto flex flex-col gap-10">
 

@@ -68,27 +68,26 @@ function generateColor(str: string) {
             <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4"
                 style="perspective: 1000px;">
                 <!-- Backdrop -->
-                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="emit('close')"></div>
+                <div class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="emit('close')"></div>
 
-                <!-- Modal Card -->
+                <!-- Modal Card (Glass-morphism Dark Mode) -->
                 <div
-                    class="relative w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
+                    class="relative w-full max-w-3xl bg-card/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-border flex flex-col max-h-[90vh]">
 
                     <!-- Header -->
                     <div
-                        class="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                        class="flex items-center justify-between p-6 border-b border-border bg-background/50 backdrop-blur-sm">
                         <div class="flex items-center gap-3">
-                            <div
-                                class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                            <div class="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
                                 <BarChart3 v-if="config.type === 'bar'" class="w-6 h-6" />
                                 <PieChart v-else-if="config.type === 'pie'" class="w-6 h-6" />
                                 <TrendingUp v-else class="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-zinc-900 dark:text-white">
+                                <h3 class="text-xl font-bold text-foreground">
                                     {{ config.title }}
                                 </h3>
-                                <p v-if="config.description" class="text-sm text-zinc-500">
+                                <p v-if="config.description" class="text-sm text-muted-foreground">
                                     {{ config.description }}
                                 </p>
                             </div>
@@ -96,24 +95,23 @@ function generateColor(str: string) {
 
                         <div class="flex items-center gap-2">
                             <!-- Export Actions -->
-                            <div
-                                class="flex items-center gap-1 mr-4 border-r border-zinc-200 dark:border-zinc-800 pr-4">
+                            <div class="flex items-center gap-1 mr-4 border-r border-border pr-4">
                                 <button @click="emit('export', 'pdf')" title="Exportar PDF"
-                                    class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-red-500 transition-colors">
+                                    class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-400 transition-colors">
                                     <FileText class="w-4 h-4" />
                                 </button>
                                 <button @click="emit('export', 'excel')" title="Exportar Excel"
-                                    class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-emerald-500 transition-colors">
+                                    class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-emerald-400 transition-colors">
                                     <TableIcon class="w-4 h-4" />
                                 </button>
                                 <button @click="emit('export', 'word')" title="Exportar Word"
-                                    class="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-blue-500 transition-colors">
+                                    class="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-blue-400 transition-colors">
                                     <Download class="w-4 h-4" />
                                 </button>
                             </div>
 
                             <button @click="emit('close')"
-                                class="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+                                class="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                                 <X class="w-5 h-5" />
                             </button>
                         </div>
@@ -124,14 +122,14 @@ function generateColor(str: string) {
 
                         <!-- AI Insight Box -->
                         <div v-if="config.insight"
-                            class="mb-8 p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-100 dark:border-indigo-800/50 flex gap-4 items-start">
-                            <div class="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-indigo-500">
+                            class="mb-8 p-4 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex gap-4 items-start backdrop-blur-sm">
+                            <div class="p-2 bg-indigo-500/20 rounded-lg shadow-sm text-indigo-400">
                                 <Sparkles class="w-5 h-5" />
                             </div>
                             <div>
-                                <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-100 mb-1">Análisis
+                                <h4 class="text-sm font-bold text-indigo-300 mb-1">Análisis
                                     Inteligente</h4>
-                                <p class="text-sm text-indigo-800 dark:text-indigo-200 leading-relaxed">
+                                <p class="text-sm text-indigo-200/80 leading-relaxed">
                                     {{ config.insight }}
                                 </p>
                             </div>
@@ -143,22 +141,21 @@ function generateColor(str: string) {
                                 class="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-pulse">
                                 {{ data[0]?.[config.y_axis] || 0 }}
                             </div>
-                            <span class="text-xl text-zinc-500 mt-4 font-medium uppercase tracking-widest">{{
+                            <span class="text-xl text-muted-foreground mt-4 font-medium uppercase tracking-widest">{{
                                 config.x_axis }}</span>
                         </div>
 
                         <!-- Bar Chart Type -->
                         <div v-else-if="config.type === 'bar'" class="w-full">
-                            <div
-                                class="h-80 flex items-end justify-between gap-4 px-4 pb-8 border-b border-zinc-100 dark:border-zinc-800">
+                            <div class="h-80 flex items-end justify-between gap-4 px-4 pb-8 border-b border-border">
                                 <div v-for="(item, index) in chartData" :key="index"
                                     class="flex-1 flex flex-col items-center group relative h-full justify-end">
                                     <!-- Value Label (Hover) -->
                                     <div
-                                        class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-zinc-900 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-xl transform translate-y-2 group-hover:translate-y-0 z-10 whitespace-nowrap">
+                                        class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-foreground text-background text-xs font-bold py-1.5 px-3 rounded-lg shadow-xl transform translate-y-2 group-hover:translate-y-0 z-10 whitespace-nowrap">
                                         {{ item.value }}
                                         <div
-                                            class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 border-4 border-transparent border-t-zinc-900">
+                                            class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 border-4 border-transparent border-t-foreground">
                                         </div>
                                     </div>
 
@@ -172,7 +169,7 @@ function generateColor(str: string) {
 
                                     <!-- X Axis Label -->
                                     <div class="absolute -bottom-8 w-full text-center">
-                                        <span class="text-xs font-medium text-zinc-500 truncate block px-1"
+                                        <span class="text-xs font-medium text-muted-foreground truncate block px-1"
                                             :title="String(item.label)">
                                             {{ item.label }}
                                         </span>
@@ -183,23 +180,24 @@ function generateColor(str: string) {
 
                         <!-- Table View (Always visible below chart for detail) -->
                         <div class="mt-12">
-                            <h4 class="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Datos Detallados
+                            <h4 class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Datos
+                                Detallados
                             </h4>
                             <div
-                                class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                class="overflow-hidden rounded-xl border border-border shadow-sm bg-background/30 backdrop-blur-sm">
                                 <table class="w-full text-sm text-left">
-                                    <thead class="bg-zinc-50 dark:bg-zinc-900/50 text-zinc-500 font-medium">
+                                    <thead class="bg-muted/50 text-muted-foreground font-medium">
                                         <tr>
                                             <th class="px-6 py-3">{{ config.x_axis }}</th>
                                             <th class="px-6 py-3 text-right">{{ config.y_axis }}</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    <tbody class="divide-y divide-border">
                                         <tr v-for="(row, i) in data" :key="i"
-                                            class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                            <td class="px-6 py-3 text-zinc-900 dark:text-zinc-300 font-medium">{{
+                                            class="hover:bg-muted/30 transition-colors">
+                                            <td class="px-6 py-3 text-foreground font-medium">{{
                                                 row[config.x_axis] }}</td>
-                                            <td class="px-6 py-3 text-right font-mono text-zinc-600 dark:text-zinc-400">
+                                            <td class="px-6 py-3 text-right font-mono text-muted-foreground">
                                                 {{
                                                     row[config.y_axis] }}</td>
                                         </tr>

@@ -10,8 +10,8 @@ import { initializeTheme } from './composables/useAppearance';
 import { createPinia } from 'pinia';
 
 // ***********************************************
-// 1. AÑADE ESTAS LÍNEAS
-import ElementPlus from 'element-plus';
+// GLOBAL CSS RESTORED FOR DESIGN INTEGRITY
+// JS Library remains on-demand for Quantum speed.
 import 'element-plus/dist/index.css';
 // ***********************************************
 
@@ -65,10 +65,8 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(ElementPlus)
+            // .use(ElementPlus) // REMOVED GLOBAL IMPORT TO SAVE ~100MB RAM
             .use(createPinia())
-            // Register Link globally for ease of use (optional but good practice)
-            // .component('Link', Link) 
             .mount(el);
 
         // 3. Perform Redirect AFTER app is mounted (Safe)
@@ -96,4 +94,11 @@ createInertiaApp({
 });
 
 // This will set light / dark mode on page load...
+// Register Quantum Service Worker for instant loading
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+    });
+}
+
 initializeTheme();

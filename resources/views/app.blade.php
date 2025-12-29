@@ -33,7 +33,29 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link rel="dns-prefetch" href="https://fonts.bunny.net">
+        <link rel="preconnect" href="https://generativelanguage.googleapis.com">
+        <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com">
+        
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
+
+        <!-- Pre-resolving critical network paths -->
+        <link rel="preconnect" href="{{ url('/') }}" crossorigin>
+
+        <!-- Speculation Rules API: Prerender next pages for 0ms navigation -->
+        <script type="speculationrules">
+        {
+          "prerender": [
+            {
+              "where": { "href_matches": "/*" },
+              "eagerness": "moderate"
+            }
+          ]
+        }
+        </script>
+
+        <!-- Module Preload: Instruct browser to fetch and compile JS in parallel -->
+        <link rel="modulepreload" href="{{ Vite::asset('resources/js/app.ts') }}" fetchpriority="high">
 
         @vite(['resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         @inertiaHead

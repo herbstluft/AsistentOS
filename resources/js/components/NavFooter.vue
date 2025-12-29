@@ -24,7 +24,7 @@ defineProps<Props>();
             <SidebarMenu>
                 <SidebarMenuItem v-for="item in items" :key="item.title">
                     <SidebarMenuButton class="text-muted-foreground hover:text-foreground transition-colors" as-child>
-                        <Link :href="item.href">
+                        <Link :href="item.href" prefetch="hover">
                             <component :is="item.icon" />
                             <span>{{ item.title }}</span>
                         </Link>

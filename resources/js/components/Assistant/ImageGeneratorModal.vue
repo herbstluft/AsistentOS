@@ -63,7 +63,7 @@ const generate = () => {
                 leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                 leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
                 <div v-show="show"
-                    class="mb-6 bg-card border border-border rounded-[2rem] overflow-hidden shadow-2xl transform transition-all sm:w-full sm:max-w-2xl sm:mx-auto relative">
+                    class="mb-6 bg-card/50 backdrop-blur-sm border border-border rounded-[2rem] overflow-hidden shadow-2xl transform transition-all sm:w-full sm:max-w-2xl sm:mx-auto relative">
 
                     <!-- Header -->
                     <div class="relative p-6 border-b border-border/50 flex justify-between items-center bg-card/50">

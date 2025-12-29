@@ -7,6 +7,7 @@ import type { BreadcrumbItemType } from '@/types';
 import { useTabs } from '@/composables/useTabs';
 import { usePage } from '@inertiajs/vue3';
 import { watch, onMounted } from 'vue';
+import { ElTabs, ElTabPane } from 'element-plus';
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];
@@ -25,7 +26,6 @@ const routeNameMap: Record<string, string> = {
     'notes': 'Notas',
     'contacts': 'Contactos',
     'capabilities': 'Funcionalidades',
-    'image-generation': 'Generar Imágenes',
     'settings': 'Configuración',
     'biometrics': 'Biometría',
     'spotify': 'Spotify'
@@ -72,8 +72,8 @@ const handleTabClick = (pane: any) => {
     activateTab(pane.paneName);
 };
 
-const handleTabRemove = (name: string) => {
-    removeTab(name);
+const handleTabRemove = (name: any) => {
+    removeTab(name as string);
 };
 
 // Determine Assistant Mode
@@ -89,9 +89,20 @@ const assistantVariant = computed(() => {
 
             <!-- Sistema de Pestañas Global con SidebarTrigger integrado -->
             <!-- Sistema de Pestañas Global con SidebarTrigger integrado -->
-            <div class="flex-1 overflow-hidden bg-background relative z-0 flex flex-col">
+            <div class="flex-1 overflow-hidden bg-transparent relative z-0 flex flex-col">
 
-                <!-- Dynamic Ambient Background REMOVED FOR SPEED -->
+                <!-- Global Ambient Background (The "Image Generator" Look) -->
+                <div class="absolute inset-0 pointer-events-none fixed z-[-1] overflow-hidden">
+                    <div
+                        class="absolute top-[-15%] left-[-10%] w-[70%] h-[70%] bg-purple-600/15 rounded-full blur-[120px]">
+                    </div>
+                    <div
+                        class="absolute bottom-[-15%] right-[-10%] w-[70%] h-[70%] bg-pink-600/10 rounded-full blur-[120px]">
+                    </div>
+                    <div
+                        class="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-indigo-600/5 rounded-full blur-[100px]">
+                    </div>
+                </div>
 
                 <!-- Trigger Row (Above Tabs) -->
                 <div

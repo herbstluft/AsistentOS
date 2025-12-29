@@ -85,7 +85,7 @@ const handleCancel = async () => {
             <div class="space-y-6">
 
                 <!-- Estado de la Suscripción -->
-                <Card>
+                <Card class="bg-card/50 backdrop-blur-sm border-border">
                     <CardHeader>
                         <CardTitle class="flex items-center gap-2">
                             <CreditCard class="w-5 h-5" />
@@ -95,7 +95,8 @@ const handleCancel = async () => {
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <!-- Estado -->
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div
+                            class="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border/50">
                             <div class="flex items-center gap-3">
                                 <div class="w-3 h-3 rounded-full" :class="{
                                     'bg-blue-500 animate-pulse': statusColor === 'blue',
@@ -244,7 +245,7 @@ const handleCancel = async () => {
                 </Card>
 
                 <!-- Información Adicional -->
-                <Card>
+                <Card class="bg-card/50 backdrop-blur-sm border-border">
                     <CardHeader>
                         <CardTitle>Información Importante</CardTitle>
                     </CardHeader>

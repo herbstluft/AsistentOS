@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { UserFilled, User, Message, Lock } from '@element-plus/icons-vue';
+import { ElDialog, ElIcon, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus';
 
 defineProps<{
     showUserModal: boolean;
@@ -10,7 +11,7 @@ const emit = defineEmits(['update:showUserModal', 'confirmCreateUser', 'cancelCr
 </script>
 
 <template>
-    <el-dialog :model-value="showUserModal" title="Confirmar Nuevo Usuario" :width="null" center
+    <el-dialog :model-value="showUserModal" title="Confirmar Nuevo Usuario" width="auto" center
         :close-on-click-modal="false" :close-on-press-escape="false" destroy-on-close
         class="custom-dark-modal rounded-xl overflow-hidden responsive-dialog user-dialog">
         <div class="text-center mb-4">

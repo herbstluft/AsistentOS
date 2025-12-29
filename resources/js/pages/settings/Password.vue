@@ -21,7 +21,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
         <Head title="Configuración de contraseña" />
 
-        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10">
+        <div class="min-h-full w-full bg-transparent text-foreground p-6 md:p-10">
             <div class="max-w-4xl mx-auto space-y-6">
 
                 <!-- Header -->
@@ -36,7 +36,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                 </div>
 
                 <!-- Password Form -->
-                <div class="bg-card border border-border rounded-xl p-6">
+                <div class="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-6">
                     <Form v-bind="PasswordController.update.form()" :options="{
                         preserveScroll: true,
                     }" reset-on-success :reset-on-error="[

@@ -81,6 +81,33 @@
         background-color: hsl(var(--border));
         @apply rounded-full hover:bg-muted-foreground/50 transition-colors;
     }
+
+    /* GPU & Rendering Optimizations */
+    .gpu {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+        will-change: transform, opacity;
+    }
+
+    .content-auto {
+        content-visibility: auto;
+        contain-intrinsic-size: 0 500px;
+    }
+
+    .contain-paint {
+        contain: paint;
+    }
+
+    .overscroll-none {
+        overscroll-behavior: none;
+    }
+
+    /* Input Latency Reduction */
+    input,
+    button {
+        touch-action: manipulation;
+    }
 }
 
 /* Base styles */

@@ -10,21 +10,35 @@ export default defineConfig({
         allowedHosts: true
     },
     build: {
-        target: 'esnext', // Modern browsers for faster execution
-        minify: 'esbuild', // Faster minification
+        target: 'es2022', // Modern JS engines only for faster execution
+        minify: 'esbuild',
+        assetsInlineLimit: 15360, // 15KB - Inline almost all small assets
+        cssCodeSplit: true,
+        chunkSizeWarningLimit: 500,
         rollupOptions: {
             output: {
                 manualChunks: (id) => {
-                    // Split vendor logic for better caching
                     if (id.includes('node_modules')) {
+                        // Core Framework
                         if (id.includes('vue') || id.includes('pinia') || id.includes('@inertiajs')) {
                             return 'vendor-core';
+                        }
+                        // UI Library (Large)
+                        if (id.includes('element-plus')) {
+                            return 'vendor-ui';
+                        }
+                        // AI & Logic (Heavy)
+                        if (id.includes('@google') || id.includes('three') || id.includes('mediapipe')) {
+                            return 'vendor-heavy';
                         }
                         return 'vendor';
                     }
                 }
             }
         }
+    },
+    esbuild: {
+        drop: ['console', 'debugger'], // Strip logs for production speed/size
     },
     plugins: [
         laravel({

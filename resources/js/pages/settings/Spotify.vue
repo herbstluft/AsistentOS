@@ -64,7 +64,7 @@ onMounted(() => {
 
         <Head title="Configuración Spotify" />
 
-        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10">
+        <div class="min-h-full w-full bg-transparent text-foreground p-6 md:p-10">
             <div class="max-w-4xl mx-auto space-y-6">
 
                 <!-- Header -->
@@ -79,24 +79,25 @@ onMounted(() => {
                 </div>
 
                 <!-- Loading State -->
-                <div v-if="loading" class="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
+                <div v-if="loading"
+                    class="flex items-center gap-3 p-4 bg-card/50 backdrop-blur-sm border border-border rounded-xl">
                     <Loader2 class="w-5 h-5 animate-spin text-muted-foreground" />
                     <span class="text-muted-foreground">Cargando estado...</span>
                 </div>
 
                 <!-- Connected State -->
                 <div v-else-if="isConnected" class="space-y-4">
-                    <div class="p-6 bg-green-500/10 border border-green-500/20 rounded-xl">
+                    <div class="p-6 bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-xl">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
                                 <div class="p-3 bg-green-500 rounded-full text-white">
                                     <CheckCircle2 class="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 class="font-medium text-green-600 dark:text-green-400">
+                                    <h3 class="font-medium text-green-400">
                                         Conectado a Spotify
                                     </h3>
-                                    <p class="text-sm text-green-600/80 dark:text-green-400/80 mt-0.5">
+                                    <p class="text-sm text-green-400/80 mt-0.5">
                                         ID: {{ spotifyName }}
                                     </p>
                                 </div>
@@ -111,9 +112,9 @@ onMounted(() => {
 
                 <!-- Disconnected State -->
                 <div v-else class="space-y-4">
-                    <div class="p-6 bg-card border border-border rounded-xl">
+                    <div class="p-6 bg-card/50 backdrop-blur-sm border border-border rounded-xl">
                         <div class="flex flex-col items-center text-center space-y-4">
-                            <div class="p-4 bg-muted rounded-full">
+                            <div class="p-4 bg-muted/50 rounded-full">
                                 <Music class="w-12 h-12 text-muted-foreground opacity-50" />
                             </div>
                             <div>

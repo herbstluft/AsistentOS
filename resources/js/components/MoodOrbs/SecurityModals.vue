@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { Lock, Key, Pointer } from '@element-plus/icons-vue';
+import { ElDialog, ElIcon, ElInput, ElButton } from 'element-plus';
 import { useBiometrics } from '@/composables/useBiometrics';
 
 defineProps<{
-    showNipModal: boolean;
-    nipInput: string;
-    nipError: string;
-    statusMessage: string;
-    showAccessDeniedModal: boolean;
+    showNipModal: boolean; nipInput: string; nipError: string; statusMessage: string; showAccessDeniedModal:
+    boolean;
 }>();
 
-const emit = defineEmits(['update:showNipModal', 'update:nipInput', 'update:showAccessDeniedModal', 'verifyNip', 'cancelNip']);
+const emit = defineEmits(['update:showNipModal', 'update:nipInput', 'update:showAccessDeniedModal', 'verifyNip',
+    'cancelNip']);
 
 const handleNipInput = (val: string) => emit('update:nipInput', val);
 
@@ -28,7 +27,7 @@ const handleBiometricAuth = async () => {
 <template>
     <div>
         <!-- MODAL DE NIP -->
-        <el-dialog :model-value="showNipModal" title="Autorización Requerida" :width="null" center
+        <el-dialog :model-value="showNipModal" title="Autorización Requerida" width="auto" center
             :close-on-click-modal="false" :show-close="false"
             class="custom-dark-modal security-dialog responsive-dialog nip-dialog">
             <div class="text-center">
@@ -57,7 +56,8 @@ const handleBiometricAuth = async () => {
                         </el-icon>
                         {{ isBioAuth ? 'Escaneando...' : 'Usar Huella Digital' }}
                     </button>
-                    <p v-if="isBioAuth" class="text-xs text-cyan-400 mt-1 animate-pulse">Coloca tu dedo en el sensor</p>
+                    <p v-if="isBioAuth" class="text-xs text-cyan-400 mt-1 animate-pulse">Coloca tu dedo en el sensor
+                    </p>
                 </div>
                 <div class="mt-6 flex justify-center gap-4">
                     <el-button @click="$emit('cancelNip')" class="dark-button">Cancelar</el-button>

@@ -50,7 +50,7 @@ const handleDelete = async (credId: string) => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10">
+        <div class="min-h-full w-full bg-transparent text-foreground p-6 md:p-10">
             <div class="max-w-4xl mx-auto space-y-6">
 
                 <!-- Header -->
@@ -97,7 +97,7 @@ const handleDelete = async (credId: string) => {
                     <h2 class="text-lg font-medium text-foreground">Dispositivos registrados</h2>
 
                     <div v-for="cred in registeredCredentials" :key="cred.id"
-                        class="group bg-card border border-border rounded-xl p-5 hover:shadow-lg transition-all duration-300">
+                        class="group bg-card/50 backdrop-blur-sm border border-border rounded-xl p-5 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-4">
                                 <div class="p-3 bg-indigo-500/10 rounded-full text-indigo-500">
@@ -131,7 +131,8 @@ const handleDelete = async (credId: string) => {
                 </div>
 
                 <!-- Empty State -->
-                <div v-else-if="isAvailable" class="text-center py-20 bg-card border border-border rounded-xl">
+                <div v-else-if="isAvailable"
+                    class="text-center py-20 bg-card/50 backdrop-blur-sm border border-border rounded-xl">
                     <div class="inline-flex p-4 bg-muted rounded-full mb-4">
                         <Fingerprint class="w-12 h-12 text-muted-foreground opacity-50" />
                     </div>

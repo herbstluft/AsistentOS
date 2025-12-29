@@ -151,7 +151,7 @@ const breadcrumbs = [
     <Head title="Mis Notas" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="min-h-full w-full bg-background text-foreground p-6 md:p-10 relative overflow-hidden">
+        <div class="min-h-full w-full bg-transparent text-foreground p-6 md:p-10 relative overflow-hidden">
 
             <!-- Ambient Background REMOVED -->
 
@@ -197,7 +197,7 @@ const breadcrumbs = [
 
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <div v-for="(note, index) in paginatedNotes" :key="note.id"
-                        class="group relative bg-card/80 hover:bg-card border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[280px]">
+                        class="group relative bg-card/50 backdrop-blur-sm hover:bg-card/80 border border-border rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-[320px]">
                         <!-- Actions Overlay -->
                         <div
                             class="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
@@ -253,7 +253,7 @@ const breadcrumbs = [
                         class="relative w-full max-w-2xl bg-background border border-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
                         <div class="p-6 border-b border-border flex justify-between items-center bg-muted/30">
                             <h3 class="text-xl font-light text-foreground">{{ isEditing ? 'Editar Nota' : 'Nueva Nota'
-                                }}</h3>
+                            }}</h3>
                             <button @click="closeModal"
                                 class="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
                                 <X class="w-5 h-5" />
