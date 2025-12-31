@@ -30,8 +30,8 @@ onMounted(() => {
 
 <template>
     <!-- Connected State -->
-    <div v-if="isConnected && currentTrack" :class="[
-        'transition-all duration-500 ease-spring bg-card/90 backdrop-blur-xl border border-border shadow-sm overflow-hidden',
+    <div id="tour-spotify" v-if="isConnected && currentTrack" :class="[
+        'transition-all duration-500 ease-spring bg-card/90 backdrop-blur-xl border border-border shadow-sm overflow-hidden spotify-bar',
         isMinimized ? 'rounded-full p-1 w-auto' : 'rounded-full p-1.5 pr-2 sm:pr-3 w-auto max-w-full'
     ]">
 
@@ -130,8 +130,8 @@ onMounted(() => {
     </div>
 
     <!-- Disconnected/Disabled State -->
-    <a v-else href="/settings/spotify"
-        class="block transition-all duration-500 ease-spring bg-card/50 backdrop-blur-xl border border-border shadow-sm overflow-hidden rounded-full p-1.5 pr-3 w-auto cursor-pointer group hover:bg-muted/50"
+    <a id="tour-spotify" v-else href="/settings/spotify"
+        class="block transition-all duration-500 ease-spring bg-card/50 backdrop-blur-xl border border-border shadow-sm overflow-hidden rounded-full p-1.5 pr-3 w-auto cursor-pointer group hover:bg-muted/50 spotify-bar"
         title="Ir a configuración para conectar Spotify">
         <div class="flex items-center gap-2 sm:gap-3 h-8 opacity-60 grayscale">
             <!-- Icon -->

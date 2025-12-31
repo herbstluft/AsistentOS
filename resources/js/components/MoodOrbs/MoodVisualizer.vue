@@ -24,24 +24,31 @@ const workerCode = `
     let audioLevel = 0;
     let isSpeaking = false;
     let isListening = false;
-    let colors = ['#00d2ff', '#3a7bd5', '#ff00cc', '#00f260'];
+    let colors = ['#06b6d4', '#8b5cf6'];
 
-    const config = { baseRadius: 60, speed: 0.02 };
+    const config = { baseRadius: 60, speed: 0.03 };
 
     function drawPath(ctx, x, y, radius, color, offset, intensity, scaleFactor) {
         ctx.beginPath();
-        const points = 12;
+        const points = 8; // Reduced from 12 for speed
+        const step = (Math.PI * 2) / points;
+        
         for (let i = 0; i <= points; i++) {
-            const angle = (i / points) * Math.PI * 2;
-            const wave = Math.sin(angle * 3 + time * 2 + offset) * (10 * scaleFactor);
-            const audioMod = intensity * (30 * scaleFactor) * Math.sin(angle * 10 + time * 10);
-            const r = radius + wave + audioMod;
-            const px = x + Math.cos(angle) * r;
-            const py = y + Math.sin(angle) * r;
+            const angle = i * step;
+            // Optimized math: Fewer trigonometric calls
+            const wave = Math.sin(angle * 2 + time + offset) * (8 * scaleFactor);
+            const audioMod = intensity * (25 * scaleFactor) * Math.sin(angle * 5 + time * 8);
+            const r = (radius + wave + audioMod) | 0; // Integer rounding for speed
+            
+            const px = (x + Math.cos(angle) * r) | 0;
+            const py = (y + Math.sin(angle) * r) | 0;
+            
             if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
         ctx.closePath();
-        const grad = ctx.createRadialGradient(x, y, radius * 0.2, x, y, radius * 1.5);
+        
+        // Simpler Gradient for performance
+        const grad = ctx.createRadialGradient(x, y, radius * 0.1, x, y, radius * 1.4);
         grad.addColorStop(0, color);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
@@ -51,7 +58,7 @@ const workerCode = `
     self.onmessage = (e) => {
         if (e.data.type === 'init') {
             canvas = e.data.canvas;
-            ctx = canvas.getContext('2d');
+            ctx = canvas.getContext('2d', { alpha: true });
             width = e.data.width;
             height = e.data.height;
             isRunning = true;
@@ -61,22 +68,29 @@ const workerCode = `
             isSpeaking = e.data.isSpeaking;
             isListening = e.data.isListening;
             if (e.data.colors) colors = e.data.colors;
+        } else if (e.data.type === 'stop') {
+            isRunning = false;
+        } else if (e.data.type === 'start') {
+            if (!isRunning) {
+                isRunning = true;
+                render();
+            }
         }
     };
 
     function render() {
         if (!isRunning) return;
         ctx.clearRect(0, 0, width, height);
-        time += config.speed * (isSpeaking ? 2.5 : (isListening ? 0.5 : 1));
+        time += config.speed * (isSpeaking ? 2 : (isListening ? 0.6 : 1));
         
-        const centerX = width / 2;
-        const centerY = height / 2;
+        const centerX = (width / 2) | 0;
+        const centerY = (height / 2) | 0;
         const scaleFactor = Math.min(width, height) / 300;
-        const baseR = (config.baseRadius * scaleFactor) + (audioLevel * 20 * scaleFactor);
+        const baseR = ((config.baseRadius * scaleFactor) + (audioLevel * 15 * scaleFactor)) | 0;
 
-        ctx.globalCompositeOperation = 'screen';
+        // Using standard blending for zero lag
         drawPath(ctx, centerX, centerY, baseR, colors[0], 0, audioLevel, scaleFactor);
-        drawPath(ctx, centerX, centerY, baseR * 0.9, colors[1], 2, audioLevel, scaleFactor);
+        drawPath(ctx, centerX, centerY, (baseR * 0.85) | 0, colors[1], 1.5, audioLevel, scaleFactor);
 
         requestAnimationFrame(render);
     }
@@ -116,7 +130,15 @@ const updateWorker = () => {
     });
 };
 
+import { isTabVisible } from '@/lib/performance';
+
 watch(() => [props.audioLevel, props.isSpeaking, props.isListening, props.paletteId], updateWorker);
+
+watch(isTabVisible, (visible) => {
+    if (worker) {
+        worker.postMessage({ type: visible ? 'start' : 'stop' });
+    }
+});
 
 onMounted(initWorker);
 onBeforeUnmount(() => worker?.terminate());

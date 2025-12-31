@@ -1,6 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 export const biometrics = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -14,7 +14,7 @@ biometrics.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 biometrics.url = (options?: RouteQueryOptions) => {
@@ -22,7 +22,7 @@ biometrics.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 biometrics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -31,7 +31,7 @@ biometrics.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 biometrics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -40,7 +40,7 @@ biometrics.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 const biometricsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -49,7 +49,7 @@ const biometricsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 })
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 biometricsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -58,7 +58,7 @@ biometricsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 })
 
 /**
-* @see routes/web.php:42
+* @see routes/web.php:44
 * @route '/settings/biometrics'
 */
 biometricsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -74,7 +74,7 @@ biometricsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 biometrics.form = biometricsForm
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 export const spotify = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -88,7 +88,7 @@ spotify.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 spotify.url = (options?: RouteQueryOptions) => {
@@ -96,7 +96,7 @@ spotify.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 spotify.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -105,7 +105,7 @@ spotify.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 spotify.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -114,7 +114,7 @@ spotify.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 const spotifyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -123,7 +123,7 @@ const spotifyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 })
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 spotifyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ spotifyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 })
 
 /**
-* @see routes/web.php:46
+* @see routes/web.php:48
 * @route '/settings/spotify'
 */
 spotifyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

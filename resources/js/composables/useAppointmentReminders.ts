@@ -3,15 +3,25 @@ import axios from 'axios';
 import { useVoice } from '@/composables/useVoice';
 import { useNotifications } from '@/composables/useNotifications';
 import { socket } from '@/lib/socket';
+import { shouldPerformTask } from '@/lib/performance';
 
 // --- GLOBAL STATE (Singleton) ---
 const checkInterval = ref<number | null>(null);
 const notifiedAppointments = ref<Set<number>>(new Set());
-const upcomingAppointments = ref<any[]>([]);
+export const upcomingAppointments = ref<any[]>([]);
 
 export function useAppointmentReminders() {
     const { speak } = useVoice();
     const { addNotification, repeatCount } = useNotifications();
+
+    const startChecking = () => {
+        if (checkInterval.value) return;
+        checkInterval.value = window.setInterval(() => {
+            if (shouldPerformTask('low')) {
+                checkTimeReminders();
+            }
+        }, 60000); // Check every minute
+    };
 
     const fetchAppointments = async () => {
         try {
@@ -99,11 +109,11 @@ export function useAppointmentReminders() {
             Notification.requestPermission();
         }
 
-        // Initial fetch
-        fetchAppointments();
-
-        // Check time locally every minute (NO NETWORK REQUEST)
-        checkInterval.value = window.setInterval(checkTimeReminders, 60000);
+        // Prevent redundant fetch if already data (Hydrated from app-init)
+        if (upcomingAppointments.value.length === 0) {
+            fetchAppointments();
+        }
+        startChecking();
     });
 
     onUnmounted(() => {
@@ -114,8 +124,7 @@ export function useAppointmentReminders() {
     });
 
     return {
-        checkReminders: fetchAppointments, // Backward compatibility alias
         upcomingAppointments,
-        refreshAppointments: fetchAppointments
+        fetchAppointments
     };
 }

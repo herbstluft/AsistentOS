@@ -253,7 +253,7 @@ const breadcrumbs = [
                         class="relative w-full max-w-2xl bg-background border border-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
                         <div class="p-6 border-b border-border flex justify-between items-center bg-muted/30">
                             <h3 class="text-xl font-light text-foreground">{{ isEditing ? 'Editar Nota' : 'Nueva Nota'
-                            }}</h3>
+                                }}</h3>
                             <button @click="closeModal"
                                 class="p-2 rounded-full hover:bg-muted text-muted-foreground transition-colors">
                                 <X class="w-5 h-5" />

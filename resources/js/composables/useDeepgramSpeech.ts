@@ -7,6 +7,7 @@ const statusMessage = ref('Listo');
 const hasError = ref(false);
 const partialTranscript = ref('');
 const finalTranscript = ref('');
+const isMeetingMode = ref(false);
 
 // Internal state
 let mediaRecorder: MediaRecorder | null = null;
@@ -14,6 +15,12 @@ let socket: WebSocket | null = null;
 let audioStream: MediaStream | null = null;
 let silenceTimer: ReturnType<typeof setTimeout> | null = null;
 let accumulatedText = '';
+
+// --- QUANTUM PRE-AMP (For Whispers) ---
+let audioContext: AudioContext | null = null;
+let gainNode: GainNode | null = null;
+let streamDestination: MediaStreamAudioDestinationNode | null = null;
+let sourceNode: MediaStreamAudioSourceNode | null = null;
 
 // Subscribers
 const listeners: ((text: string) => void)[] = [];
@@ -37,6 +44,7 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
 
     // Get API key from backend (secure)
     const getApiKey = async (): Promise<string> => {
+        if ((window as any)._deepgramToken) return (window as any)._deepgramToken;
         try {
             const response = await fetch('/api/deepgram/token');
             const data = await response.json();
@@ -64,19 +72,20 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true,
+                    // High-sensitivity tuning
                 }
             });
 
             // 2. Get API key from backend
             const apiKey = await getApiKey();
 
-            // 3. Connect to Deepgram WebSocket
+            // 3. Connect to Deepgram WebSocket - OPTIMIZED FOR NATURAL FLOW
             const params = new URLSearchParams({
                 model: 'nova-2',
                 language: 'es',
                 punctuate: 'true',
                 interim_results: 'true',
-                endpointing: '300',
+                endpointing: '650', // Optimized for Whispers (snappy but allows pauses)
                 vad_events: 'true',
                 smart_format: 'true',
             });
@@ -123,6 +132,7 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
                                     partialTranscript.value = '';
                                 } else {
                                     // Wait for more speech or silence
+                                    const timeout = isMeetingMode.value ? 5000 : 1200;
                                     silenceTimer = setTimeout(() => {
                                         const textToSend = accumulatedText.trim();
                                         if (textToSend) {
@@ -131,7 +141,7 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
                                         }
                                         accumulatedText = '';
                                         partialTranscript.value = '';
-                                    }, 1500); // 1.5s silence = end of command
+                                    }, timeout); // Accelerated from 2.0s to 1.2s
                                 }
                             } else {
                                 // Interim result - show preview
@@ -185,14 +195,32 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
     const startRecording = () => {
         if (!audioStream || !socket) return;
 
-        // Use MediaRecorder to capture audio
+        // --- NEURAL PRE-AMP INJECTION ---
+        try {
+            audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            sourceNode = audioContext.createMediaStreamSource(audioStream);
+            gainNode = audioContext.createGain();
+
+            // QUANTUM GAIN: 2.5x Boost (Perfect for whispers and low volume environments)
+            gainNode.gain.value = 2.5;
+
+            streamDestination = audioContext.createMediaStreamDestination();
+
+            sourceNode.connect(gainNode);
+            gainNode.connect(streamDestination);
+
+            console.log('⚡ NEURAL PRE-AMP ACTIVE: Gain set to 2.5x');
+        } catch (e) {
+            console.warn('⚠️ Pre-Amp failed, falling back to raw stream:', e);
+        }
+
+        const activeStream = streamDestination ? streamDestination.stream : audioStream;
         const options = { mimeType: 'audio/webm;codecs=opus' };
 
         try {
-            mediaRecorder = new MediaRecorder(audioStream, options);
+            mediaRecorder = new MediaRecorder(activeStream, options);
         } catch (e) {
-            // Fallback for Safari
-            mediaRecorder = new MediaRecorder(audioStream);
+            mediaRecorder = new MediaRecorder(activeStream);
         }
 
         mediaRecorder.ondataavailable = (event) => {
@@ -201,9 +229,8 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
             }
         };
 
-        // Send audio chunks every 250ms for real-time transcription
-        mediaRecorder.start(250);
-        console.log('🎤 Grabando audio...');
+        mediaRecorder.start(100);
+        console.log('⚡ QUANTUM SPEECH ACTIVE (100ms)');
     };
 
     const stop = () => {
@@ -230,6 +257,15 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
         }
+
+        // Cleanup Pre-Amp
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        gainNode = null;
+        streamDestination = null;
+        sourceNode = null;
 
         // Clear timers
         if (silenceTimer) {
@@ -264,6 +300,11 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
             accumulatedText = '';
             partialTranscript.value = '';
             finalTranscript.value = '';
+        },
+        isMeetingMode,
+        setMeetingMode: (val: boolean) => {
+            console.log(`🎙️ Protocolo Reunión: ${val ? 'ACTIVADO (5.0s)' : 'DESACTIVADO (1.2s)'}`);
+            isMeetingMode.value = val;
         }
     };
 }

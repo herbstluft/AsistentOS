@@ -8,6 +8,8 @@ import { ref, onMounted, computed, watch, onBeforeUnmount, defineAsyncComponent 
 const SiriWave = defineAsyncComponent(() => import('@/components/SiriWave.vue'));
 const ReportModal = defineAsyncComponent(() => import('@/components/Assistant/ReportModal.vue'));
 const MicrophonePermissionModal = defineAsyncComponent(() => import('@/components/Assistant/MicrophonePermissionModal.vue'));
+const OnboardingTour = defineAsyncComponent(() => import('@/components/OnboardingTour.vue'));
+const ParticleLogo = defineAsyncComponent(() => import('@/components/ParticleLogo.vue'));
 
 import {
     Fingerprint,
@@ -38,7 +40,8 @@ const user = computed(() => page.props.auth.user);
 
 // Composable usage for real status
 // Composable usage for real status
-const { isListening, isSpeaking, triggerMicActivation, stopMicrophone, reportState, isProcessing, processTextQuery, exportCurrentReport, stopSpeaking, setDocumentContext, statusMessage, serverResponse } = useAssistantOrchestrator();
+// Composable usage for real status
+const { isListening, isSpeaking, triggerMicActivation, stopMicrophone, reportState, isProcessing, isResearching, isMeetingMode, processTextQuery, exportCurrentReport, stopSpeaking, setDocumentContext, statusMessage, serverResponse } = useAssistantOrchestrator();
 const { analyzeFile, documentName, documentContent, isAnalyzing, analysisError, resetDocument } = useDocumentAnalyzer();
 const { reminders } = useAssistantReminders(() => { }, false); // Just read access
 
@@ -248,7 +251,7 @@ const summaryState = computed(() => {
 
         <!-- Main Container: Optimized for 120Hz/60Hz zero-lag scrolling -->
         <div
-            class="w-full bg-transparent text-foreground p-4 md:p-6 lg:p-8 relative flex flex-col min-h-[100dvh] lg:h-full lg:overflow-hidden overflow-y-auto gpu overscroll-none scroll-smooth">
+            class="w-full bg-transparent text-foreground p-4 md:p-6 lg:p-8 relative flex flex-col min-h-[100dvh] lg:h-full lg:overflow-hidden overflow-y-auto scroll-quantum gpu overscroll-none">
 
             <!-- HEADER COMPACTO -->
             <header class="flex justify-between items-end mb-2 md:mb-6 relative z-10 shrink-0">
@@ -275,14 +278,16 @@ const summaryState = computed(() => {
                 class="flex flex-col lg:grid lg:grid-cols-12 lg:grid-rows-[2fr_1fr] gap-4 md:gap-6 flex-1 min-h-0 relative z-10 pb-20 lg:pb-0">
 
                 <!-- 1. AI COMMAND CENTER (Main Stage) -->
-                <div class="lg:col-span-8 lg:row-span-2 relative group flex-1 min-h-[350px] md:min-h-[500px] lg:min-h-0 basis-auto"
+                <div id="tour-genesis"
+                    class="lg:col-span-8 lg:row-span-2 relative group flex-1 min-h-[350px] md:min-h-[500px] lg:min-h-0 basis-auto ai-hub-container bento-card"
                     @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
 
                     <div
-                        class="absolute inset-0 bg-card/50 backdrop-blur-2xl rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden transition-all duration-500 group-hover:border-white/10 group-hover:shadow-blue-500/5">
+                        class="absolute inset-0 bg-card/50 backdrop-blur-lg rounded-[2rem] border border-white/5 shadow-xl overflow-hidden transition-all duration-300 group-hover:border-white/10 bento-card">
 
                         <!-- Visualizer Background -->
-                        <div class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none">
+                        <div id="tour-mood"
+                            class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none mood-orbs-container">
                             <div class="relative w-[300px] h-[300px] md:w-full md:max-w-[500px] md:aspect-square">
                                 <!-- Idle Ring -->
                                 <div v-if="!isSpeaking"
@@ -333,9 +338,9 @@ const summaryState = computed(() => {
                                 <p class="text-lg font-light text-white">Analizando documento...</p>
                             </div>
 
-                            <div class="w-full max-w-3xl mx-auto">
+                            <div id="tour-mic" class="w-full max-w-3xl mx-auto mic-button-container">
                                 <div
-                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5 transition-all focus-within:bg-[#0f172a]">
+                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/90 backdrop-blur-md border border-white/10 rounded-full shadow-xl transition-all focus-within:bg-[#0f172a]">
 
                                     <!-- Mic Toggle -->
                                     <button @click="toggleMic($event)"
@@ -365,13 +370,26 @@ const summaryState = computed(() => {
                                         <ArrowRight class="w-5 h-5" />
                                     </button>
                                 </div>
+
+                                <!-- Protocol Indicators -->
+                                <div class="flex justify-center gap-4 mt-4">
+                                    <div v-if="isMeetingMode"
+                                        class="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold tracking-tighter animate-pulse uppercase">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span> Protocolo
+                                        Reunión Activo
+                                    </div>
+                                    <div v-if="isResearching"
+                                        class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold tracking-tighter animate-pulse uppercase">
+                                        <Activity class="w-3 h-3" /> Escaneo Cuántico de Red
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- AI Response HUD (Responsive Premium Subtitles) -->
-                            <div v-if="serverResponse"
+                            <div v-show="serverResponse"
                                 class="absolute bottom-24 left-0 right-0 flex justify-center px-4 md:px-10 z-30 pointer-events-none">
                                 <div
-                                    class="w-full max-w-2xl bg-slate-950/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 md:p-6 shadow-2xl border-t-cyan-500/30 pointer-events-auto transition-all duration-500">
+                                    class="w-full max-w-2xl bg-slate-950/80 backdrop-blur-lg border border-white/10 rounded-2xl p-4 md:p-6 shadow-xl border-t-cyan-500/30 pointer-events-auto transition-all duration-300">
                                     <div class="max-h-[140px] md:max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                                         <p
                                             class="text-sm md:text-base lg:text-lg text-slate-200 font-light leading-relaxed text-center md:text-left tracking-tight text-pretty">
@@ -399,6 +417,31 @@ const summaryState = computed(() => {
                     <!-- Hidden File Input -->
                     <input ref="fileInputRef" type="file" @change="handleFileSelect"
                         accept=".pdf,.docx,.doc,.xlsx,.xls,.xml,.json,.txt,.csv,.log,.md" class="hidden" />
+
+                    <!-- Deep Research Scanning Overlay -->
+                    <transition name="quantum-scan">
+                        <div v-if="isResearching"
+                            class="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-md rounded-[2rem] flex flex-col items-center justify-center overflow-hidden pointer-events-none">
+                            <div class="relative w-64 h-64">
+                                <div
+                                    class="absolute inset-0 border-2 border-cyan-500/30 rounded-full animate-scan-pulse">
+                                </div>
+                                <div class="absolute inset-0 border border-cyan-400/20 rounded-full animate-spin-slow">
+                                </div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <Activity class="w-12 h-12 text-cyan-400 animate-pulse" />
+                                </div>
+                                <!-- Horizontal Scanning Line -->
+                                <div
+                                    class="absolute top-0 left-0 right-0 h-[1px] bg-cyan-400/60 shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-scan-line">
+                                </div>
+                            </div>
+                            <h3 class="mt-8 text-xl font-light tracking-[0.3em] text-cyan-400 uppercase animate-pulse">
+                                Deep Research Mode</h3>
+                            <p class="text-[10px] font-mono text-cyan-500/60 mt-2 uppercase tracking-widest">Inyectando
+                                neuronas en la red de conocimiento...</p>
+                        </div>
+                    </transition>
                 </div>
 
                 <!-- 2. SIDEBAR COLUMN (Productivity) -->
@@ -406,7 +449,7 @@ const summaryState = computed(() => {
 
                     <!-- A. Summary / Notifications Card -->
                     <div
-                        class="flex-1 min-h-[200px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 md:p-8 relative overflow-hidden group hover:bg-card/40 transition-all cursor-default">
+                        class="flex-1 min-h-[200px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 md:p-8 relative overflow-hidden group hover:bg-card/40 transition-all cursor-default bento-card">
                         <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Clock class="w-32 h-32 -rotate-12 text-amber-500" />
                         </div>
@@ -440,8 +483,8 @@ const summaryState = computed(() => {
                     </div>
 
                     <!-- B. Calendar Access -->
-                    <Link href="/calendar" prefetch
-                        class="h-[140px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex items-center justify-between relative overflow-hidden group hover:border-emerald-500/30 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+                    <Link id="tour-calendar" href="/calendar"
+                        class="h-[140px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex items-center justify-between relative overflow-hidden group hover:border-emerald-500/30 transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] calendar-widget bento-card">
                         <div class="relative z-10">
                             <h3
                                 class="text-xl font-light text-foreground mb-1 group-hover:text-emerald-400 transition-colors">
@@ -464,8 +507,8 @@ const summaryState = computed(() => {
                 <!-- Spans full width on mobile, fills remaining spots on desktop -->
 
                 <!-- Notes / Text Gen -->
-                <Link href="/notes" prefetch
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-blue-500/30">
+                <Link id="tour-notes" href="/notes"
+                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-blue-500/30 tour-notes bento-card">
                     <div class="flex justify-between items-start">
                         <FileText class="w-6 h-6 text-blue-500" />
                         <ArrowRight
@@ -475,8 +518,8 @@ const summaryState = computed(() => {
                 </Link>
 
                 <!-- Reports -->
-                <div @click="handleOpenReports"
-                    class="lg:col-span-6 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-amber-500/30">
+                <div id="tour-reports" @click="handleOpenReports"
+                    class="lg:col-span-6 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-amber-500/30 tour-reports bento-card">
                     <div class="flex justify-between items-start">
                         <Activity class="w-6 h-6 text-amber-500" />
                         <ArrowRight
@@ -486,8 +529,8 @@ const summaryState = computed(() => {
                 </div>
 
                 <!-- Settings / Profile -->
-                <Link href="/settings/profile" prefetch
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-xl rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-slate-500/30">
+                <Link id="tour-profile" href="/settings/profile"
+                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-slate-500/30 tour-profile bento-card">
                     <div class="flex justify-between items-start">
                         <User class="w-6 h-6 text-slate-400" />
                         <ArrowRight
@@ -499,14 +542,16 @@ const summaryState = computed(() => {
             </div>
 
         </div>
+
+        <!-- Modales & Tour (Inside Layout for Sidebar Context) -->
+        <OnboardingTour />
+        <ParticleLogo />
+        <ReportModal v-if="reportState" :show="reportState.isOpen" :data="reportState.data" :config="reportState.config"
+            @close="reportState.isOpen = false" @export="exportCurrentReport" />
+
+        <MicrophonePermissionModal :show="showMicModal" :permission-status="micPermissionStatus"
+            @close="handleCloseModal" @request-access="handleRequestAccess" />
     </AppLayout>
-
-    <!-- Modales -->
-    <ReportModal v-if="reportState" :show="reportState.isOpen" :data="reportState.data" :config="reportState.config"
-        @close="reportState.isOpen = false" @export="exportCurrentReport" />
-
-    <MicrophonePermissionModal :show="showMicModal" :permission-status="micPermissionStatus" @close="handleCloseModal"
-        @request-access="handleRequestAccess" />
 </template>
 
 <style scoped>
@@ -576,6 +621,49 @@ const summaryState = computed(() => {
 .animate-pulse-glow {
     animation: pulse-glow 3s ease-in-out infinite;
     will-change: transform, opacity;
+}
+
+@keyframes scan-line {
+    0% {
+        top: 0%
+    }
+
+    100% {
+        top: 100%
+    }
+}
+
+@keyframes scan-pulse {
+
+    0%,
+    100% {
+        transform: scale(0.9);
+        opacity: 0.2;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.4;
+    }
+}
+
+.animate-scan-line {
+    animation: scan-line 2s linear infinite;
+}
+
+.animate-scan-pulse {
+    animation: scan-pulse 3s ease-in-out infinite;
+}
+
+.quantum-scan-enter-active,
+.quantum-scan-leave-active {
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.quantum-scan-enter-from,
+.quantum-scan-leave-to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
 }
 </style>
 

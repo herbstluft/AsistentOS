@@ -16,12 +16,12 @@ interface SubscriptionStatus {
 }
 
 // Estado global compartido (Singleton)
-const stripe = ref<Stripe | null>(null);
-const elements = ref<StripeElements | null>(null);
-const subscriptionStatus = ref<SubscriptionStatus | null>(null);
-const loading = ref(false);
-const error = ref<string | null>(null);
-const trialTimeRemaining = ref<number>(0);
+export const stripe = ref<Stripe | null>(null);
+export const elements = ref<StripeElements | null>(null);
+export const subscriptionStatus = ref<SubscriptionStatus | null>(null);
+export const loading = ref(false);
+export const error = ref<string | null>(null);
+export const trialTimeRemaining = ref<number>(0);
 let intervalId: number | null = null;
 
 export function useSubscription() {
@@ -38,9 +38,13 @@ export function useSubscription() {
     };
 
     const fetchSubscriptionStatus = async () => {
+        // Prevent redundant fetches if already loading or already have data
+        if (loading.value) return;
+        if (subscriptionStatus.value && typeof window !== 'undefined' && (window as any)._subFetched) return;
+
         try {
-            // No activar loading global para polling silencioso, solo si no tenemos datos
-            if (!subscriptionStatus.value) loading.value = true;
+            loading.value = true;
+            (window as any)._subFetched = true;
 
             const response = await axios.get('/api/subscription/status');
             const newStatus = response.data;

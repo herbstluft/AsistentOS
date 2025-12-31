@@ -92,7 +92,7 @@ const handleFloatingInteraction = () => {
 
                 <!-- AI RESPONSE DISPLAY (TYPEWRITER HUD) -->
                 <div v-if="serverResponse"
-                    class="bg-slate-950/60 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.15)] animate-in fade-in zoom-in duration-500 w-full max-w-xl">
+                    class="bg-slate-950/60 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.15)] animate-in fade-in zoom-in duration-150 w-full max-w-xl">
                     <p
                         class="text-lg md:text-xl text-cyan-50 font-light leading-relaxed text-center tracking-wide text-balance">
                         <span class="text-cyan-400/50 mr-2">◈</span>{{ serverResponse }}

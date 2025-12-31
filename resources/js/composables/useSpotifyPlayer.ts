@@ -1,19 +1,20 @@
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import { ElNotification } from 'element-plus';
 import { useNotifications } from '@/composables/useNotifications';
+import { shouldPerformTask } from '@/lib/performance';
 
 // Global State (Singleton)
-const isConnected = ref(false);
-const isPlaying = ref(false);
-const currentTrack = ref<any>(null);
-const deviceId = ref<string | null>(null);
-const player = ref<any>(null);
-const isPlayerReady = ref(false);
-const isMinimized = ref(true);
-const volume = ref(50);
-const progressMs = ref(0);
-const durationMs = ref(0);
+export const isConnected = ref(false);
+export const isPlaying = ref(false);
+export const currentTrack = ref<any>(null);
+export const deviceId = ref<string | null>(null);
+export const player = ref<any>(null);
+export const isPlayerReady = ref(false);
+export const isMinimized = ref(true);
+export const volume = ref(50);
+export const progressMs = ref(0);
+export const durationMs = ref(0);
 const isSeeking = ref(false);
 const pollingInterval = ref<any>(null);
 
@@ -331,16 +332,19 @@ const init = async () => {
     const pollLoop = async () => {
         if (!pollingInterval.value) return; // Stop flag
 
-        await checkStatus();
+        // OPTIMIZACIÓN EXTREMA: Solo checar si la pestaña es visible y el usuario está activo
+        if (shouldPerformTask('low')) {
+            await checkStatus();
+        } else {
+            console.log('💤 SPOTIFY: Skipping poll (Tab hidden or user idle)');
+        }
 
-        if (isPlaying.value && !isSeeking.value) {
+        if (isPlaying.value && !isSeeking.value && shouldPerformTask('high')) {
             progressMs.value += 1000; // Estimate progress
         }
 
-        // Adjust delay based on connection status
-        // If disconnected, poll much slower (60s) to avoid spamming
-        // If connected, keep 10s sync
-        const delay = isConnected.value ? 10000 : 60000;
+        // Adjust delay based on connection status (Optimized to reduce requests)
+        const delay = isConnected.value ? 30000 : 90000;
 
         pollingInterval.value = setTimeout(pollLoop, delay);
     };
@@ -350,14 +354,19 @@ const init = async () => {
     window.addEventListener('spotify-volume-change', ((e: CustomEvent) => {
         setVolume(e.detail);
     }) as EventListener);
-    try {
-        const res = await axios.get('/api/spotify/token');
-        if (res.data.token) {
-            initializePlayer(res.data.token);
-        }
-    } catch (e: any) {
-        if (e.response && e.response.status !== 401) {
-            console.log('Could not init player', e);
+    const cachedToken = (window as any)._spotifyToken;
+    if (cachedToken) {
+        initializePlayer(cachedToken);
+    } else {
+        try {
+            const res = await axios.get('/api/spotify/token');
+            if (res.data.token) {
+                initializePlayer(res.data.token);
+            }
+        } catch (e: any) {
+            if (e.response && e.response.status !== 401) {
+                console.log('Could not init player', e);
+            }
         }
     }
 };

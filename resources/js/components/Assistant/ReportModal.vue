@@ -37,11 +37,21 @@ const maxValue = computed(() => {
 
 const chartData = computed(() => {
     if (!props.data) return [];
+    const total = props.data.reduce((sum, d) => sum + getValue(d, props.config.y_axis), 0);
+    let currentPercentage = 0;
+
     return props.data.map(d => {
         const val = getValue(d, props.config.y_axis);
+        const percentage = total > 0 ? (val / total) * 100 : 0;
+        const start = currentPercentage;
+        currentPercentage += percentage;
+
         return {
-            label: d[props.config.x_axis] || Object.values(d)[0], // Fallback label
+            label: d[props.config.x_axis] || Object.values(d)[0],
             value: val,
+            percentage,
+            startDegree: (start * 3.6).toFixed(1),
+            endDegree: (currentPercentage * 3.6).toFixed(1),
             height: maxValue.value ? (val / maxValue.value) * 100 : 0,
             color: generateColor(d[props.config.x_axis] || 'default')
         };
@@ -173,6 +183,41 @@ function generateColor(str: string) {
                                             :title="String(item.label)">
                                             {{ item.label }}
                                         </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pie Chart Type -->
+                        <div v-else-if="config.type === 'pie'"
+                            class="w-full flex flex-col md:flex-row items-center justify-around gap-12 py-4">
+                            <!-- CSS Pie -->
+                            <div class="relative w-64 h-64 rounded-full shadow-2xl transition-transform hover:scale-105 duration-500 group/pie"
+                                :style="{
+                                    background: `conic-gradient(${chartData.map(d => `${d.color} ${d.startDegree}deg ${d.endDegree}deg`).join(', ')})`
+                                }">
+                                <!-- Inner Hole for Donut Look -->
+                                <div
+                                    class="absolute inset-8 bg-card/90 backdrop-blur-xl rounded-full flex flex-col items-center justify-center border border-white/5">
+                                    <span
+                                        class="text-xs font-bold text-muted-foreground uppercase opacity-60">Total</span>
+                                    <span class="text-2xl font-black text-foreground">{{chartData.reduce((s, d) => s +
+                                        d.value, 0).toLocaleString()}}</span>
+                                </div>
+                            </div>
+
+                            <!-- Legend -->
+                            <div class="grid grid-cols-1 gap-3 max-w-xs">
+                                <div v-for="(item, index) in chartData" :key="index"
+                                    class="flex items-center gap-3 group/item">
+                                    <div class="w-1.5 h-1.5 rounded-full transition-transform group-hover/item:scale-150"
+                                        :style="{ backgroundColor: item.color }"></div>
+                                    <div class="flex-1 flex justify-between items-center gap-6">
+                                        <span
+                                            class="text-xs font-medium text-foreground/80 group-hover/item:text-foreground">{{
+                                                item.label }}</span>
+                                        <span class="text-xs font-mono font-bold text-muted-foreground">{{
+                                            item.percentage.toFixed(1) }}%</span>
                                     </div>
                                 </div>
                             </div>

@@ -24,12 +24,6 @@
         --radius: 0.5rem;
     }
 
-    /* DISABLE ALL ANIMATIONS GLOBAL */
-    * {
-        animation: none !important;
-        transition: none !important;
-    }
-
     /* REMOVE ALL FOCUS BORDERS AND OUTLINES */
     *:focus {
         outline: none !important;
@@ -63,6 +57,14 @@
         --border: 217.2 32.6% 17.5%;
         --input: 217.2 32.6% 17.5%;
         --ring: 212.7 26.8% 83.9%;
+        --sidebar-background: 260 30% 2%;
+        --sidebar-foreground: 210 40% 98%;
+        --sidebar-primary: 263.4 70% 50.4%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 263.4 70% 50.4%;
+        --sidebar-accent-foreground: 210 40% 98%;
+        --sidebar-border: 260 30% 15%;
+        --sidebar-ring: 263.4 70% 50.4%;
     }
 }
 
@@ -103,10 +105,46 @@
         overscroll-behavior: none;
     }
 
-    /* Input Latency Reduction */
+    /* Quantum Physics & GPU Bridge */
+    * {
+        transition-duration: 120ms !important;
+        transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeSpeed;
+        image-rendering: crisp-edges;
+    }
+
+    .bg-sidebar {
+        background: linear-gradient(180deg, rgba(5, 2, 10, 0.98) 0%, rgba(15, 6, 30, 0.98) 100%) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+
+    main,
+    .app-sidebar-container,
+    .dashboard-grid,
+    .ai-hub-container,
+    .mood-orbs-container,
+    .splash-screen,
+    .bento-card {
+        content-visibility: auto;
+        contain: layout paint;
+        contain-intrinsic-size: 0 500px;
+        will-change: transform, opacity;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+        -webkit-perspective: 1000px;
+    }
+
+    /* Zero-Latency Interaction */
+    button,
+    a,
     input,
-    button {
-        touch-action: manipulation;
+    select {
+        cursor: pointer;
+        outline: none !important;
+        -webkit-tap-highlight-color: transparent;
     }
 }
 

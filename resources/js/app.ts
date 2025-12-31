@@ -102,3 +102,40 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 initializeTheme();
+
+// Global Interactivity Warming (Hyper-Quantum Speed)
+if (typeof window !== 'undefined') {
+    const warmUp = () => {
+        // High-Priority DNS & Connection Warming
+        const links = [
+            { rel: 'preconnect', href: 'https://api.elevenlabs.io' },
+            { rel: 'dns-prefetch', href: 'https://api.elevenlabs.io' },
+            { rel: 'preconnect', href: 'https://api.deepgram.com' }
+        ];
+
+        links.forEach(({ rel, href }) => {
+            const link = document.createElement('link');
+            link.rel = rel;
+            link.href = href;
+            document.head.appendChild(link);
+        });
+
+        // Trigger JIT for heavy AI logic (Warm up the engine)
+        import('./composables/useAssistantOrchestrator').then(({ useAssistantOrchestrator }) => {
+            console.log('⚡ QUANTUM: Logic warmed up');
+        });
+
+        // Remove listeners
+        window.removeEventListener('mousemove', warmUp);
+        window.removeEventListener('touchstart', warmUp);
+        window.removeEventListener('keydown', warmUp);
+    };
+    window.addEventListener('mousemove', warmUp, { once: true, passive: true });
+    window.addEventListener('touchstart', warmUp, { once: true, passive: true });
+    window.addEventListener('keydown', warmUp, { once: true, passive: true });
+}
+
+// Bootstrap application data in a single request (Speed optimization)
+import { useAppInit } from './composables/useAppInit';
+const { bootstrap } = useAppInit();
+bootstrap();

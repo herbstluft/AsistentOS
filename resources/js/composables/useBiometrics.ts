@@ -237,7 +237,10 @@ export function useBiometrics() {
 
     onMounted(() => {
         checkAvailability();
-        fetchCredentials();
+        if (typeof window !== 'undefined' && !(window as any)._biometricsLoaded) {
+            (window as any)._biometricsLoaded = true;
+            fetchCredentials();
+        }
 
         // Listen for global refresh events (e.g. from AI Assistant)
         window.addEventListener('biometrics-updated', fetchCredentials);

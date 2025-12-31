@@ -1,4 +1,5 @@
 import SubscriptionController from './SubscriptionController'
+import SystemInitController from './SystemInitController'
 import DeepgramController from './DeepgramController'
 import AssistantPreferenceController from './AssistantPreferenceController'
 import BiometricController from './BiometricController'
@@ -7,11 +8,13 @@ import AppointmentController from './AppointmentController'
 import ContactController from './ContactController'
 import NoteController from './NoteController'
 import GeminiController from './GeminiController'
+import MemoryController from './MemoryController'
 import Settings from './Settings'
 import AiQueryController from './AiQueryController'
 
 const Controllers = {
     SubscriptionController: Object.assign(SubscriptionController, SubscriptionController),
+    SystemInitController: Object.assign(SystemInitController, SystemInitController),
     DeepgramController: Object.assign(DeepgramController, DeepgramController),
     AssistantPreferenceController: Object.assign(AssistantPreferenceController, AssistantPreferenceController),
     BiometricController: Object.assign(BiometricController, BiometricController),
@@ -20,6 +23,7 @@ const Controllers = {
     ContactController: Object.assign(ContactController, ContactController),
     NoteController: Object.assign(NoteController, NoteController),
     GeminiController: Object.assign(GeminiController, GeminiController),
+    MemoryController: Object.assign(MemoryController, MemoryController),
     Settings: Object.assign(Settings, Settings),
     AiQueryController: Object.assign(AiQueryController, AiQueryController),
 }

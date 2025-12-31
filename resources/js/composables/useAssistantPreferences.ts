@@ -1,8 +1,8 @@
 import { ref, onMounted } from 'vue';
 
 // Singleton State
-const currentPalette = ref(1);
-const assistantName = ref('Exo');
+export const currentPalette = ref(1);
+export const assistantName = ref('Exo');
 
 export function useAssistantPreferences() {
     const palettes = [
@@ -46,7 +46,10 @@ export function useAssistantPreferences() {
     };
 
     onMounted(() => {
-        loadPreference();
+        if (typeof window !== 'undefined' && !(window as any)._prefsLoaded) {
+            (window as any)._prefsLoaded = true;
+            loadPreference();
+        }
     });
 
     return {

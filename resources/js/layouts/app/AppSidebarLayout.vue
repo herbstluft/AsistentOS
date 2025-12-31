@@ -58,15 +58,9 @@ watch(() => page.url, (newUrl) => {
     activeTab.value = newUrl;
 }, { immediate: true });
 
-import { useAssistantReminders } from '@/composables/useAssistantReminders';
-import { useVoice } from '@/composables/useVoice';
 import { computed, defineAsyncComponent } from 'vue';
 
 const MoodOrbs = defineAsyncComponent(() => import('@/components/MoodOrbs.vue'));
-
-const { speak } = useVoice();
-// Initialize Global Reminder Checker (true = enable checking)
-useAssistantReminders(speak, true);
 
 const handleTabClick = (pane: any) => {
     activateTab(pane.paneName);
@@ -85,7 +79,7 @@ const assistantVariant = computed(() => {
 <template>
     <AppShell variant="sidebar">
         <AppSidebar />
-        <AppContent variant="sidebar" class="overflow-hidden flex flex-col h-screen relative">
+        <AppContent variant="sidebar" class="overflow-hidden flex flex-col h-screen relative gpu">
 
             <!-- Sistema de Pestañas Global con SidebarTrigger integrado -->
             <!-- Sistema de Pestañas Global con SidebarTrigger integrado -->

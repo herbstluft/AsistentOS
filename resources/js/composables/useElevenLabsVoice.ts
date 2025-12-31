@@ -2,9 +2,10 @@ import { ref } from 'vue';
 
 // --- State ---
 const isSpeaking = ref(false);
-const currentVoice = ref('flHkNRp1BlvT73UL6gyz'); // User's selected voice from library
+const currentVoice = ref('7nCYbNPCi8RLAKVnYEoO'); // User's custom voice
 const lastSpokenText = ref('');
 const lastSpokenTime = ref(0);
+const hasExhaustedQuota = ref(false); // Persistent failure flag for session
 
 // Audio element for streaming
 let audioElement: HTMLAudioElement | null = null;
@@ -19,12 +20,21 @@ export const ELEVENLABS_VOICES = {
     'ErXwobaYiN019PkySvjV': { name: 'Antoni', gender: 'male', lang: 'en', description: 'Well-rounded' },
 };
 
+// Cache API key to avoid redundant hits
+let cachedApiKey: string | null = null;
+
 export function useElevenLabsVoice() {
 
     // Get API key from backend
     const getApiKey = async (): Promise<string> => {
+        if (cachedApiKey) return cachedApiKey;
+        if ((window as any)._elevenLabsToken) {
+            cachedApiKey = (window as any)._elevenLabsToken;
+            return cachedApiKey!;
+        }
         const response = await fetch('/api/elevenlabs/token');
         const data = await response.json();
+        cachedApiKey = data.token;
         return data.token;
     };
 
@@ -58,6 +68,11 @@ export function useElevenLabsVoice() {
         const cleanText = cleanTextForSpeech(text);
         if (!cleanText) return;
 
+        if (hasExhaustedQuota.value) {
+            fallbackToWebSpeech(cleanText);
+            return;
+        }
+
         isSpeaking.value = true;
         lastSpokenText.value = cleanText.toLowerCase();
 
@@ -65,64 +80,50 @@ export function useElevenLabsVoice() {
             const apiKey = await getApiKey();
             const voiceId = voiceOverride || currentVoice.value;
 
-            console.log('🎙️ ElevenLabs TTS streaming:', voiceId);
+            console.log('🎙️ QUANTUM TTS: Generando voz hipersónica...');
 
-            // Use streaming endpoint for lowest latency
             const response = await fetch(
                 `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?optimize_streaming_latency=4`,
                 {
                     method: 'POST',
-                    headers: {
-                        'xi-api-key': apiKey,
-                        'Content-Type': 'application/json',
-                        'Accept': 'audio/mpeg',
-                    },
+                    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: cleanText,
-                        model_id: 'eleven_turbo_v2_5', // Fastest model with multilingual
-                        voice_settings: {
-                            stability: 0.5,
-                            similarity_boost: 0.75,
-                            style: 0.0,
-                            use_speaker_boost: true
-                        }
+                        model_id: 'eleven_turbo_v2_5',
+                        voice_settings: { stability: 0.5, similarity_boost: 0.8 }
                     }),
                 }
             );
 
             if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`ElevenLabs error: ${response.status} - ${error}`);
+                if (response.status === 401 || response.status === 429) {
+                    console.warn('💸 ElevenLabs Quota Exceeded or Invalid Key. Switching to Neural Backup.');
+                    hasExhaustedQuota.value = true;
+                }
+                throw new Error(`ElevenLabs Failed: ${response.status}`);
             }
 
-            // Create blob URL and play immediately
+            // Obtenemos el blob completo de forma optimizada
+            // Eleven_turbo_v2_5 es tan rápido que el tiempo de descarga es insignificante
             const blob = await response.blob();
-            const audioUrl = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
 
-            // Create or reuse audio element
-            if (!audioElement) {
-                audioElement = new Audio();
-            }
+            if (!audioElement) audioElement = new Audio();
+            audioElement.src = url;
+            audioElement.playbackRate = 1.08; // Quantum Speed 1.08x
 
-            audioElement.src = audioUrl;
             audioElement.onended = () => {
                 isSpeaking.value = false;
                 lastSpokenTime.value = Date.now();
-                URL.revokeObjectURL(audioUrl);
+                URL.revokeObjectURL(url);
                 window.dispatchEvent(new CustomEvent('assistant-speech-ended'));
             };
 
-            audioElement.onerror = () => {
-                console.error('Audio playback error');
-                isSpeaking.value = false;
-                URL.revokeObjectURL(audioUrl);
-            };
-
             await audioElement.play();
-            console.log('🔊 ElevenLabs playing!');
+            console.log('🔊 VOZ HIPERSÓNICA ACTIVA');
 
         } catch (error) {
-            console.error('ElevenLabs TTS error:', error);
+            console.error('Quantum TTS Error:', error);
             isSpeaking.value = false;
             fallbackToWebSpeech(cleanText);
         }
@@ -135,9 +136,14 @@ export function useElevenLabsVoice() {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'es-MX';
+        utterance.rate = 1.15; // Mantener el ritmo "Quantum"
+        utterance.pitch = 1.05; // Un poco más vivo
 
         const voices = window.speechSynthesis.getVoices();
-        const spanishVoice = voices.find(v => v.lang.includes('es'));
+        // Buscar voces premium locales si existen
+        const spanishVoice = voices.find(v => v.lang.includes('es') && v.name.includes('Google')) ||
+            voices.find(v => v.lang.includes('es'));
+
         if (spanishVoice) utterance.voice = spanishVoice;
 
         utterance.onend = () => {

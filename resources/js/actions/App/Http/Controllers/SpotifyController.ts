@@ -219,7 +219,7 @@ disconnect.form = disconnectForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 export const status = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -234,7 +234,7 @@ status.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 status.url = (options?: RouteQueryOptions) => {
@@ -243,7 +243,7 @@ status.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -253,7 +253,7 @@ status.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -263,7 +263,7 @@ status.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -273,7 +273,7 @@ const statusForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -283,7 +283,7 @@ statusForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::status
-* @see app/Http/Controllers/SpotifyController.php:63
+* @see app/Http/Controllers/SpotifyController.php:74
 * @route '/api/spotify/status'
 */
 statusForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -300,7 +300,7 @@ status.form = statusForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::play
-* @see app/Http/Controllers/SpotifyController.php:107
+* @see app/Http/Controllers/SpotifyController.php:118
 * @route '/api/spotify/play'
 */
 export const play = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -315,7 +315,7 @@ play.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::play
-* @see app/Http/Controllers/SpotifyController.php:107
+* @see app/Http/Controllers/SpotifyController.php:118
 * @route '/api/spotify/play'
 */
 play.url = (options?: RouteQueryOptions) => {
@@ -324,7 +324,7 @@ play.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::play
-* @see app/Http/Controllers/SpotifyController.php:107
+* @see app/Http/Controllers/SpotifyController.php:118
 * @route '/api/spotify/play'
 */
 play.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -334,7 +334,7 @@ play.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::play
-* @see app/Http/Controllers/SpotifyController.php:107
+* @see app/Http/Controllers/SpotifyController.php:118
 * @route '/api/spotify/play'
 */
 const playForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -344,7 +344,7 @@ const playForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => (
 
 /**
 * @see \App\Http\Controllers\SpotifyController::play
-* @see app/Http/Controllers/SpotifyController.php:107
+* @see app/Http/Controllers/SpotifyController.php:118
 * @route '/api/spotify/play'
 */
 playForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -356,7 +356,7 @@ play.form = playForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::pause
-* @see app/Http/Controllers/SpotifyController.php:219
+* @see app/Http/Controllers/SpotifyController.php:230
 * @route '/api/spotify/pause'
 */
 export const pause = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -371,7 +371,7 @@ pause.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::pause
-* @see app/Http/Controllers/SpotifyController.php:219
+* @see app/Http/Controllers/SpotifyController.php:230
 * @route '/api/spotify/pause'
 */
 pause.url = (options?: RouteQueryOptions) => {
@@ -380,7 +380,7 @@ pause.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::pause
-* @see app/Http/Controllers/SpotifyController.php:219
+* @see app/Http/Controllers/SpotifyController.php:230
 * @route '/api/spotify/pause'
 */
 pause.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -390,7 +390,7 @@ pause.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::pause
-* @see app/Http/Controllers/SpotifyController.php:219
+* @see app/Http/Controllers/SpotifyController.php:230
 * @route '/api/spotify/pause'
 */
 const pauseForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -400,7 +400,7 @@ const pauseForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\SpotifyController::pause
-* @see app/Http/Controllers/SpotifyController.php:219
+* @see app/Http/Controllers/SpotifyController.php:230
 * @route '/api/spotify/pause'
 */
 pauseForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -412,7 +412,7 @@ pause.form = pauseForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::next
-* @see app/Http/Controllers/SpotifyController.php:233
+* @see app/Http/Controllers/SpotifyController.php:244
 * @route '/api/spotify/next'
 */
 export const next = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -427,7 +427,7 @@ next.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::next
-* @see app/Http/Controllers/SpotifyController.php:233
+* @see app/Http/Controllers/SpotifyController.php:244
 * @route '/api/spotify/next'
 */
 next.url = (options?: RouteQueryOptions) => {
@@ -436,7 +436,7 @@ next.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::next
-* @see app/Http/Controllers/SpotifyController.php:233
+* @see app/Http/Controllers/SpotifyController.php:244
 * @route '/api/spotify/next'
 */
 next.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -446,7 +446,7 @@ next.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::next
-* @see app/Http/Controllers/SpotifyController.php:233
+* @see app/Http/Controllers/SpotifyController.php:244
 * @route '/api/spotify/next'
 */
 const nextForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -456,7 +456,7 @@ const nextForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => (
 
 /**
 * @see \App\Http\Controllers\SpotifyController::next
-* @see app/Http/Controllers/SpotifyController.php:233
+* @see app/Http/Controllers/SpotifyController.php:244
 * @route '/api/spotify/next'
 */
 nextForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -468,7 +468,7 @@ next.form = nextForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::previous
-* @see app/Http/Controllers/SpotifyController.php:252
+* @see app/Http/Controllers/SpotifyController.php:263
 * @route '/api/spotify/previous'
 */
 export const previous = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -483,7 +483,7 @@ previous.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::previous
-* @see app/Http/Controllers/SpotifyController.php:252
+* @see app/Http/Controllers/SpotifyController.php:263
 * @route '/api/spotify/previous'
 */
 previous.url = (options?: RouteQueryOptions) => {
@@ -492,7 +492,7 @@ previous.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::previous
-* @see app/Http/Controllers/SpotifyController.php:252
+* @see app/Http/Controllers/SpotifyController.php:263
 * @route '/api/spotify/previous'
 */
 previous.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -502,7 +502,7 @@ previous.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::previous
-* @see app/Http/Controllers/SpotifyController.php:252
+* @see app/Http/Controllers/SpotifyController.php:263
 * @route '/api/spotify/previous'
 */
 const previousForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -512,7 +512,7 @@ const previousForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\SpotifyController::previous
-* @see app/Http/Controllers/SpotifyController.php:252
+* @see app/Http/Controllers/SpotifyController.php:263
 * @route '/api/spotify/previous'
 */
 previousForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -524,7 +524,7 @@ previous.form = previousForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 export const playerState = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -539,7 +539,7 @@ playerState.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 playerState.url = (options?: RouteQueryOptions) => {
@@ -548,7 +548,7 @@ playerState.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 playerState.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -558,7 +558,7 @@ playerState.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 playerState.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -568,7 +568,7 @@ playerState.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 const playerStateForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -578,7 +578,7 @@ const playerStateForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 playerStateForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -588,7 +588,7 @@ playerStateForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\SpotifyController::playerState
-* @see app/Http/Controllers/SpotifyController.php:287
+* @see app/Http/Controllers/SpotifyController.php:298
 * @route '/api/spotify/state'
 */
 playerStateForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -605,7 +605,7 @@ playerState.form = playerStateForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 export const token = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -620,7 +620,7 @@ token.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 token.url = (options?: RouteQueryOptions) => {
@@ -629,7 +629,7 @@ token.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 token.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -639,7 +639,7 @@ token.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 token.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -649,7 +649,7 @@ token.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 const tokenForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -659,7 +659,7 @@ const tokenForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 tokenForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -669,7 +669,7 @@ tokenForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::token
-* @see app/Http/Controllers/SpotifyController.php:311
+* @see app/Http/Controllers/SpotifyController.php:322
 * @route '/api/spotify/token'
 */
 tokenForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -686,7 +686,7 @@ token.form = tokenForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::volume
-* @see app/Http/Controllers/SpotifyController.php:271
+* @see app/Http/Controllers/SpotifyController.php:282
 * @route '/api/spotify/volume'
 */
 export const volume = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -701,7 +701,7 @@ volume.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::volume
-* @see app/Http/Controllers/SpotifyController.php:271
+* @see app/Http/Controllers/SpotifyController.php:282
 * @route '/api/spotify/volume'
 */
 volume.url = (options?: RouteQueryOptions) => {
@@ -710,7 +710,7 @@ volume.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::volume
-* @see app/Http/Controllers/SpotifyController.php:271
+* @see app/Http/Controllers/SpotifyController.php:282
 * @route '/api/spotify/volume'
 */
 volume.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -720,7 +720,7 @@ volume.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::volume
-* @see app/Http/Controllers/SpotifyController.php:271
+* @see app/Http/Controllers/SpotifyController.php:282
 * @route '/api/spotify/volume'
 */
 const volumeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -735,7 +735,7 @@ const volumeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 
 /**
 * @see \App\Http\Controllers\SpotifyController::volume
-* @see app/Http/Controllers/SpotifyController.php:271
+* @see app/Http/Controllers/SpotifyController.php:282
 * @route '/api/spotify/volume'
 */
 volumeForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -752,7 +752,7 @@ volume.form = volumeForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::seek
-* @see app/Http/Controllers/SpotifyController.php:317
+* @see app/Http/Controllers/SpotifyController.php:328
 * @route '/api/spotify/seek'
 */
 export const seek = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -767,7 +767,7 @@ seek.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::seek
-* @see app/Http/Controllers/SpotifyController.php:317
+* @see app/Http/Controllers/SpotifyController.php:328
 * @route '/api/spotify/seek'
 */
 seek.url = (options?: RouteQueryOptions) => {
@@ -776,7 +776,7 @@ seek.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::seek
-* @see app/Http/Controllers/SpotifyController.php:317
+* @see app/Http/Controllers/SpotifyController.php:328
 * @route '/api/spotify/seek'
 */
 seek.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -786,7 +786,7 @@ seek.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::seek
-* @see app/Http/Controllers/SpotifyController.php:317
+* @see app/Http/Controllers/SpotifyController.php:328
 * @route '/api/spotify/seek'
 */
 const seekForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -801,7 +801,7 @@ const seekForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => (
 
 /**
 * @see \App\Http\Controllers\SpotifyController::seek
-* @see app/Http/Controllers/SpotifyController.php:317
+* @see app/Http/Controllers/SpotifyController.php:328
 * @route '/api/spotify/seek'
 */
 seekForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -818,7 +818,7 @@ seek.form = seekForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::saveTrack
-* @see app/Http/Controllers/SpotifyController.php:333
+* @see app/Http/Controllers/SpotifyController.php:344
 * @route '/api/spotify/save-track'
 */
 export const saveTrack = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -833,7 +833,7 @@ saveTrack.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::saveTrack
-* @see app/Http/Controllers/SpotifyController.php:333
+* @see app/Http/Controllers/SpotifyController.php:344
 * @route '/api/spotify/save-track'
 */
 saveTrack.url = (options?: RouteQueryOptions) => {
@@ -842,7 +842,7 @@ saveTrack.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::saveTrack
-* @see app/Http/Controllers/SpotifyController.php:333
+* @see app/Http/Controllers/SpotifyController.php:344
 * @route '/api/spotify/save-track'
 */
 saveTrack.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -852,7 +852,7 @@ saveTrack.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::saveTrack
-* @see app/Http/Controllers/SpotifyController.php:333
+* @see app/Http/Controllers/SpotifyController.php:344
 * @route '/api/spotify/save-track'
 */
 const saveTrackForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -867,7 +867,7 @@ const saveTrackForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'>
 
 /**
 * @see \App\Http\Controllers\SpotifyController::saveTrack
-* @see app/Http/Controllers/SpotifyController.php:333
+* @see app/Http/Controllers/SpotifyController.php:344
 * @route '/api/spotify/save-track'
 */
 saveTrackForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -884,7 +884,7 @@ saveTrack.form = saveTrackForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::removeTrack
-* @see app/Http/Controllers/SpotifyController.php:352
+* @see app/Http/Controllers/SpotifyController.php:363
 * @route '/api/spotify/remove-track'
 */
 export const removeTrack = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -899,7 +899,7 @@ removeTrack.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::removeTrack
-* @see app/Http/Controllers/SpotifyController.php:352
+* @see app/Http/Controllers/SpotifyController.php:363
 * @route '/api/spotify/remove-track'
 */
 removeTrack.url = (options?: RouteQueryOptions) => {
@@ -908,7 +908,7 @@ removeTrack.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::removeTrack
-* @see app/Http/Controllers/SpotifyController.php:352
+* @see app/Http/Controllers/SpotifyController.php:363
 * @route '/api/spotify/remove-track'
 */
 removeTrack.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -918,7 +918,7 @@ removeTrack.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =>
 
 /**
 * @see \App\Http\Controllers\SpotifyController::removeTrack
-* @see app/Http/Controllers/SpotifyController.php:352
+* @see app/Http/Controllers/SpotifyController.php:363
 * @route '/api/spotify/remove-track'
 */
 const removeTrackForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -933,7 +933,7 @@ const removeTrackForm = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 /**
 * @see \App\Http\Controllers\SpotifyController::removeTrack
-* @see app/Http/Controllers/SpotifyController.php:352
+* @see app/Http/Controllers/SpotifyController.php:363
 * @route '/api/spotify/remove-track'
 */
 removeTrackForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -950,7 +950,7 @@ removeTrack.form = removeTrackForm
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 export const checkSaved = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -965,7 +965,7 @@ checkSaved.definition = {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 checkSaved.url = (options?: RouteQueryOptions) => {
@@ -974,7 +974,7 @@ checkSaved.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 checkSaved.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -984,7 +984,7 @@ checkSaved.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 checkSaved.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -994,7 +994,7 @@ checkSaved.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 const checkSavedForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1004,7 +1004,7 @@ const checkSavedForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 checkSavedForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1014,7 +1014,7 @@ checkSavedForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\SpotifyController::checkSaved
-* @see app/Http/Controllers/SpotifyController.php:371
+* @see app/Http/Controllers/SpotifyController.php:382
 * @route '/api/spotify/check-saved'
 */
 checkSavedForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

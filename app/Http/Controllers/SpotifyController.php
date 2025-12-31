@@ -50,6 +50,17 @@ class SpotifyController extends Controller
     public function disconnect()
     {
         $user = User::find(Auth::id());
+        
+        // Attempt to pause playback before revoking tokens so music doesn't keep playing
+        try {
+            $token = $this->getAccessToken($user);
+            if ($token) {
+                \Illuminate\Support\Facades\Http::withToken($token)->put('https://api.spotify.com/v1/me/player/pause');
+            }
+        } catch (\Exception $e) {
+            // Ignore errors if no active device is found or token invalid
+        }
+
         $user->update([
             'spotify_id' => null,
             'spotify_access_token' => null,
@@ -57,7 +68,7 @@ class SpotifyController extends Controller
             'spotify_token_expires_at' => null,
         ]);
 
-        return back()->with('status', 'Spotify disconnected.');
+        return response()->json(['status' => 'Spotify disconnected and playback stopped.']);
     }
 
     public function status()

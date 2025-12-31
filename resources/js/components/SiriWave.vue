@@ -130,9 +130,21 @@ const initWorker = () => {
     if (props.isSpeaking) worker.postMessage({ type: 'start' });
 };
 
+import { isTabVisible } from '@/lib/performance';
+
 watch(() => props.isSpeaking, (val) => {
-    if (worker) {
+    if (worker && isTabVisible.value) {
         worker.postMessage({ type: val ? 'start' : 'stop' });
+    }
+});
+
+watch(isTabVisible, (visible) => {
+    if (worker) {
+        if (!visible) {
+            worker.postMessage({ type: 'stop' });
+        } else if (props.isSpeaking) {
+            worker.postMessage({ type: 'start' });
+        }
     }
 });
 

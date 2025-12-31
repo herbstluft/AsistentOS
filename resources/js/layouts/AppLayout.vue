@@ -75,17 +75,23 @@ const setupSmartPolling = () => {
 
     currentPollingMode = newMode;
 
-    // Configurar nuevo intervalo
+    // Configurar nuevo intervalo (Optimizado para reducir solicitudes)
     if (newMode === 'high') {
         statusCheckInterval = window.setInterval(() => {
-            fetchSubscriptionStatus();
-        }, 5000);
+            if (shouldPerformTask('high')) {
+                fetchSubscriptionStatus();
+            }
+        }, 15000); // 15s instead of 5s
     } else if (newMode === 'low') {
         statusCheckInterval = window.setInterval(() => {
-            fetchSubscriptionStatus();
-        }, 30000);
+            if (shouldPerformTask('low')) {
+                fetchSubscriptionStatus();
+            }
+        }, 60000); // 1m instead of 30s
     }
 };
+
+import { shouldPerformTask } from '@/lib/performance';
 
 // Cargar estado de suscripción al montar y configurar polling
 onMounted(() => {

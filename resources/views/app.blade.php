@@ -12,6 +12,10 @@
                 if (appearance === 'dark') {
                     document.documentElement.classList.add('dark');
                 }
+
+                @auth
+                    window.__BOOTSTRAP_DATA__ = {!! json_encode(\App\Services\AppBootstrapService::getData()) !!};
+                @endauth
             })();
         </script>
 
@@ -36,23 +40,15 @@
         <link rel="dns-prefetch" href="https://fonts.bunny.net">
         <link rel="preconnect" href="https://generativelanguage.googleapis.com">
         <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com">
+        <link rel="preconnect" href="https://api.elevenlabs.io">
+        <link rel="dns-prefetch" href="https://api.elevenlabs.io">
         
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600|lexend-deca:400,700,800&display=swap" rel="stylesheet" />
 
         <!-- Pre-resolving critical network paths -->
         <link rel="preconnect" href="{{ url('/') }}" crossorigin>
 
-        <!-- Speculation Rules API: Prerender next pages for 0ms navigation -->
-        <script type="speculationrules">
-        {
-          "prerender": [
-            {
-              "where": { "href_matches": "/*" },
-              "eagerness": "moderate"
-            }
-          ]
-        }
-        </script>
+
 
         <!-- Module Preload: Instruct browser to fetch and compile JS in parallel -->
         <link rel="modulepreload" href="{{ Vite::asset('resources/js/app.ts') }}" fetchpriority="high">

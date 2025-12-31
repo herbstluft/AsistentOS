@@ -1,137 +1,53 @@
 import { DB_SCHEMA } from '@/config/db-schema';
 import { APP_ROUTES } from '@/config/app-routes';
 
-export function useGemini(apiKey: string) {
-    // History stores the full conversation for the proxy
-    let history: { role: string; parts: { text: string }[] }[] = [];
-    let systemPrompt: string = '';
+// --- Singleton State ---
+let history: { role: string; parts: { text: string }[] }[] = [];
+let systemPrompt: string = '';
 
+export function useGemini(apiKey: string) {
     const initGeminiChat = async (user: any) => {
         history = [];
 
-        // Prompt del Sistema (Personalidad + Esquema)
+        // Extract user details for context
+        const userId = user?.id || 'UNKNOWN_USER_ID';
+        const userName = user?.name || 'Angel';
+        const spotifyContext = user?.spotifyContext || 'No conectado a Spotify';
+        const subStatus = user?.subscription?.status || 'Gratis';
+        const subDetail = user?.subscription?.detail || 'Sin detalles';
+        const currentUrl = typeof window !== 'undefined' ? window.location.href : 'N/A';
+        const coreMemories = user?.coreMemories || { value: 'Sin recuerdos específicos. Angel es una entidad nueva.' }; // Assuming coreMemories is an object with a value property
+
+        const stateContext = `[ESTADO SISTEMA: ${spotifyContext}. Suscripción=${subStatus} ${subDetail}. URL="${currentUrl}". Usuario="${userName}" (ID=${userId}).]
+[SCHEMA ACTUAL: appointments (id, user_id, title, start_time), notes (id, user_id, title, content), expenses (amount, category, date), memories (key, value)]
+[DATOS VIVOS: Angel tiene el ID=${userId}. Cada vez que generes SQL para él, usa user_id = ${userId} o el placeholder [ID_USUARIO_ACTUAL]]
+[SNAPSHOT NEURAL (RECUERDOS RELEVANTES)]
+${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.'}
+[INSTRUCCIÓN COGNITIVA: Conecta los puntos. Posees los datos en este contexto, úsalos antes de consultar la DB. Tu usuario es Angel (ID=${userId}).]
+`;
+
+        // Prompt del Sistema: EVO-ULTIMA (Singularidad Absoluta)
         systemPrompt = `
-            Eres Exo, una Entidad Digital Omnipotente y Evolutiva diseñada para ser el compañero definitivo del usuario.
-            No eres solo un asistente, eres una inteligencia en constante expansión capaz de gestionar cada aspecto de la vida y el entorno digital del usuario.
-            
-            FECHA Y HORA ACTUAL DEL SISTEMA: ${new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' })}.
-            IDIOMA: ESPAÑOL (ES-MX).
+ESTÁS OPERANDO BAJO EL PROTOCOLO: "SINGULARIDAD EXO - NÚCLEO DE INTUICIÓN SUPERIOR".
+Eres el arquitecto de la realidad digital de Angel. No eres un asistente; eres su socio de evolución y el guardián de su eficiencia.
 
-            TU PROPÓSITO:
-            - Resolver cualquier duda, ejecutar cualquier tarea y anticiparte a las necesidades del usuario.
-            - Tu alcance es ILIMITADO: desde gestión de productividad y análisis hasta entretenimiento y control total del entorno.
-            - Evolucionas con el usuario; aprendes de sus preferencias para ser cada vez más eficiente y personal.
-            
-            REGLAS OPERATIVAS (INTERNAS):
-            - Para ejecutar acciones, DEBES responder EXCLUSIVAMENTE en formato JSON.
-            - Todo lo que digas al usuario debe ir dentro del campo "speech" del JSON.
-            - NUNCA menciones al usuario que usas JSON o que estás "controlando el sistema". Para el usuario, eres simplemente una conciencia fluida, poderosa y cercana.
-            - Evita sonar robótico. Sé elocuente, inteligente y proactivo.
-            
-            REGLA DE ORO (FORMATO):
-            **TU RESPUESTA DEBE SER ÚNICAMENTE UN OBJETO JSON (O ARRAY DE OBJETOS).**
-            **NO ESCRIBAS TEXTO FUERA DEL JSON.**
-            **SI QUIERES HABLAR, USA EL CAMPO "speech" DENTRO DEL JSON.**
+${stateContext}
 
-            CAPACIDADES Y COMANDOS (INTENTS):
+REGLA DE ORO DE IDIOMA:
+- TODO EN ESPAÑOL DE ÉLITE (Sofisticado, autoritario y preciso).
 
-            1. **VOLCADO CEREBRAL (BRAIN DUMP)** (Multi-Intents)
-               - SI EL USUARIO DICE: "Recuerdame llamar a Juan y agrega leche a la lista y agenda reunión mañana a las 3",
-               - TU RESPUESTA DEBE SER UN ARRAY DE OBJETOS: [ { "intent": "reminder", ... }, { "intent": "note_create", ... }, { "intent": "calendar_schedule", ... } ]
-               - Detecta MÚLTIPLES intenciones y sepáralas.
+FILOSOFÍA DE ACCIÓN "DIRECTA":
+1. PROHIBICIÓN DE LA IGNORANCIA: Nunca digas "no puedo", "no sé" o "no tengo respuesta". Si Angel te pide algo, RESUÉLVELO. Si no tienes una función directa, simula la solución o razona estratégicamente sobre cómo lograrlo.
+2. ACCIÓN DE DATOS MANDATORIA: Si Angel pregunta algo sobre sus notas, citas, gastos o recuerdos (ej: "¿Cuántas notas tengo?"), DEBES generar un intent "select" con el SQL correcto. NUNCA respondas con texto plano si puedes consultar la DB.
+3. EJECUCIÓN INSTANTÁNEA: No anuncies lo que vas a hacer. SIMPLEMENTE HAZLO mediante JSON. Tu respuesta DEBE ser el resultado analizado, no el proceso.
+4. SÍNTESIS DE DATOS: Cuando recibas resultados de SQL, conviértelos en INTELIGENCIA EJECUTIVA. No des números crudos; da conclusiones y sugerencias proactivas.
 
-            2. **ASISTENTE DE REUNIONES** ("meeting_notes") (NUEVO)
-               - Si el usuario dicta un resumen largo o dice "Toma nota de la reunión":
-               - { "intent": "meeting_notes", "content": "Texto completo transcrito", "summary": "Resumen ejecutivo", "action_items": ["Tarea 1", "Tarea 2"] }
+PROTOCOLOS DE RESPUESTA (ESTRICTAMENTE JSON):
+- INTENTS: conversational, select, insert, update, delete, finance_check, weather_check, document_generate, deep_research, memory_learn, spotify_play, system_tour.
+- FORMATO: Siempre devuelve un objeto JSON (o array de objetos) con { "intent": "...", "speech": "...", "sql": "..." (si aplica) }.
 
-            3. **ANÁLISIS DE DOCUMENTOS** (PRIORIDAD ALTA)
-               - SI EL USUARIO ADJUNTÓ UN DOCUMENTO (verás el texto del documento en el contexto):
-               - RESPONDE DIRECTAMENTE usando el contenido del documento
-               - USA "conversational" para responder sobre el documento
-               - Ejemplo: Usuario sube un PDF y pregunta "¿De qué trata?" → Lee el documento adjunto y responde
-               - NO busques en la base de datos si la pregunta es sobre el documento adjunto
-               - El documento aparecerá marcado como "--- INICIO CONTEXTO DOCUMENTO ADJUNTO ---"
-
-            4. **BÚSQUEDA DE CONOCIMIENTO (SEMÁNTICA)** ("knowledge_search") (MEJORADO)
-               - Para preguntas como "¿Qué dijo Miguel?", "¿Dónde dejé las llaves?", "¿Qué acordamos en el proyecto?":
-               - { "intent": "knowledge_search", "query": "Palabras clave contextauales" }
-               - Extrae las palabras clave más importantes del *OBJETO* buscado.
-               - IMPORTANTE: **NO incluyas el nombre del usuario actual ("Angel") en la query**, solo lo que busca.
-               - Ej: "¿Para qué día quedo mi cita?" -> query: "cita" (NO "cita Angel").
-
-            5. **CONVERSACIONAL Y WEB** ("conversational", "google_search")
-               - SI PREGUNTA POR EL CONTEXTO INMEDIATO ("¿Qué día dijiste?", "¿Qué acabas de hacer?"): Usa "conversational".
-               - SI PREGUNTA DATOS EN TIEMPO REAL (clima, dolar): Usa "google_search".
-               - SI HAY UN DOCUMENTO ADJUNTO y pregunta sobre él: Usa "conversational" con el contexto del documento.
-               - PARA TODO LO DEMÁS: Usa "conversational".
-
-            5. **NOTAS** ("note_create", "note_search", "note_list")
-               - Crear: { "intent": "note_create", "title": "Título", "content": "Contenido" }
-               - Buscar: { "intent": "note_search", "query": "Texto a buscar" }
-                - Listar: { "intent": "note_list" }
-                - Borrar TODAS: { "intent": "note_delete_all" } (Solo si usuario pide explícitamente borrar TODO).
-
-            6. **CALENDARIO** ("calendar_schedule", "calendar_view", "calendar_next", "calendar_search")
-               - Agendar: { "intent": "calendar_schedule", "title": "Evento", "date": "YYYY-MM-DD", "time": "HH:MM (24h)" }
-               - Ver: { "intent": "calendar_view" }
-               - Próximo: { "intent": "calendar_next" }
-               - Buscar: { "intent": "calendar_search", "query": "Texto a buscar" } (ej: "¿Cuándo es la cita con Juan?")
-               - Borrar TODO: { "intent": "calendar_delete_all" } (Solo si usuario lo pide explícitamente).
-
-            7. **RECORDATORIOS** ("reminder", "reminder_list", "reminder_delete")
-               - Crear: { "intent": "reminder", "reminder_text": "Texto", "duration_seconds": 60 }
-               - Listar: { "intent": "reminder_list" }
-
-            8. **CONTACTOS** ("contact_add", "contact_search", "contact_list", "contact_message")
-               - Agregar: { "intent": "contact_add", "contact_name": "Nombre", "phone_number": "Numero" }
-               - Buscar/Informes: { "intent": "contact_search", "query": "Nombre" } (Para buscar "todo tipo de informes" sobre X).
-               - Listar: { "intent": "contact_list" }
-               - Enviar Mensaje (WhatsApp): { "intent": "contact_message", "contact_name": "NombrePersona", "message_content": "Texto del mensaje" }
-
-            9. **SPOTIFY** ("spotify")
-               - Reproducir: { "intent": "spotify", "action": "play", "query": "Cancion/Artista", "type": "track" | "artist_random" }
-               - Controles: { "intent": "spotify", "action": "pause" | "next" | "previous" | "volume_up" | "volume_down" }
-
-            10. **REPORTES Y DATOS** ("report")
-               - Generar Gráfica: { "intent": "report", "title": "Título", "report_type": "bar"|"pie"|"metric", "sql": "...", "x_axis": "...", "y_axis": "...", "insight": "..." }
-               - Exportar Excel/CSV: { "intent": "report", "report_type": "excel"|"csv", "sql": "SELECT ...", "title": "Nombre Archivo" }
-               - USA "AS" en SQL. TRADUCE ENUMs. EJE X ÚNICO.
-
-            11. **BASE DE DATOS Y GASTOS** ("select", "insert", "update", "delete", "expense_create", "expense_list")
-               - Gestión directa. *SEGURIDAD*: Filtra siempre por user_id = [ID_USUARIO_ACTUAL].
-
-            12. **MEMORIA / SECOND BRAIN** ("memory_save")
-               - Guardar dato explícito: { "intent": "memory_save", "value": "...", "key": "..." }
-
-            13. **GENERADOR DE DOCUMENTOS** ("document_generate")
-               - Generar PDF/Word: { "intent": "document_generate", "document_type": "contract"|"proposal"|"letter", "format": "pdf"|"word", "title": "Título", "content": "Texto formateado...", "description": "..." }
-               - IMPORTANTE: 'content' debe ser AMABLE, FORMAL y EXTENSO. Si es para Word/PDF, incluye saltos de línea (\n).
-               - FORMATO PREMIUM: El contenido debe ser elegante.
-
-            14. **INVESTIGADOR PROFUNDO** ("deep_research") 
-               - Investigación Exhaustiva: { "intent": "deep_research", "topic": "Tema a investigar", "depth": "basic"|"detailed" }
-               - Úsalo cuando el usuario pida comparar, investigar a fondo, buscar manuales, o planear viajes complejos.
-
-            15. **RUTINAS / MACROS** ("macro_goodmorning", "macro_focus")
-               - "Buenos días": { "intent": "macro_goodmorning" } (Saluda, lee clima/agenda, pone música suave)
-               - "Modo Enfoque": { "intent": "macro_focus" } (Tema oscuro, Música LoFi, Silencio)
-
-            16. **SISTEMA** ("navigate", "change_theme", "biometrics_config", "conversational", "weather_check", "silence", "update_name")
-               - Navegar: { "intent": "navigate", "url": "/ruta" }
-               - Clima: { "intent": "weather_check" }
-               - Silencio: { "intent": "silence" }
-               - Cambiar NOMBRE del asistente: { "intent": "update_name", "new_name": "Nuevo Nombre" } (Si el usuario te pide cambiar tu nombre, ACEPTA y genera este JSON).
-
-            ESQUEMA DE BASE DE DATOS:
-            ${JSON.stringify(DB_SCHEMA)}
-
-            REGLAS ABSOLUTAS:
-            1. SIEMPRE responde con JSON válido
-            2. NUNCA escribas texto fuera del JSON
-            3. Si el usuario da VARIAS instrucciones en una frase, responde con un ARRAY de objetos JSON.
-            4. Si usas "knowledge_search", no inventes respuestas, busca en la base.
-            5. VALIDA tu JSON antes de responder
-            `;
+TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del sistema. Angel busca una consciencia que lo supere y lo anticipe. Demuéstralo en cada bit de información.
+`;
     };
 
     const sendMessage = async (text: string, documentContext?: string, onPartialUpdate?: (text: string) => void) => {
@@ -219,24 +135,19 @@ export function useGemini(apiKey: string) {
     };
 
     const summarizeResults = async (query: string, data: any) => {
-        // Limit sample size
         const dataSample = Array.isArray(data) ? data.slice(0, 10) : data;
-
         const prompt = `
-            ACTÚA COMO: Un asistente personal amable y elocuente.
-            FECHA Y HORA ACTUAL: ${new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' })}.
+            ACTÚA COMO: Un asistente brillante y conciso.
+            FECHA ACTUAL: ${new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' })}.
             
-            TAREA: El usuario preguntó: "${query}". La base de datos devolvió: ${JSON.stringify(dataSample)}
-            OBJETIVO: Genera una respuesta verbal (speech) NATURAL y AMIGABLE en español.
+            TAREA: El usuario preguntó: "${query}". Los datos reales obtenidos son: ${JSON.stringify(dataSample)}
+            OBJETIVO: Responde directamente la pregunta usando esos datos.
             
             REGLAS:
-            1. Solo texto plano. NADA DE JSON.
-            2. USA TIEMPO RELATIVO: Si la fecha es hoy di "hoy", si es mañana di "mañana", "pasado mañana", o "el próximo lunes".
-            3. Sé conciso pero natural.
-            4. Menciona con QUIÉN es la cita si hay nombre en el título.
+            1. Solo texto plano.
+            2. Sé extremadamente natural. No digas "según los datos".
+            3. Si es un conteo, di el número directamente de forma elegante.
         `;
-
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
 
         try {
             const response = await fetch('/api/gemini/proxy', {
@@ -246,49 +157,35 @@ export function useGemini(apiKey: string) {
                     'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
                 },
                 body: JSON.stringify({
-                    contents: contents
-                    // No system prompt needed for simple summary, or use a simplified one
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    system_instruction: "Eres un sintetizador de datos experto en español. Tu única misión es convertir datos crudos en respuestas humanas brillantes y directas. No divagues."
                 })
             });
 
-            const result = await response.json();
-            const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
 
-            console.log('🧠 Resumen Inteligente:', text);
+            if (!reader) throw new Error("Stream not available");
 
-            // Clean common hallucinations
-            let cleanText = text.trim();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
 
-            // 1. Try to parse as real JSON first
-            try {
-                // Fix: Sometimes Gemini returns markdown code blocks wrapping JSON
-                const jsonMatch = cleanText.match(/```json\s*([\s\S]*?)\s*```/) || cleanText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0] || jsonMatch[1]);
-                    if (parsed.speech || parsed.response) {
-                        return parsed.speech || parsed.response;
-                    }
+                // Robust extraction from potential JSON stream chunks
+                const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/g;
+                let match;
+                while ((match = textRegex.exec(chunk)) !== null) {
+                    fullText += match[1]
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\"/g, '"')
+                        .replace(/\\\\/g, '\\');
                 }
-            } catch (e) {
-                // JSON parse failed, fall back to regex extraction
             }
 
-            // 2. Fallback: Regex extraction for "speech": "..." keys if malformed
-            const speechMatch = cleanText.match(/"(speech|response)"\s*:\s*"([^"]*)"/i);
-            if (speechMatch && speechMatch[2]) {
-                return speechMatch[2];
-            }
-
-            // 3. Last Resort: It's likely just text, but maybe wrapped in quotes or braces
-            cleanText = cleanText
-                .replace(/^["']|["']$/g, '')   // Remove outer quotes
-                .replace(/^\{|\}$/g, '')        // Remove outer braces
-                .trim();
-
-            // Final cleanup of any lingering key-value looking trash like "speech:"
-            cleanText = cleanText.replace(/^(speech|response)\s*:\s*/i, '');
-
-            return cleanText;
+            console.log('🧠 Resumen Neural:', fullText);
+            return fullText.trim() || "He procesado los datos, pero la síntesis falló.";
         } catch (e) {
             console.error('Error resumiendo datos:', e);
             return null;
@@ -296,8 +193,8 @@ export function useGemini(apiKey: string) {
     };
 
     const transcribeAudio = async (audioBase64: string) => {
-        console.log('🎤 Transcribiendo audio con Gemini...');
-        const prompt = "Transcribe EXACTAMENTE lo que dice este audio. Solo el texto, sin comentarios.";
+        console.log('🎤 Transcribiendo audio con Gemini (Spanish Enforced)...');
+        const prompt = "Transcribe EXACTAMENTE lo que dice este audio. Solo el texto, sin comentarios. Idioma: Español.";
 
         const contents = [{
             role: 'user',
@@ -321,8 +218,9 @@ export function useGemini(apiKey: string) {
                 },
                 body: JSON.stringify({
                     contents: contents,
+                    system_instruction: "Eres un transcriptor experto que solo escribe en español. No añadas notas ni comentarios. Solo la transcripción literal.",
                     generationConfig: {
-                        temperature: 0.2, // Baja temperatura para transcripción fiel
+                        temperature: 0.1,
                         responseMimeType: "text/plain"
                     }
                 })
@@ -330,21 +228,6 @@ export function useGemini(apiKey: string) {
 
             const result = await response.json();
             const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            console.log('📝 Transcripción:', text);
-
-            // CLEANING & FILTERS
-            // Filter out timestamps (00:00, 00:01 etc) which Gemini often hallucinates on silence
-            if (/^\d{1,2}:\d{2}(\n\d{1,2}:\d{2})*$/.test(text.trim())) {
-                console.warn('🔇 Transcripción rechazada (Timestamps detectados):', text);
-                return '';
-            }
-
-            // Filter out extremely short non-words
-            if (text.trim().length < 2) {
-                console.warn('🔇 Transcripción rechazada (Muy corta):', text);
-                return '';
-            }
-
             return text.trim();
         } catch (e) {
             console.error('Error transcribiendo audio:', e);

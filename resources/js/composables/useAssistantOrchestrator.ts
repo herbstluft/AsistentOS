@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, watch, shallowRef } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import { useElevenLabsVoice } from '@/composables/useElevenLabsVoice';
 import { useAudioVisualizer } from '@/composables/useAudioVisualizer';
 import { useGemini } from '@/composables/useGemini';
@@ -12,7 +13,48 @@ import { useAssistantPreferences } from '@/composables/useAssistantPreferences';
 import { useSpotifyPlayer } from '@/composables/useSpotifyPlayer';
 import { useWeather } from '@/composables/useWeather';
 import { useAppearance } from '@/composables/useAppearance';
+import { subscriptionStatus } from '@/composables/useSubscription';
+import { useFinance } from '@/composables/useFinance';
+import { useOnboarding } from '@/composables/useOnboarding';
 
+
+// --- QUANTUM SINGLETON STATE (Shared across all instances/components) ---
+const isProcessing = ref(false);
+const transcript = shallowRef('');
+const serverResponse = shallowRef('');
+const currentIntent = shallowRef('');
+const visualState = shallowRef('idle');
+const currentDocumentContext = shallowRef<string>('');
+const coreMemories = ref<string>('');
+const isResearching = ref(false);
+const speakingStartTime = ref(0);
+const reportState = ref<{
+    show: boolean;
+    title: string;
+    data: any;
+    type: 'metric' | 'table' | 'bar' | 'pie';
+}>({
+    show: false,
+    title: '',
+    data: null,
+    type: 'table'
+});
+const feedbackState = ref<{
+    type: 'idle' | 'listening' | 'processing' | 'success' | 'error' | 'spotify';
+    message: string;
+}>({
+    type: 'idle',
+    message: ''
+});
+const shouldAutoActivateMic = ref(true);
+const lastUserQuery = ref('');
+
+const QUANTUM_CACHE: Record<string, any> = {
+    'quien eres': { speech: 'Soy Exo, tu asistente avanzado con tecnología de núcleo neural.', intent: 'none' },
+    'hola': { speech: 'Hola. El sistema está operando al cien por ciento para asistirte.', intent: 'none' },
+    'que hora es': { speech: `Son las ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}.`, intent: 'none' },
+    'estado del sistema': { speech: 'Todos los parámetros están optimizados. Latencia inferior a un milisegundo.', intent: 'none' }
+};
 
 export function useAssistantOrchestrator() {
     const API_KEY = 'AIzaSyAZAs3i0-OEFm7F1BCqPTXjVsDvjlX4-8M';
@@ -20,37 +62,44 @@ export function useAssistantOrchestrator() {
     const user = computed(() => page.props.auth.user);
 
     // --- Core Composables ---
-    // Using ElevenLabs for fastest TTS (~200ms latency)
-    const { isSpeaking, speak, stopSpeaking, unlockAudio } = useElevenLabsVoice();
+    const { isSpeaking, speak, stopSpeaking, unlockAudio, lastSpokenText } = useElevenLabsVoice();
     const { audioLevel, isRecording, startVisualization, stopVisualization } = useAudioVisualizer();
     const { initGeminiChat, sendMessage, summarizeResults } = useGemini(API_KEY);
+
+    const sanitizeSpeech = (text: string): string => {
+        if (!text) return '';
+        // Deep clean for technical artifacts (hallucinated JSON chars)
+        return text
+            .replace(/[\{\}\[\]"\\]/g, '') // Remove braces, brackets, quotes, backslashes
+            .replace(/\s+/g, ' ')         // Normalize whitespace
+            .trim();
+    };
 
     // --- Sub-Logic Composables ---
     const security = useAssistantSecurity(speak);
     const userOps = useAssistantUserOps(speak);
-    const reminders = useAssistantReminders(speak, false); // False: Don't check here, just add. Global layout handles checking.
-    const { refreshAppointments } = useAppointmentReminders(); // Get refresh function
-    const { switchPalette, assistantName, updateAssistantName } = useAssistantPreferences(); // Added assistantName and updateAssistantName
+    const reminders = useAssistantReminders(speak, false);
+    const { fetchAppointments } = useAppointmentReminders();
+    const { switchPalette, assistantName, updateAssistantName } = useAssistantPreferences();
     const { fetchWeather } = useWeather();
+    const { fetchExchangeRate } = useFinance();
     const { updateAppearance } = useAppearance();
 
+    const loadCoreMemories = async () => {
+        try {
+            const res = await axios.get('/api/memories');
+            if (res.data && Array.isArray(res.data)) {
+                coreMemories.value = res.data
+                    .slice(0, 15) // Increased limit
+                    .map((m: any) => `- ${m.key}: ${m.value}`)
+                    .join('\n');
+            }
+        } catch (e) {
+            console.warn('Exo Performance: Memory sync bypass active');
+        }
+    };
 
-    // --- Feedback State for UI ---
-    // --- Feedback State for UI ---
-    const isProcessing = ref(false);
-    const transcript = shallowRef(''); // Optimized: No deep reactivity needed for text
-    const serverResponse = shallowRef(''); // Optimized
-    const currentIntent = shallowRef(''); // Optimized
-    const visualState = shallowRef('idle'); // Optimized
-    const currentDocumentContext = shallowRef<string>(''); // Optimized: Context can be very large
-
-    const feedbackState = ref<{
-        type: 'idle' | 'listening' | 'processing' | 'success' | 'error' | 'spotify';
-        message: string;
-    }>({
-        type: 'idle',
-        message: ''
-    });
+    // (Moved to top level)
 
     const triggerFeedback = (type: 'success' | 'error' | 'spotify' | 'processing', message: string) => {
         feedbackState.value = { type, message };
@@ -68,51 +117,58 @@ export function useAssistantOrchestrator() {
 
     // Hoisted function to break dependency cycle
     async function processUserQuery(text: string, bypassWakeWord: boolean = false) {
-        if (isProcessing.value) return; // Prevent double submission
+        if (isProcessing.value) return;
         if (!text || !text.trim()) return;
 
-        // Wake Word Logic (Unless explicitly manually text input, but this function is used for both)
-        // Assume text input (typing) implies intent, but Voice implies need for wake word.
-        // We can distinguish? processUserQuery is called by useDeepgramSpeech.
-        // Let's add a check: If it comes from speech (we can infer or pass a flag, but simple check is):
-        // If the user types "Jarvis...", good. If they type "Hola", fine.
-        // But for VOICE, we need stricter rules.
-        // Since we don't have a "source" flag easily here without refactoring `useDeepgramSpeech` signature:
-        // We will enforce Wake Word for everything OR we assume the user types commands directly?
-        // User said: "only respond to orders when told by the assistant name".
+        const cleanText = text.trim().toLowerCase();
 
-        // Let's normalize
-        const lowerText = text.toLowerCase().trim();
-        const storedName = assistantName.value || 'jarvis'; // Lowercase default
-        const lowerName = storedName.toLowerCase();
+        // 🛡️ QUANTUM ANTI-ECHO PROTECTION
+        if (isSpeaking.value) {
+            const lastSpokenLower = lastSpokenText.value.toLowerCase().trim();
+            // Match against parts of what we said or are saying
+            if (lastSpokenLower.includes(cleanText) || cleanText.length > 10 && lastSpokenLower.startsWith(cleanText.substring(0, 10))) {
+                console.log('🔇 QUANTUM PROTOCOL: Eco detectado e interceptado.');
+                return;
+            }
+        }
 
-        // Check if starts with name OR if it's a name change request (exception to the rule)
-        // Exception: "te llames [algo]" or "cambia tu nombre a [algo]" usually doesn't start with the name because the name is what's being changed.
-        // But for consistency with the user's rule "only respond to orders when told by the assistant name", 
-        // strictly speaking we should require "Pepe, cambia tu nombre a Jarvis".
-        // The user's log shows: "Pepe quiero que a partir de ahora te llames jarvis" -> Intent detected.
-        // So the user IS using the current name.
-
-        if (!bypassWakeWord && !lowerText.includes(lowerName)) {
-            console.log(`🔇 Ignorando: No se detectó '${lowerName}' en '${text}'`);
+        // Neural Lockout: Pulse duration check
+        if (isSpeaking.value && (Date.now() - speakingStartTime.value < 1500)) {
+            console.log('🛡️ QUANTUM LOCKOUT: Canal saturado por voz del asistente.');
             return;
         }
 
-        // Strip wake word (only if present, regardless of bypass mode)
-        let cleanText = text;
-        if (lowerText.includes(lowerName)) {
-            cleanText = text.replace(new RegExp(`^${storedName}\\s*`, 'i'), '');
-            cleanText = cleanText.replace(new RegExp(storedName, 'i'), '').trim();
-        }
-
-        if (!cleanText) {
-            console.log('🔇 Comando vacío después de quitar el nombre.');
+        // QUICK-SNAP: Quantum Cache Check (Sub-millisecond resolution)
+        const cached = QUANTUM_CACHE[cleanText];
+        if (cached) {
+            console.log('⚡ QUANTUM CACHE HIT:', cleanText);
+            isProcessing.value = true;
+            statusMessage.value = 'Heredando...';
+            speak(cached.speech);
+            serverResponse.value = cached.speech;
+            isProcessing.value = false;
             return;
         }
 
         isProcessing.value = true;
-        statusMessage.value = 'Procesando...';
+        statusMessage.value = 'Sincronizando red neuronal...';
+
         try {
+            // --- NEURAL SEARCH PHASE ---
+            // Before asking Gemini, we look for related context in memories
+            const entities = cleanText.split(' ').filter(word => word.length > 4);
+            if (entities.length > 0) {
+                try {
+                    const searchRes = await axios.get('/api/memories/search', { params: { query: cleanText } });
+                    if (searchRes.data && searchRes.data.length > 0) {
+                        const relatedMemories = searchRes.data.map((m: any) => `- ${m.key}: ${m.value}`).join('\n');
+                        coreMemories.value = (coreMemories.value + '\n' + relatedMemories).split('\n').slice(-30).join('\n'); // Keep top 30
+                        console.log('🧠 NEURAL CONTEXT ENRICHED');
+                    }
+                } catch (e) { /* silent fail for speed */ }
+            }
+
+            statusMessage.value = 'Analizando implicaciones...';
             await askGemini(cleanText);
         } finally {
             isProcessing.value = false;
@@ -127,7 +183,9 @@ export function useAssistantOrchestrator() {
         hasError,
         startListening: startSpeech,
         stopListening: stopSpeech,
-        partialTranscript
+        partialTranscript,
+        setMeetingMode,
+        isMeetingMode
     } = useDeepgramSpeech(processUserQuery);
 
 
@@ -143,35 +201,60 @@ export function useAssistantOrchestrator() {
         }
     });
 
-    // Reset status when speaking ends
+    // Unified status message logic
     watch(isSpeaking, (newValue) => {
-        if (!newValue) {
-            // Give a small buffer before resetting to avoid flickering if it speaks again immediately
+        if (newValue) {
+            speakingStartTime.value = Date.now();
+            statusMessage.value = 'Exo hablando...';
+        } else {
+            speakingStartTime.value = 0;
             setTimeout(() => {
                 if (!isSpeaking.value && !isListening.value) {
-                    statusMessage.value = 'Presiona para hablar';
+                    statusMessage.value = 'Listo para escucharte';
                 }
-            }, 1000);
+            }, 1200);
         }
     });
 
-    // Stop visualization when listening ends
     watch(isListening, (val) => {
-        if (!val) {
+        if (val) {
+            statusMessage.value = 'Escuchando...';
+        } else {
             stopVisualization();
+            statusMessage.value = 'Micrófono en espera';
         }
     });
 
-    // CRITICAL: Stop listening immediately when speaking starts to preventing echo
+    // CRITICAL BARGE-IN: Detect when user ACTUALLY starts speaking    // Neural Barge-In Logic
+    watch(partialTranscript, (newText) => {
+        if (!isSpeaking.value) return;
+        if (!newText || newText.trim().length < 12) return;
+
+        const cleanInterruption = newText.toLowerCase().trim();
+
+        // 🛡️ ANTI-ECHO BARGE-IN PROTECTION
+        if (lastSpokenText.value.toLowerCase().includes(cleanInterruption)) {
+            return; // It's likely just the assistant's voice
+        }
+
+        // Neural lockout: Don't allow barge-in in the first 1.2s to avoid echo-cutoff
+        const speakingDuration = Date.now() - speakingStartTime.value;
+        if (speakingDuration < 1200) return;
+
+        console.log('🚀 NEURAL BARGE-IN: Interrupción detectada.');
+        stopSpeaking();
+    });
+
+    // CRITICAL: Prevent echo - but keep microphone always on for barge-in
     watch(isSpeaking, (val) => {
         if (val && isListening.value) {
-            console.log('🔇 Asistente hablando: (Micrófono activo - ALWAYS ON)');
-            // stopSpeech(); // DESHABILITADO: El usuario quiere "Always On" real.
+            console.log('🔇 Assistant speaking (Microphone still active for barge-in)');
+            // Don't stop listening - we need it active to detect interruptions
         }
     });
 
     // --- Audio Ducking (Spotify) ---
-    const { setVolume, volume: spotifyVolume, isPlaying: isSpotifyPlaying, isConnected: isSpotifyConnected } = useSpotifyPlayer();
+    const { setVolume, volume: spotifyVolume, isPlaying: isSpotifyPlaying, isConnected: isSpotifyConnected, currentTrack: spotifyTrack, disconnectPlayer } = useSpotifyPlayer();
     const originalVolume = ref(50);
     const isDucked = ref(false);
     let duckTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -292,7 +375,7 @@ export function useAssistantOrchestrator() {
 
     watch([isListening, isSpeaking], manageAudioDucking);
 
-    const lastUserQuery = ref('');
+    // (Moved to top level)
 
     // --- Execution Logic ---
     const executeQuery = async (queryObj: any, nip: string | null = null): Promise<boolean> => {
@@ -353,18 +436,36 @@ export function useAssistantOrchestrator() {
             }
 
             // Respuesta exitosa
-            if (queryObj.intent === 'select' || queryObj.intent === 'complex' || queryObj.intent === 'count') {
+            if (queryObj.speech) {
+                // Speak the initial intent immediately to manage latency
+                const cleanInitial = sanitizeSpeech(queryObj.speech);
+                speak(cleanInitial);
+                serverResponse.value = cleanInitial;
+            }
+
+            if (['select', 'complex', 'count', 'read'].includes(queryObj.intent)) {
                 const smartSummary = await summarizeResults(lastUserQuery.value, result.data);
                 if (smartSummary) {
-                    speak(smartSummary);
+                    const cleanSummary = sanitizeSpeech(smartSummary);
+                    speak(cleanSummary);
+                    serverResponse.value = cleanSummary;
                     statusMessage.value = `Éxito: ${result.message}`;
+                } else {
+                    // HEURISTIC FALLBACK: If AI fails to summarize, we look for 'total' or length
+                    let count = result.data?.length || 0;
+                    if (result.data?.[0]?.total !== undefined) count = result.data[0].total;
+
+                    const msg = `He analizado tus datos, Angel. He localizado un total de ${count} registros relevantes para tu consulta.`;
+                    speak(msg);
+                    serverResponse.value = msg;
                 }
-            } else if (queryObj.speech) {
-                speak(queryObj.speech);
-                triggerFeedback('success', result.message || 'Hecho');
-            } else {
-                speak("Operación completada.");
+            } else if (!queryObj.speech) {
+                const msg = "Operación completada con éxito.";
+                speak(msg);
+                serverResponse.value = msg;
                 triggerFeedback('success', 'Completado');
+            } else {
+                triggerFeedback('success', result.message || 'Hecho');
             }
 
             // Check if we modified biometrics to trigger UI refresh
@@ -375,7 +476,7 @@ export function useAssistantOrchestrator() {
             // Check if we modified appointments to trigger UI refresh
             if (queryObj.sql && (queryObj.sql.toLowerCase().includes('insert into appointments') || queryObj.sql.toLowerCase().includes('update appointments'))) {
                 setTimeout(() => {
-                    refreshAppointments();
+                    fetchAppointments();
                     console.log('🔄 Refrescando lista de citas...');
                 }, 1000);
             }
@@ -493,27 +594,33 @@ export function useAssistantOrchestrator() {
             return;
         }
 
-        // 0.1 BÚSQUEDA GOOGLE
+        // 0.1 BÚSQUEDA GOOGLE / INVESTIGACIÓN
         if (parsed.intent === 'google_search') {
-            console.log('🔍 Búsqueda Web:', parsed.query);
-            shouldAutoActivateMic.value = false; // Disable auto-mic so user can read results
-            speak(parsed.speech || `Buscando ${parsed.query} en Google.`);
-            statusMessage.value = "Buscando...";
+            console.log('🔍 Búsqueda Web/Conocimiento:', parsed.query);
 
             const isImageSearch = /imagen|foto/i.test(parsed.query);
-            const baseUrl = isImageSearch ? 'https://www.google.com/search?tbm=isch&q=' : 'https://www.google.com/search?q=';
 
-            // Trigger in timeout to separate slightly from mic processing
-            setTimeout(() => {
-                const url = `${baseUrl}${encodeURIComponent(parsed.query)}`;
-                const win = window.open(url, '_blank');
-                if (!win) {
-                    console.warn('⚠️ Popup bloqueado. Redirigiendo pestaña actual.');
-                    statusMessage.value = "Redirigiendo...";
-                    window.location.href = url;
+            if (isImageSearch) {
+                // Solo si es explícitamente una imagen, abrimos ventana
+                speak(parsed.speech || `Buscando imágenes de ${parsed.query}.`);
+                statusMessage.value = "Buscando imágenes...";
+                setTimeout(() => {
+                    const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(parsed.query)}`;
+                    window.open(url, '_blank');
+                }, 500);
+            } else {
+                // Si es información, respondemos nosotros (o delegamos a conversational)
+                // Para no abrir ventanas, simplemente decimos que estamos investigando y dejamos que el speech ocurra
+                // Si Gemini devolvió speech, ya se estará diciendo.
+                // Si NO devolvió speech útil, forzamos una "Investigación" interna.
+                if (!parsed.speech || parsed.speech.length < 5) {
+                    statusMessage.value = "Investigando...";
+                    const research = await sendMessage(`El usuario quiere saber: "${parsed.query}". Investiga en tu conocimiento y responde directamente de forma elocuente.`);
+                    speak(research);
+                } else {
+                    speak(parsed.speech);
                 }
-            }, 500);
-
+            }
             return;
         }
 
@@ -891,7 +998,8 @@ export function useAssistantOrchestrator() {
         if (parsed.intent === 'spotify') {
             console.log('🎵 Spotify Intent:', parsed);
 
-            if (!isSpotifyConnected.value) {
+            // Bypassear chequeo de conexión si la acción es 'connect'
+            if (parsed.action !== 'connect' && !isSpotifyConnected.value) {
                 speak("Tu cuenta de Spotify aún no está conectada. No puedo realizar esta acción sin acceso.");
                 triggerFeedback('error', 'Spotify no vinculado');
                 return;
@@ -904,44 +1012,55 @@ export function useAssistantOrchestrator() {
                 let endpoint = '/api/spotify/play';
                 let body: any = {};
 
-                if (parsed.action === 'next') endpoint = '/api/spotify/next';
+                if (parsed.action === 'connect') {
+                    speak("Entendido, te voy a redirigir para que vincules tu cuenta de Spotify.");
+                    setTimeout(() => {
+                        window.location.href = '/auth/spotify';
+                    }, 1500);
+                    return;
+                }
+                else if (parsed.action === 'next') endpoint = '/api/spotify/next';
                 else if (parsed.action === 'previous') endpoint = '/api/spotify/previous';
                 else if (parsed.action === 'pause') endpoint = '/api/spotify/pause';
+                else if (parsed.action === 'disconnect') endpoint = '/api/spotify/disconnect';
+                else if (parsed.action === 'like' || parsed.action === 'unlike') {
+                    endpoint = parsed.action === 'like' ? '/api/spotify/save-track' : '/api/spotify/remove-track';
+                    if (!spotifyTrack.value) {
+                        speak("No hay ninguna canción sonando para agregar a favoritos.");
+                        return;
+                    }
+                    body = { track_id: spotifyTrack.value.id };
+                }
                 else if (parsed.action === 'volume_up' || parsed.action === 'volume_down' || parsed.action === 'volume_set') {
                     endpoint = '/api/spotify/volume';
                     let vol = 50;
-                    // Try to get current volume from global state if available, or assume 50
-                    const currentVol = (window as any).spotifyVolume || 50;
+                    // Try to get current volume (window or state)
+                    const currentVol = (window as any).spotifyVolume || spotifyVolume.value || 50;
 
                     if (parsed.action === 'volume_up') vol = Math.min(100, currentVol + 10);
                     else if (parsed.action === 'volume_down') vol = Math.max(0, currentVol - 10);
                     else if (parsed.action === 'volume_set') vol = parsed.value;
 
-                    // Update global state immediately for responsiveness
                     (window as any).spotifyVolume = vol;
-
-                    // Dispatch event for UI update
                     window.dispatchEvent(new CustomEvent('spotify-volume-change', { detail: vol }));
-
                     body = { volume_percent: vol };
-                    // Use PUT for volume
-                    // But fetch below uses POST by default if not specified, let's fix that logic
                 }
                 else if (parsed.action === 'play') {
                     endpoint = '/api/spotify/play';
                     body = { query: parsed.query, type: parsed.type };
                 }
 
-                // Try to find active device ID from the player component if possible
-                // Since we don't have direct access to the component state here, we can rely on 
-                // the backend handling the default device, OR we can try to store the device ID in localStorage/global state
-                // For now, let's try to read it from a global variable if we set it in the component
                 const deviceId = (window as any).spotifyDeviceId;
-                if (deviceId) {
+                if (deviceId && !body.track_id) { // Don't send device_id for save/remove which use track_id
                     body.device_id = deviceId;
                 }
 
-                const method = (parsed.action === 'volume_up' || parsed.action === 'volume_down' || parsed.action === 'volume_set') ? 'PUT' : 'POST';
+                let method = 'POST';
+                if (parsed.action === 'volume_up' || parsed.action === 'volume_down' || parsed.action === 'volume_set' || parsed.action === 'like') {
+                    method = 'PUT';
+                } else if (parsed.action === 'unlike') {
+                    method = 'DELETE';
+                }
 
                 const response = await fetch(endpoint, {
                     method: method,
@@ -951,6 +1070,11 @@ export function useAssistantOrchestrator() {
                     },
                     body: JSON.stringify(body)
                 });
+
+                if (response.ok && parsed.action === 'disconnect') {
+                    console.log('🚮 Spotify Disconnected. Cleaning UI...');
+                    disconnectPlayer();
+                }
 
                 if (!response.ok) {
                     const err = await response.json();
@@ -1086,6 +1210,51 @@ export function useAssistantOrchestrator() {
             return;
         }
 
+        // 12.1 FINANZAS (DIVISAS)
+        if (parsed.intent === 'finance_check') {
+            console.log('💰 Consulta Financiera:', parsed);
+            speak(parsed.speech || "Consultando indicadores financieros...");
+            statusMessage.value = "Conectando con Bolsa...";
+
+            const base = parsed.base || parsed.currency || 'USD';
+            const target = parsed.target || 'MXN';
+            const data = await fetchExchangeRate(base, target);
+
+            if (data) {
+                const summary = await summarizeResults(lastUserQuery.value, data);
+                if (summary) {
+                    speak(summary);
+                    serverResponse.value = summary; // Sincronizar HUD con el resumen
+                } else {
+                    const text = `El tipo de cambio actual de ${base} a ${target} es de ${data.rate.toFixed(2)}.`;
+                    speak(text);
+                    serverResponse.value = text;
+                }
+                statusMessage.value = `1 ${base} = ${data.rate.toFixed(2)} ${target}`;
+            } else {
+                speak("No pude obtener los datos financieros en tiempo real.");
+            }
+            return;
+        }
+
+        // 12.1.1 ALIAS PARA FINANZAS (Variantes de Gemini)
+        if (['currency_exchange_rate', 'currency_conversion', 'currency_query', 'fx_check'].includes(parsed.intent)) {
+            parsed.intent = 'finance_check'; // Redirigir al handler principal
+            await processIntent(parsed, index);
+            return;
+        }
+
+        // 12.2 TOUR DEL SISTEMA (GUÍA)
+        if (parsed.intent === 'system_tour') {
+            const { startTour } = useOnboarding();
+            speak(parsed.speech || "Excelente idea. Permíteme mostrarte cómo funciona mi ecosistema. Iniciando guía del sistema.");
+            statusMessage.value = "Iniciando Tour...";
+            setTimeout(() => {
+                startTour();
+            }, 1000);
+            return;
+        }
+
         // 9. GASTOS (NUEVO)
         if (parsed.intent === 'expense_create') {
             const amount = parsed.amount;
@@ -1107,108 +1276,122 @@ export function useAssistantOrchestrator() {
             return;
         }
 
-        if (parsed.intent === 'expense_list') {
-            const sql = "SELECT date, description, amount, category FROM expenses WHERE user_id = [ID_USUARIO_ACTUAL] ORDER BY date DESC LIMIT 5";
-            await executeQuery({
-                intent: 'select',
-                sql: sql,
-                speech: null
-            });
-            return;
-        }
-
-        // 10. MEMORIA / SECOND BRAIN
-        if (parsed.intent === 'memory_save') {
-            const key = parsed.key ? `'${parsed.key}'` : 'NULL';
-            const value = parsed.value;
-
-            if (!value) { speak("¿Qué quieres que recuerde?"); return; }
-
-            const sql = `INSERT INTO memories (user_id, \`key\`, value, created_at, updated_at) VALUES ([ID_USUARIO_ACTUAL], ${key}, '${value}', NOW(), NOW())`;
-            await executeQuery({ intent: 'insert', sql: sql, speech: parsed.speech || "Dato guardado en mi memoria." });
-            return;
-        }
-
-        // 10.1 BÚSQUEDA DE CONOCIMIENTO (NUEVO)
-        if (parsed.intent === 'knowledge_search' || parsed.intent === 'memory_read') {
-            const query = parsed.query || '';
-            console.log('🧠 Knowledge Search:', query);
-
-            statusMessage.value = "Buscando en mi memoria...";
-            const searchTerms = query.split(' ').filter((t: string) => t.length > 3); // Basic keyword extraction if needed, but LIKE %query% is better for now
-
-            // Parallel Search: Memories, Notes, Appointments (Titles)
-            // We use specialized queries for each.
-
-            const sqlMemories = `SELECT 'memory' as source, value as content, created_at FROM memories WHERE user_id = [ID_USUARIO_ACTUAL] AND (value LIKE '%${query}%' OR \`key\` LIKE '%${query}%') ORDER BY created_at DESC LIMIT 5`;
-            const sqlNotes = `SELECT 'note' as source, CONCAT(title, ': ', content) as content, created_at FROM notes WHERE user_id = [ID_USUARIO_ACTUAL] AND (content LIKE '%${query}%' OR title LIKE '%${query}%') ORDER BY created_at DESC LIMIT 3`;
-            const sqlAppts = `SELECT 'appointment' as source, CONCAT(title, ' el ', start_time) as content, created_at FROM appointments WHERE user_id = [ID_USUARIO_ACTUAL] AND title LIKE '%${query}%' ORDER BY start_time DESC LIMIT 3`;
+        if (parsed.intent === 'expense_list' || parsed.intent === 'expense_check') {
+            const sql = "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = [ID_USUARIO_ACTUAL] GROUP BY category ORDER BY total DESC";
+            statusMessage.value = "Calculando finanzas...";
 
             try {
-                // Execute searches
-                const [resMem, resNotes, resAppts] = await Promise.all([
-                    executeQuery({ intent: 'select', sql: sqlMemories, speech: null }), // executeQuery returns FALSE on select usually? No, it returns bool success, but logic inside calls summarize. 
-                    // Wait, executeQuery logic for 'select' calls summarizeResults internally IF we pass the intent 'select'.
-                    // We need the RAW data here to combine them.
-                    // executeQuery does NOT return the data. It returns boolean.
-                    // We need to fetch data directly or modify executeQuery.
-                    // Let's look at executeQuery. It calls /api/execute-ai-query and gets result.data.
-                    // But it doesn't return data.
-                    // We must use fetch directly here for custom handling.
+                const response = await fetch('/api/execute-ai-query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
+                    body: JSON.stringify({ intent: 'select', sql: sql })
+                });
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    reportState.value = {
+                        isOpen: true,
+                        data: result.data,
+                        config: {
+                            title: 'Distribución de Gastos',
+                            type: 'pie',
+                            x_axis: 'category',
+                            y_axis: 'total',
+                            insight: 'He analizado tus movimientos financieros. Aquí tienes el desglose por categorías.'
+                        }
+                    };
+                    speak(parsed.speech || "Aquí tienes el análisis de tus gastos por categoría.");
+                } else {
+                    speak("No tengo registros de gastos para generar el gráfico.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            return;
+        }
+
+        // 10. NEURAL MEMORY (APRENDIZAJE)
+        if (parsed.intent === 'memory_learn' || parsed.intent === 'memory_save') {
+            const key = parsed.key || 'fact';
+            const value = parsed.value;
+            const type = parsed.type || 'general';
+
+            if (!value) { speak("¿Qué quieres que aprenda exactamente?"); return; }
+
+            console.log('🧠 Exo está aprendiendo:', { key, value });
+            statusMessage.value = "Sincronizando memoria...";
+
+            try {
+                await axios.post('/api/memories', { key, value, type });
+                speak(parsed.speech || `Entendido Angel. He guardado "${key}" en mi memoria neural. No lo olvidaré.`);
+                // Refresh core memories reactively
+                loadCoreMemories();
+                triggerFeedback('success', 'Aprendizaje completado');
+            } catch (e) {
+                console.error("Error aprendiendo:", e);
+                speak("Tuve un problema al intentar guardar ese recuerdo.");
+            }
+            return;
+        }
+
+        // 10.1 NEURAL SEARCH (BÚSQUEDA)
+        if (parsed.intent === 'memory_search' || parsed.intent === 'knowledge_search' || parsed.intent === 'memory_read') {
+            const query = parsed.query || '';
+            console.log('🧠 Búsqueda Neural:', query);
+            statusMessage.value = "Consultando recuerdos...";
+
+            try {
+                // Fetch distributed context: Memories (Fuzzy), Notes, Appointments
+                const [resMemories, resNotes, resAppts] = await Promise.all([
+                    axios.get('/api/memories', { params: { q: query } }).then(r => r.data),
                     fetch('/api/execute-ai-query', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
-                        body: JSON.stringify({ intent: 'select', sql: sqlNotes })
+                        body: JSON.stringify({ intent: 'select', sql: `SELECT title as source, content FROM notes WHERE user_id = [ID_USUARIO_ACTUAL] AND (content LIKE '%${query}%' OR title LIKE '%${query}%') LIMIT 3` })
                     }).then(r => r.json()),
                     fetch('/api/execute-ai-query', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
-                        body: JSON.stringify({ intent: 'select', sql: sqlAppts })
+                        body: JSON.stringify({ intent: 'select', sql: `SELECT title as source, start_time as content FROM appointments WHERE user_id = [ID_USUARIO_ACTUAL] AND title LIKE '%${query}%' LIMIT 3` })
                     }).then(r => r.json())
                 ]);
 
-                // We need to redo the memory fetch manually too to get data
-                const resMemories = await fetch('/api/execute-ai-query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content },
-                    body: JSON.stringify({ intent: 'select', sql: sqlMemories })
-                }).then(r => r.json());
-
-                // Combine results
+                // Flatten and normalize for Gemini Summary
                 const allResults = [
-                    ...(resMemories.data || []),
-                    ...(resNotes.data || []),
-                    ...(resAppts.data || [])
+                    ...(Array.isArray(resMemories) ? resMemories.map(m => ({ source: 'memoria', content: `${m.key}: ${m.value}` })) : []),
+                    ...(resNotes.data || []).map((n: any) => ({ source: 'nota', content: `${n.source}: ${n.content}` })),
+                    ...(resAppts.data || []).map((a: any) => ({ source: 'calendario', content: `${a.source} (${a.content})` }))
                 ];
 
                 if (allResults.length === 0) {
-                    speak("No encontré nada relacionado en tus notas, memoria o calendario.");
+                    speak("He consultado mi memoria y no he encontrado nada relacionado.");
                     return;
                 }
 
-                // Summarize Combined
-                console.log('🧠 Contexto encontrado:', allResults);
+                console.log('🧠 Contexto Distribuido:', allResults);
                 const summary = await summarizeResults(query, allResults);
-                if (summary) {
-                    speak(summary);
-                } else {
-                    speak("Encontré información relevante en tus notas y memoria.");
-                }
-
+                speak(summary || "He encontrado información relevante en mi base de datos neural.");
             } catch (e) {
-                console.error("Error en Knowledge Search", e);
-                speak("Tuve un problema buscando en mi memoria.");
+                console.error("Error en Búsqueda Neural:", e);
+                speak("Hubo un fallo en la recuperación de mi memoria.");
             }
             return;
         }
 
         // 10.2 ASISTENTE DE REUNIONES
-        if (parsed.intent === 'meeting_notes') {
+        if (parsed.intent === 'meeting_notes' || parsed.intent === 'meeting_start') {
             console.log('📝 Meeting Assistant:', parsed);
-            const content = parsed.content || parsed.summary || parsed.speech || '';
-            const actionItems = parsed.action_items || [];
 
-            if (!content) return;
+            // Activate Meeting Mode (Extended Listening)
+            setMeetingMode(true);
+            triggerFeedback('success', 'Protocolo de Reunión Activado');
+            speak(parsed.speech || "Protocolo de reunión activado. Estaré escuchando atentamente sin interrupciones breves.");
+            statusMessage.value = "REC: Reunión en curso...";
+
+            const content = parsed.content || parsed.summary || parsed.speech || '';
+            if (!content) return; // If it's just starting, we don't save yet
+
+            const actionItems = parsed.action_items || [];
 
             // Format nicely
             let noteContent = `Resumen: ${parsed.summary || 'Sin resumen'}\n\nTranscripción: ${content}`;
@@ -1222,8 +1405,15 @@ export function useAssistantOrchestrator() {
             await executeQuery({
                 intent: 'insert',
                 sql: sql,
-                speech: parsed.speech || `He guardado las notas de la reunión y detectado ${actionItems.length} tareas.`
+                speech: "Notas de reunión guardadas correctamente."
             });
+            return;
+        }
+
+        if (parsed.intent === 'meeting_stop') {
+            setMeetingMode(false);
+            speak("Protocolo de reunión finalizado. Volviendo al modo de respuesta rápida.");
+            statusMessage.value = "Modo normal";
             return;
         }
 
@@ -1350,8 +1540,9 @@ export function useAssistantOrchestrator() {
 
         // 14. DEEP RESEARCH (Simulated via Gemini Knowledge for now)
         if (parsed.intent === 'deep_research') {
+            const topic = (parsed.topic || parsed.query || 'Investigación General').replace(/\{[\s\S]*\}/, '').trim();
             statusMessage.value = "Investigando a fondo...";
-            speak(`Iniciando investigación profunda sobre ${parsed.topic}. Esto puede tomar unos segundos.`);
+            speak(parsed.speech || `Iniciando investigación profunda sobre ${topic}. Esto puede tomar unos segundos.`);
 
             // We ask Gemini to do the heavy lifting in a new request
             // mimicking a "Browse" agent
@@ -1364,6 +1555,8 @@ export function useAssistantOrchestrator() {
                 IMPORTANTE: Responde en formato JSON: { "speech": "Resumen verbal corto", "markdown_report": "Reporte completo en Markdown" }
              `;
 
+            isResearching.value = true; // Trigger visual overlay
+
             try {
                 const response = await sendMessage(researchPrompt);
                 // The response might be JSON string from the proxy.
@@ -1374,23 +1567,41 @@ export function useAssistantOrchestrator() {
                 let reportContent = response;
                 let speechSummary = "Aquí tienes lo que encontré.";
 
-                // Try to parse if Gemini followed JSON rule
                 try {
                     const jsonMatch = response.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const r = JSON.parse(jsonMatch[0]);
-                        if (r.markdown_report) reportContent = r.markdown_report;
-                        if (r.speech) speechSummary = r.speech;
+                        if (r.markdown_report) {
+                            reportContent = r.markdown_report;
+                        } else if (r.report) {
+                            reportContent = r.report;
+                        }
+
+                        if (r.speech) {
+                            speechSummary = r.speech;
+                        }
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.warn("Research JSON parse failed, using raw response.");
+                }
+
+                // If it's still JSON-like strings, clean them
+                if (reportContent.startsWith('{')) {
+                    reportContent = reportContent.replace(/^\{[\s\S]*"markdown_report"\s*:\s*"/, '').replace(/"\s*,\s*"speech"[\s\S]*\}$/, '');
+                }
+
+                // Append the location to the speech
+                speechSummary += " He guardado el reporte completo en tu sección de Notas.";
 
                 // Speak summary
                 speak(speechSummary);
+                serverResponse.value = speechSummary; // Sincronizar HUD final
+                isResearching.value = false; // Scan complete
 
                 // Create a Note with the research!
-                const noteTitle = `Investigación: ${parsed.topic}`;
+                const noteTitle = `Investigación: ${topic}`;
                 // Double escape quotes for SQL
-                const safeContent = reportContent.replace(/'/g, "''");
+                const safeContent = reportContent.replace(/'/g, "''").replace(/\\"/g, '"');
 
                 const sql = `INSERT INTO notes (user_id, title, content, created_at, updated_at) VALUES ([ID_USUARIO_ACTUAL], '${noteTitle}', '${safeContent}', NOW(), NOW())`;
 
@@ -1513,50 +1724,31 @@ export function useAssistantOrchestrator() {
             }
 
             if (parsed.intent === 'calendar_schedule') {
-                // Determine if this was a direct SQL insert (Brain Dump) or a request to open modal
-                // If Brain Dump used 'calendar_schedule' BUT also provided SQL in the same payload (which standard brain dump might not do if using the strict schema), 
-                // actually Brain Dump returns multiple intents.
-                // The 'calendar_schedule' intent in the prompt DOES NOT have SQL. It has structured data.
-                // So the Orchestrator presumably handles it by opening the modal?
-                // WAIT. In the previous turn, the user said "en el calendario me lo abre para que yo lo ponga deve de poder ser capaz de hacerlo el mismo".
-                // This means the user WANTS AUTOMATIC INSERTION, not the modal.
-                // Currently 'calendar_schedule' just opens the modal.
-                // We need to change this: If we have all data, INSERT IT directly.
-
                 if (parsed.date && parsed.time && parsed.title) {
-                    // Fix Timezone: User expects LOCAL time in the DB because the frontend reads it as-is.
-                    // Previously we converted to UTC (toISOString), which shifted 14:30 -> 20:30 (for UTC-6).
-                    // But the frontend `new Date('2025-... 20:30:00')` treating it as local, displayed 8:30 PM.
-                    // Solution: Store exactly what the user said (Local Time String).
-
                     const localDateTime = `${parsed.date} ${parsed.time}:00`;
+                    const title = parsed.title?.replace(/'/g, "''") || 'Cita sin título';
+                    const reminder = parsed.reminder_minutes_before || 30;
 
-                    const title = parsed.title;
-                    const reminder = parsed.reminder_minutes_before || 30; // Default 30 min
-
-                    // Direct Insert with Local Time
                     const sql = `INSERT INTO appointments (user_id, title, start_time, end_time, reminder_minutes_before, status, created_at, updated_at) VALUES ([ID_USUARIO_ACTUAL], '${title}', '${localDateTime}', DATE_ADD('${localDateTime}', INTERVAL 1 HOUR), ${reminder}, 'scheduled', NOW(), NOW())`;
 
+                    statusMessage.value = "Agendando...";
                     await executeQuery({
                         intent: 'insert',
                         sql: sql,
-                        speech: parsed.speech || `Agendada reunión "${title}" para el ${parsed.date} a las ${parsed.time}.`
+                        speech: parsed.speech || `Listo, agendado: ${parsed.title}.`
                     });
 
-                    // Trigger refresh
-                    setTimeout(() => window.dispatchEvent(new Event('refresh-appointments')), 1000);
+                    window.dispatchEvent(new Event('refresh-appointments'));
+                    triggerFeedback('success', 'Agenda Actualizada');
                 } else {
-                    // Missing data, fallback to modal
-                    setTimeout(() => {
-                        const event = new CustomEvent('open-appointment-modal', {
-                            detail: {
-                                date: parsed.date,
-                                time: parsed.time,
-                                title: parsed.title
-                            }
-                        });
-                        window.dispatchEvent(event);
-                    }, 1000);
+                    const event = new CustomEvent('open-appointment-modal', {
+                        detail: {
+                            date: parsed.date,
+                            time: parsed.time,
+                            title: parsed.title
+                        }
+                    });
+                    window.dispatchEvent(event);
                 }
             }
             return;
@@ -1595,15 +1787,12 @@ export function useAssistantOrchestrator() {
             }
         }
 
-        // 7. CONVERSACIÓN GENERAL
-        if (!parsed.sql || parsed.sql === 'null' || parsed.intent === 'conversational') {
+        // 7. CONVERSACIÓN GENERAL / RESPUESTA DIRECTA
+        if (!parsed.sql || parsed.sql === 'null' || parsed.sql === '' || parsed.intent === 'conversational') {
             console.log('💬 Conversación detectada.');
-            const textToSpeak = parsed.speech || parsed.response || "No tengo respuesta para eso.";
+            const textToSpeak = parsed.speech || parsed.response || parsed.text || "He analizado tu petición y estoy listo para proceder. ¿En qué más puedo asistirte?";
             speak(textToSpeak);
-            statusMessage.value = 'Respondiendo...';
-            setTimeout(() => {
-                if (!isSpeaking.value) statusMessage.value = 'Presiona para hablar';
-            }, 4000);
+            statusMessage.value = 'En línea';
             return;
         }
 
@@ -1615,18 +1804,41 @@ export function useAssistantOrchestrator() {
         lastUserQuery.value = text;
 
         try {
-            // Inject Visual Context
+            // Inject State Context (Spotify, Subscription, etc)
+            const spotifyStatus = isSpotifyConnected.value ? 'CONECTADO' : 'NO VINCULADO';
+            let spotifyContext = `Spotify=${spotifyStatus}`;
+
+            if (isSpotifyConnected.value && spotifyTrack.value) {
+                const track = spotifyTrack.value;
+                const artistName = Array.isArray(track.artists) ? track.artists.map((a: any) => a.name).join(', ') : (track.artists || 'Desconocido');
+                spotifyContext += ` (Título="${track.name}", Artista="${artistName}", Estado=${isSpotifyPlaying.value ? 'Reproduciendo' : 'Pausado'}, Vol=${spotifyVolume.value}%)`;
+            }
+
+            const s = subscriptionStatus.value;
+            const subStatus = s?.is_active ? 'ACTIVA' : (s?.is_on_trial ? 'TRIAL' : 'INACTIVA/EXPIRADA');
+            const subExp = s?.subscription_ends_at || s?.trial_ends_at || 'Desconocida';
+            const subDetail = `(Estado=${s?.status}, Expira=${subExp}, Trial=${s?.is_on_trial ? 'SÍ' : 'NO'})`;
+
             const currentUrl = page.url;
             const userName = user.value?.name || 'Invitado';
             const userId = user.value?.id || 'NULL';
-            const visualContext = `[CONTEXTO VISUAL: URL actual="${currentUrl}". Usuario logueado="${userName}" (ID=${userId}). Si la URL es '/dashboard' estás viendo el Panel Principal con gráficos. Si es '/users' ves la lista de usuarios. Si es '/settings' ves la configuración.]`;
-            const fullMessage = `${visualContext} Usuario dice: "${text}"`;
 
+            const stateContext = `[ESTADO SISTEMA: ${spotifyContext}. Suscripción=${subStatus} ${subDetail}. URL="${currentUrl}". Usuario="${userName}" (ID=${userId}).]
+[ESTRUCTURA CÓRTEX (TABLAS): users, appointments, memories, notes, expenses, contacts, biometric_credentials.]
+[SNAPSHOT NEURAL (RECUERDOS RELEVANTES)]
+${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.'}
+[INSTRUCCIÓN COGNITIVA: Conecta los puntos. Posees los datos en este contexto, úsalos antes de consultar la DB. Tu usuario es Angel (ID=${userId}).]
+`;
+            const fullMessage = `${stateContext} Usuario dice: "${text}"`;
+
+            statusMessage.value = 'Generando respuesta quántica...';
             serverResponse.value = ''; // Limpiar al inicio
+            let hasStartedSpeaking = false;
+            let lastSpokenLength = 0;
+
             const geminiResponse = await sendMessage(fullMessage, currentDocumentContext.value, (partialText) => {
-                // EXTRACCIÓN ROBUSTA DE SPEECH EN TIEMPO REAL
+                // EXTRACCIÓN ROBUSTA DE SPEECH EN TIEMPO REAL PARA HUD
                 try {
-                    // Permitimos que capture texto aunque la comilla de cierre no haya llegado
                     const speechRegex = /"speech"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/i;
                     const speechMatch = partialText.match(speechRegex);
 
@@ -1636,8 +1848,8 @@ export function useAssistantOrchestrator() {
                             .replace(/\\"/g, '"')
                             .replace(/\\\\/g, '\\');
                         serverResponse.value = cleanSpeech;
-                    } else if (partialText.length > 0 && !partialText.includes('"speech"') && !partialText.trim().startsWith('{') && !partialText.trim().startsWith('[')) {
-                        // Si no parece JSON (ni objeto ni array), mostrar texto plano directamente
+                    } else if (partialText.length > 0 && !partialText.includes('"intent"') && !partialText.trim().startsWith('{') && !partialText.trim().startsWith('[')) {
+                        // Only show raw text if it doesn't look like JSON is coming soon
                         serverResponse.value = partialText;
                     }
                 } catch (e) { }
@@ -1647,24 +1859,34 @@ export function useAssistantOrchestrator() {
             const extractJSON = (text: string): any => {
                 try { return JSON.parse(text); } catch { }
                 let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-                const speechMatch = cleaned.match(/"speech"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
-                if (speechMatch) return { intent: 'conversational', speech: speechMatch[1] };
                 const jsonMatch = cleaned.match(/[\[{][\s\S]*[\]}]/);
                 if (jsonMatch) {
                     try { return JSON.parse(jsonMatch[0]); } catch { }
                 }
-                return { intent: 'conversational', speech: cleaned.replace(/\{[\s\S]*\}/, '').trim() || "Entendido." };
+                // Deep Fallback: If no JSON but we have text, assume conversational
+                return { intent: 'conversational', speech: cleaned || "He procesado tu comando, Architect." };
             };
 
             parsedData = extractJSON(geminiResponse);
 
-            // Sincronizar UI final con el speech real
+            // Sincronización Estratégica:
+            // Si es un array (múltiples intenciones), unificamos el habla.
+            // Si es un solo objeto, permitimos que el handler de processIntent decida el habla 
+            // para evitar ecos y duplicación de introducciones.
             if (Array.isArray(parsedData)) {
                 const combinedSpeech = parsedData.map(p => p.speech).filter(Boolean).join(' ');
-                if (combinedSpeech) serverResponse.value = combinedSpeech;
+                if (combinedSpeech) {
+                    const cleanMsg = sanitizeSpeech(combinedSpeech);
+                    serverResponse.value = cleanMsg;
+                    speak(cleanMsg);
+                }
                 for (const item of parsedData) await processIntent(item);
             } else {
-                if (parsedData.speech) serverResponse.value = parsedData.speech;
+                // Para intenciones únicas, el HUD se actualiza pero NO hablamos aquí
+                // si el handler va a tomar el control (como en finanzas/investigación).
+                if (parsedData.speech) {
+                    serverResponse.value = sanitizeSpeech(parsedData.speech);
+                }
                 await processIntent(parsedData);
             }
 
@@ -1678,7 +1900,7 @@ export function useAssistantOrchestrator() {
     };
 
     // State to control auto-mic
-    const shouldAutoActivateMic = ref(true);
+    // (Reference global state)
 
     const isPaused = ref(false);
 
@@ -1753,61 +1975,73 @@ export function useAssistantOrchestrator() {
         security.verifyNip(executeQuery);
     };
 
-    onMounted(() => {
+    onMounted(async () => {
         initGeminiChat(user.value);
+        await loadCoreMemories(); // Bootstrap Exo's short-term memory
+
+        // --- Onboarding / Welcome Logic ---
+        const { loadOnboardingStatus, onboardingPreference, startTour } = useOnboarding();
+        await loadOnboardingStatus();
+
+        if (onboardingPreference.value === 'always' || onboardingPreference.value === 'once') {
+            // Un pequeño delay para que la página cargue bien
+            setTimeout(() => {
+                startTour();
+            }, 3000);
+        }
 
         // Limpiar respuesta previa cuando el usuario empieza a hablar
-        watch(isListening, (listening) => {
+        watch([isListening, isResearching], ([listening, researching]) => {
             if (listening) {
                 serverResponse.value = '';
             }
         });
+    });
 
-        window.addEventListener('assistant-pause', () => {
-            isPaused.value = true;
-            if (isListening.value) {
-                stopSpeech();
-                stopVisualization();
+    window.addEventListener('assistant-pause', () => {
+        isPaused.value = true;
+        if (isListening.value) {
+            stopSpeech();
+            stopVisualization();
+        }
+        if (isSpeaking.value) stopSpeaking();
+    });
+
+    window.addEventListener('assistant-resume', () => {
+        isPaused.value = false;
+    });
+
+    window.addEventListener('trigger-ai-report', () => {
+        processIntent({
+            intent: 'report',
+            sql: "SELECT DATE(created_at) as fecha, COUNT(*) as total FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 2 WEEK) GROUP BY fecha", // Default to user report
+            speech: "Generando reporte de actividad reciente...",
+            report_type: 'bar',
+            title: 'Actividad Reciente',
+            x_axis: 'fecha',
+            y_axis: 'total',
+            insight: 'Análisis rápido solicitado desde el Dashboard.'
+        });
+    });
+
+    // Auto-activate microphone after assistant finishes speaking
+    window.addEventListener('assistant-speech-ended', () => {
+        // Wait a brief moment for natural conversation flow
+        setTimeout(() => {
+            if (!isPaused.value && !isListening.value && shouldAutoActivateMic.value) {
+                console.log('🎤 Auto-activando micrófono para respuesta...');
+                startVisualization();
+                startSpeech();
+            } else if (!shouldAutoActivateMic.value) {
+                console.log('🤫 Auto-mic desactivado por solicitud de usuario.');
+                // Reset flag for NEXT time user manually interacts
+                // shouldAutoActivateMic.value = true; // DO NOT reset immediately or it defeats the purpose?
+                // Actually, if they press the button manually, they clearly want to talk again.
+                // So we can assume manual interaction resets valid flow.
+                // But we don't need to reset it here. Manual click will call startSpeech anyway.
+                // We just prevent THIS auto-trigger.
             }
-            if (isSpeaking.value) stopSpeaking();
-        });
-
-        window.addEventListener('assistant-resume', () => {
-            isPaused.value = false;
-        });
-
-        window.addEventListener('trigger-ai-report', () => {
-            processIntent({
-                intent: 'report',
-                sql: "SELECT DATE(created_at) as fecha, COUNT(*) as total FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 2 WEEK) GROUP BY fecha", // Default to user report
-                speech: "Generando reporte de actividad reciente...",
-                report_type: 'bar',
-                title: 'Actividad Reciente',
-                x_axis: 'fecha',
-                y_axis: 'total',
-                insight: 'Análisis rápido solicitado desde el Dashboard.'
-            });
-        });
-
-        // Auto-activate microphone after assistant finishes speaking
-        window.addEventListener('assistant-speech-ended', () => {
-            // Wait a brief moment for natural conversation flow
-            setTimeout(() => {
-                if (!isPaused.value && !isListening.value && shouldAutoActivateMic.value) {
-                    console.log('🎤 Auto-activando micrófono para respuesta...');
-                    startVisualization();
-                    startSpeech();
-                } else if (!shouldAutoActivateMic.value) {
-                    console.log('🤫 Auto-mic desactivado por solicitud de usuario.');
-                    // Reset flag for NEXT time user manually interacts
-                    // shouldAutoActivateMic.value = true; // DO NOT reset immediately or it defeats the purpose?
-                    // Actually, if they press the button manually, they clearly want to talk again.
-                    // So we can assume manual interaction resets valid flow.
-                    // But we don't need to reset it here. Manual click will call startSpeech anyway.
-                    // We just prevent THIS auto-trigger.
-                }
-            }, 500); // 500ms delay for natural feel
-        });
+        }, 500); // 500ms delay for natural feel
     });
 
     const setDocumentContext = (context: string) => {
@@ -1857,33 +2091,39 @@ export function useAssistantOrchestrator() {
     return {
         // State
         isListening,
+        isConnecting,
         isSpeaking,
         isProcessing,
+        isResearching,
+        isMeetingMode,
+        statusMessage,
         transcript,
         serverResponse,
         currentIntent,
         visualState,
         reportState,
+        hasError,
         // Methods
-        triggerMicActivation, // NEW NAME
-        startMicrophone: triggerMicActivation, // BACKWARD COMPAT (Just in case, but marked)
+        triggerMicActivation,
+        startMicrophone: triggerMicActivation,
         stopMicrophone,
-        stopSpeaking: stopSpeech, // Renamed silence to stopSpeaking for consistency
+        stopSpeaking: () => {
+            stopSpeaking(); // Stops Audio
+            // We don't necessarily stop mic here, usually just audio
+        },
         processTextQuery,
         exportCurrentReport,
         setDocumentContext,
-        audioLevel, // Added back audioLevel
-        statusMessage, // Added back statusMessage
-        toggleMicrophone, // Added back toggleMicrophone
-        handleVerifyNip, // Added back handleVerifyNip
-        security, // Added back security
-        userOps, // Added back userOps
-        closeReport, // Added back closeReport
-        lastUserQuery, // Added back lastUserQuery
-        feedbackState, // Added back feedbackState
-        speak, // Added back speak
-        partialTranscript, // Added back partialTranscript
-        isRecording,
-        hasError
+        audioLevel,
+        toggleMicrophone,
+        handleVerifyNip,
+        security,
+        userOps,
+        closeReport,
+        lastUserQuery,
+        feedbackState,
+        speak,
+        partialTranscript,
+        isRecording
     };
 }

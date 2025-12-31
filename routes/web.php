@@ -25,6 +25,8 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+    Route::get('/api/app-init', [App\Http\Controllers\SystemInitController::class, 'bootstrap']);
+    
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
@@ -118,6 +120,9 @@ Route::middleware([
     Route::post('/api/subscription/convert', [App\Http\Controllers\SubscriptionController::class, 'convertToSubscription']);
     Route::post('/api/subscription/reactivate', [App\Http\Controllers\SubscriptionController::class, 'reactivate']);
     Route::post('/api/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel']);
+    // Memory Routes (User Preferences/Onboarding)
+    Route::get('/api/memories', [App\Http\Controllers\MemoryController::class, 'index']);
+    Route::post('/api/memories', [App\Http\Controllers\MemoryController::class, 'store']);
 });
 
 require __DIR__.'/settings.php';

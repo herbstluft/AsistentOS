@@ -36,7 +36,7 @@ defineProps<Props>();
 
     <DropdownMenuGroup class="space-y-1">
         <DropdownMenuItem :as-child="true" class="rounded-lg focus:bg-muted/50 cursor-pointer transition-colors">
-            <Link class="flex items-center w-full px-2 py-2" :href="edit()" prefetch as="button">
+            <Link class="flex items-center w-full px-2 py-2" :href="edit()" as="button">
                 <div class="p-1.5 mr-3 rounded-lg bg-indigo-500/10">
                     <Settings class="h-4 w-4 text-indigo-400" />
                 </div>
@@ -44,7 +44,7 @@ defineProps<Props>();
             </Link>
         </DropdownMenuItem>
         <DropdownMenuItem :as-child="true" class="rounded-lg focus:bg-muted/50 cursor-pointer transition-colors">
-            <Link class="flex items-center w-full px-2 py-2" href="/settings/biometrics" prefetch as="button">
+            <Link class="flex items-center w-full px-2 py-2" href="/settings/biometrics" as="button">
                 <div class="p-1.5 mr-3 rounded-lg bg-purple-500/10">
                     <Fingerprint class="h-4 w-4 text-purple-400" />
                 </div>
