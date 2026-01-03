@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\MemoryController::store
-* @see app/Http/Controllers/MemoryController.php:47
+* @see app/Http/Controllers/MemoryController.php:72
 * @route '/api/memories'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -97,7 +97,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\MemoryController::store
-* @see app/Http/Controllers/MemoryController.php:47
+* @see app/Http/Controllers/MemoryController.php:72
 * @route '/api/memories'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\MemoryController::store
-* @see app/Http/Controllers/MemoryController.php:47
+* @see app/Http/Controllers/MemoryController.php:72
 * @route '/api/memories'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -116,7 +116,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\MemoryController::store
-* @see app/Http/Controllers/MemoryController.php:47
+* @see app/Http/Controllers/MemoryController.php:72
 * @route '/api/memories'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -126,7 +126,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\MemoryController::store
-* @see app/Http/Controllers/MemoryController.php:47
+* @see app/Http/Controllers/MemoryController.php:72
 * @route '/api/memories'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -136,6 +136,87 @@ storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => (
 
 store.form = storeForm
 
-const MemoryController = { index, store }
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+export const search = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: search.url(options),
+    method: 'get',
+})
+
+search.definition = {
+    methods: ["get","head"],
+    url: '/api/memories/search',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+search.url = (options?: RouteQueryOptions) => {
+    return search.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+search.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: search.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+search.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: search.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+const searchForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: search.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+searchForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: search.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\MemoryController::search
+* @see app/Http/Controllers/MemoryController.php:47
+* @route '/api/memories/search'
+*/
+searchForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: search.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+search.form = searchForm
+
+const MemoryController = { index, store, search }
 
 export default MemoryController

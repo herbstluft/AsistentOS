@@ -20,6 +20,7 @@ class SystemInitController extends Controller
             'subscription' => app(SubscriptionController::class)->status()->getData(),
             'preferences' => app(AssistantPreferenceController::class)->getPreference()->getData(),
             'appointments' => app(AppointmentController::class)->index($request)->getData(),
+            'memories' => app(MemoryController::class)->index($request)->getData(),
             'spotify_token' => app(SpotifyController::class)->token($request)->getData(),
             'deepgram_token' => app(DeepgramController::class)->token($request)->getData(),
             'onboarding_preference' => \App\Models\Memory::where('user_id', $user->id)->where('key', 'onboarding_preference')->first(),

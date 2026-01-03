@@ -1,14 +1,17 @@
 import { onMounted, ref } from 'vue';
 
-type Appearance = 'dark'; // Dark mode is the ONLY option
+type Appearance = 'light';
 
 export function updateTheme(_value: Appearance) {
     if (typeof window === 'undefined') {
         return;
     }
 
-    // ALWAYS use dark mode - no exceptions
-    document.documentElement.classList.add('dark');
+    const root = document.documentElement;
+    // Strictly follow Opaque Quantum Light protocol
+    root.classList.add('light');
+    root.classList.add('ultra-optimized');
+    root.classList.remove('dark');
 }
 
 const setCookie = (name: string, value: string, days = 365) => {
@@ -26,32 +29,19 @@ export function initializeTheme() {
         return;
     }
 
-    // ALWAYS initialize to dark mode
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('appearance', 'dark');
-    setCookie('appearance', 'dark');
+    updateTheme('light');
 }
 
-const appearance = ref<Appearance>('dark');
+const appearance = ref<Appearance>('light');
 
 export function useAppearance() {
     onMounted(() => {
-        // Force dark mode on mount
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('appearance', 'dark');
+        updateTheme('light');
     });
 
     function updateAppearance(_value: Appearance) {
-        // Ignore any attempts to change - always stay dark
-        appearance.value = 'dark';
-
-        // Store in localStorage for client-side persistence...
-        localStorage.setItem('appearance', 'dark');
-
-        // Store in cookie for SSR...
-        setCookie('appearance', 'dark');
-
-        updateTheme('dark');
+        // No-op for mode changes, only light is allowed
+        updateTheme('light');
     }
 
     return {

@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
             '/api/execute-ai-query',
             '/api/assistant/preference',
             '/api/spotify/*',
-            '/api/gemini/*' // CRITICAL: Allow external access to Gemini proxy
+            '/api/gemini/*',
+            '/api/openai/*' // CRITICAL: Allow external access to OpenAI proxy
         ]);
 
         $middleware->web(append: [

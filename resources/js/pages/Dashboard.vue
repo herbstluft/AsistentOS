@@ -41,10 +41,16 @@ const user = computed(() => page.props.auth.user);
 // Composable usage for real status
 // Composable usage for real status
 // Composable usage for real status
-const { isListening, isSpeaking, triggerMicActivation, stopMicrophone, reportState, isProcessing, isResearching, isMeetingMode, processTextQuery, exportCurrentReport, stopSpeaking, setDocumentContext, statusMessage, serverResponse } = useAssistantOrchestrator();
+const {
+    isListening, isSpeaking, triggerMicActivation, stopMicrophone,
+    reportState, isProcessing, isResearching, isMeetingMode,
+    processTextQuery, exportCurrentReport, stopSpeaking,
+    setDocumentContext, statusMessage, serverResponse,
+    voiceProvider, setVoiceProvider, assistantName, updateAssistantName
+} = useAssistantOrchestrator();
 const { analyzeFile, documentName, documentContent, isAnalyzing, analysisError, resetDocument } = useDocumentAnalyzer();
 const { reminders } = useAssistantReminders(() => { }, false); // Just read access
-
+const { switchPalette, currentPalette } = useAssistantPreferences();
 // --- MICROPHONE PERMISSION LOGIC ---
 const showMicModal = ref(false);
 const micPermissionStatus = ref<'prompt' | 'denied' | 'granted'>('prompt');
@@ -137,7 +143,6 @@ const toggleMic = (event?: MouseEvent) => {
 };
 const { upcomingAppointments } = useAppointmentReminders(); // Read DB appointments
 const { currentVoiceId } = useVoice() as any;
-const { assistantName } = useAssistantPreferences();
 
 
 
@@ -262,8 +267,9 @@ const summaryState = computed(() => {
                             class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
                         AsistentOS Online
                     </p>
-                    <h1 class="text-2xl md:text-3xl lg:text-4xl font-light tracking-tight">
-                        Hola, <span class="font-semibold text-foreground">{{ user.name }}</span>
+                    <h1
+                        class="text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter text-foreground mb-4 uppercase">
+                        Hola, <span class="text-primary">{{ user.name }}</span>
                     </h1>
                 </div>
                 <div class="text-right hidden md:block">
@@ -283,23 +289,24 @@ const summaryState = computed(() => {
                     @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
 
                     <div
-                        class="absolute inset-0 bg-card/50 backdrop-blur-lg rounded-[2rem] border border-white/5 shadow-xl overflow-hidden transition-all duration-300 group-hover:border-white/10 bento-card">
+                        class="absolute inset-0 bg-card rounded-[2rem] border border-border shadow-xl overflow-hidden bento-card">
 
-                        <!-- Visualizer Background -->
+                        <!-- Visualizer Background (Static) -->
                         <div id="tour-mood"
-                            class="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none mood-orbs-container">
+                            class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none mood-orbs-container z-10">
                             <div class="relative w-[300px] h-[300px] md:w-full md:max-w-[500px] md:aspect-square">
-                                <!-- Idle Ring -->
+                                <!-- Idle Ring (Static) -->
                                 <div v-if="!isSpeaking"
-                                    class="absolute inset-0 border border-slate-500/20 rounded-full animate-spin-slow">
+                                    class="absolute inset-0 border border-muted-foreground/20 rounded-full">
                                 </div>
                                 <div v-if="!isSpeaking"
-                                    class="absolute inset-4 border border-slate-500/10 rounded-full animate-spin-reverse">
+                                    class="absolute inset-4 border border-muted-foreground/10 rounded-full">
                                 </div>
 
                                 <!-- Logo/Core -->
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <Brain v-if="!isSpeaking" class="w-16 h-16 md:w-24 md:h-24 text-slate-700/50" />
+                                    <Brain v-if="!isSpeaking"
+                                        class="w-16 h-16 md:w-24 md:h-24 text-muted-foreground/50" />
                                 </div>
 
                                 <!-- Active Voice Wave -->
@@ -311,95 +318,122 @@ const summaryState = computed(() => {
                         </div>
 
                         <!-- Content Overlay -->
-                        <div class="absolute inset-0 flex flex-col justify-between p-4 md:p-8">
+                        <div class="absolute inset-0 flex flex-col justify-between p-4 md:p-8 z-20">
 
                             <!-- Top Status -->
                             <div class="flex justify-between items-start">
-                                <div
-                                    class="px-4 py-1.5 rounded-full bg-black/20 border border-white/5 backdrop-blur-md text-xs font-medium text-slate-400 flex items-center gap-2">
-                                    <Zap class="w-3 h-3 text-amber-500" />
-                                    <span class="uppercase">{{ assistantName || 'AI CORE' }}</span>
-                                </div>
-
-                                <!-- Document Active Indicator -->
-                                <div v-if="documentName && !isAnalyzing"
-                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs animate-in fade-in slide-in-from-top-4">
-                                    <FileText class="w-3 h-3" />
-                                    <span class="max-w-[150px] truncate">{{ documentName }}</span>
-                                    <button @click.stop="resetDocument" class="hover:text-emerald-400"><span
-                                            class="sr-only">Cerrar</span>×</button>
-                                </div>
-                            </div>
-
-                            <!-- Analyzing State -->
-                            <div v-if="isAnalyzing"
-                                class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-20">
-                                <Sparkles class="w-10 h-10 text-indigo-400 animate-spin mb-4" />
-                                <p class="text-lg font-light text-white">Analizando documento...</p>
-                            </div>
-
-                            <div id="tour-mic" class="w-full max-w-3xl mx-auto mic-button-container">
-                                <div
-                                    class="relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-[#0f172a]/90 backdrop-blur-md border border-white/10 rounded-full shadow-xl transition-all focus-within:bg-[#0f172a]">
-
-                                    <!-- Mic Toggle -->
-                                    <button @click="toggleMic($event)"
-                                        class="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 relative overflow-hidden group/mic"
-                                        :class="isListening ? 'bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'">
-                                        <div v-if="isListening"
-                                            class="absolute inset-0 bg-red-400 animate-ping opacity-20"></div>
-                                        <Mic v-if="!isListening" class="w-5 h-5" />
-                                        <div v-else class="w-3 h-3 bg-white rounded-sm animate-pulse"></div>
-                                    </button>
-
-                                    <!-- Text Input -->
-                                    <input v-model="textInput" @keyup.enter="handleTextSubmit" type="text"
-                                        placeholder="¿En qué ayudo?"
-                                        class="flex-1 min-w-0 bg-transparent border-none outline-none text-base md:text-lg font-light text-white placeholder:text-slate-500 focus:ring-0 focus:outline-none h-full px-2" />
-
-                                    <!-- Upload Button -->
-                                    <button @click="openFilePicker"
-                                        class="p-2 text-slate-500 hover:text-blue-400 transition-colors shrink-0"
-                                        title="Subir archivo">
-                                        <FileText class="w-5 h-5" />
-                                    </button>
-
-                                    <!-- Send Button -->
-                                    <button @click="handleTextSubmit" :disabled="!textInput.trim()"
-                                        class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center disabled:opacity-50 disabled:bg-slate-800 disabled:text-slate-600 transition-all hover:bg-blue-500 hover:scale-105 active:scale-95 shadow-lg shrink-0">
-                                        <ArrowRight class="w-5 h-5" />
-                                    </button>
-                                </div>
-
-                                <!-- Protocol Indicators -->
-                                <div class="flex justify-center gap-4 mt-4">
-                                    <div v-if="isMeetingMode"
-                                        class="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold tracking-tighter animate-pulse uppercase">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span> Protocolo
-                                        Reunión Activo
+                                <div class="flex items-center gap-2">
+                                    <div
+                                        class="px-4 py-1.5 rounded-full bg-secondary border border-border text-xs font-semibold text-primary flex items-center gap-2 shadow-sm">
+                                        <div class="w-2 h-2 rounded-full bg-primary"></div>
+                                        <span class="uppercase tracking-widest">{{ assistantName || 'EXO CORE' }}</span>
                                     </div>
-                                    <div v-if="isResearching"
-                                        class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold tracking-tighter animate-pulse uppercase">
-                                        <Activity class="w-3 h-3" /> Escaneo Cuántico de Red
+
+                                    <!-- Voice Engine Selector -->
+                                    <div
+                                        class="flex items-center gap-1 bg-secondary rounded-full p-1 border border-border shadow-inner">
+                                        <button v-for="p in ['elevenlabs', 'deepgram', 'browser']" :key="p"
+                                            @click="setVoiceProvider(p as any)" :disabled="isSpeaking"
+                                            class="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-none disabled:opacity-30 disabled:cursor-not-allowed"
+                                            :class="voiceProvider === p ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
+                                            {{ p === 'elevenlabs' ? 'LABS' : p === 'deepgram' ? 'AURA' : 'WEB' }}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- AI Response HUD (Responsive Premium Subtitles) -->
+                            <!-- CENTERED COPILOT STATUS -->
+                            <div
+                                class="flex-1 flex flex-col items-center justify-center text-center space-y-4 md:space-y-8">
+                                <!-- Real-time Status Text -->
+                                <div class="space-y-2 mb-4">
+                                    <h2 v-if="isListening"
+                                        class="text-2xl md:text-4xl font-black tracking-tighter text-foreground uppercase">
+                                        Escuchando...
+                                    </h2>
+                                    <h2 v-else-if="isProcessing"
+                                        class="text-2xl md:text-4xl font-black tracking-tighter text-foreground uppercase">
+                                        Pensando...
+                                    </h2>
+                                    <h2 v-else-if="isSpeaking"
+                                        class="text-xl md:text-3xl font-black tracking-tighter text-primary uppercase">
+                                        {{ assistantName }} rindiendo
+                                    </h2>
+                                    <h2 v-else
+                                        class="text-2xl md:text-4xl font-black tracking-tighter text-muted-foreground opacity-20 uppercase">
+                                        Sistema Activo
+                                    </h2>
+                                    <p v-if="isListening"
+                                        class="text-primary font-black text-[10px] tracking-[0.3em] uppercase">Protocolo
+                                        Quantum</p>
+                                </div>
+
+                                <!-- Central Visualizer Stage -->
+                                <div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
+                                    <div v-if="!isSpeaking && !isListening && !isProcessing"
+                                        class="absolute inset-0 bg-primary/5 rounded-full"></div>
+                                    <SiriWave :is-speaking="isSpeaking || isListening || isProcessing"
+                                        :amplitude="isListening ? 1.5 : (isSpeaking ? 1.2 : 0.4)" />
+                                </div>
+                            </div>
+
+                            <!-- FLOATING COMMAND BAR (Pinned to bottom) -->
+                            <div class="absolute bottom-6 md:bottom-8 left-0 right-0 px-4 md:px-8 z-30">
+                                <div id="tour-mic" class="w-full max-w-2xl mx-auto mic-button-container">
+                                    <div
+                                        class="command-bar-container relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-card border border-border rounded-full shadow-lg">
+
+                                        <!-- Mic Toggle -->
+                                        <button @click="toggleMic($event)"
+                                            class="w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-none shrink-0 relative overflow-hidden group/mic"
+                                            :class="isListening ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-secondary text-foreground hover:bg-muted'">
+                                            <Mic v-if="!!isListening" class="w-5 h-5 md:w-6 md:h-6" />
+                                            <div v-else class="w-4 h-4 bg-primary-foreground rounded-sm"></div>
+                                        </button>
+
+                                        <!-- Text Input -->
+                                        <input v-model="textInput" @keyup.enter="handleTextSubmit" type="text"
+                                            placeholder="Escribe o pide algo..."
+                                            class="flex-1 min-w-0 bg-transparent border-none outline-none text-sm md:text-lg font-light text-foreground placeholder:text-muted-foreground/30 focus:ring-0 focus:outline-none h-full px-2" />
+
+                                        <!-- Upload Button -->
+                                        <button @click="openFilePicker"
+                                            class="p-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                                            title="Subir archivo">
+                                            <FileText class="w-5 h-5" />
+                                        </button>
+
+                                        <!-- Send Button -->
+                                        <button @click="handleTextSubmit" :disabled="!textInput.trim()"
+                                            class="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-20 disabled:bg-muted disabled:text-muted-foreground transition-none shadow-lg shrink-0">
+                                            <ArrowRight class="w-5 h-5" />
+                                        </button>
+                                    </div>
+
+                                    <!-- Protocol Indicators (Compact) -->
+                                    <div class="flex justify-center gap-4 mt-3">
+                                        <div v-if="isMeetingMode"
+                                            class="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-bold tracking-tighter uppercase">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Reunión
+                                        </div>
+                                        <div v-if="isResearching"
+                                            class="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold tracking-tighter uppercase">
+                                            <Activity class="w-3 h-3" /> Escaneo
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Response HUD (Floating smoothly above command bar) -->
                             <div v-show="serverResponse"
-                                class="absolute bottom-24 left-0 right-0 flex justify-center px-4 md:px-10 z-30 pointer-events-none">
+                                class="absolute bottom-28 md:bottom-36 left-0 right-0 flex justify-center px-4 md:px-10 z-40 pointer-events-none">
                                 <div
-                                    class="w-full max-w-2xl bg-slate-950/80 backdrop-blur-lg border border-white/10 rounded-2xl p-4 md:p-6 shadow-xl border-t-cyan-500/30 pointer-events-auto transition-all duration-300">
-                                    <div class="max-h-[140px] md:max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                                    class="response-hud-container w-full max-w-2xl bg-card border-2 border-primary/20 rounded-[2rem] p-5 md:p-8 shadow-2xl pointer-events-auto transition-none">
+                                    <div class="max-h-[120px] md:max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                                         <p
-                                            class="text-sm md:text-base lg:text-lg text-slate-200 font-light leading-relaxed text-center md:text-left tracking-tight text-pretty">
-                                            <span
-                                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] mr-2 border border-cyan-500/20 shrink-0">AI</span>
+                                            class="text-sm md:text-lg text-foreground font-bold leading-relaxed text-center tracking-tight text-pretty">
                                             {{ serverResponse }}
                                         </p>
-                                    </div>
-                                    <div
-                                        class="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-cyan-500/40 rounded-full blur-[1px]">
                                     </div>
                                 </div>
                             </div>
@@ -407,9 +441,9 @@ const summaryState = computed(() => {
 
                         </div>
                     </div>
-                    <!-- Drag Overlay -->
+                    <!-- Drag Overlay (Opaque) -->
                     <div v-if="isDragging"
-                        class="absolute inset-0 z-50 rounded-[2rem] border-2 border-dashed border-blue-500 bg-blue-500/10 backdrop-blur-sm flex flex-col items-center justify-center text-blue-400 pointer-events-none animate-pulse">
+                        class="absolute inset-0 z-50 rounded-[2rem] border-2 border-dashed border-primary bg-background flex flex-col items-center justify-center text-primary pointer-events-none">
                         <FileText class="w-16 h-16 mb-4" />
                         <h3 class="text-xl font-bold">Suelta el archivo aquí</h3>
                     </div>
@@ -418,27 +452,20 @@ const summaryState = computed(() => {
                     <input ref="fileInputRef" type="file" @change="handleFileSelect"
                         accept=".pdf,.docx,.doc,.xlsx,.xls,.xml,.json,.txt,.csv,.log,.md" class="hidden" />
 
-                    <!-- Deep Research Scanning Overlay -->
-                    <transition name="quantum-scan">
+                    <!-- Deep Research Scanning Overlay (Static) -->
+                    <transition name="none">
                         <div v-if="isResearching"
-                            class="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-md rounded-[2rem] flex flex-col items-center justify-center overflow-hidden pointer-events-none">
+                            class="absolute inset-0 z-40 bg-background rounded-[2rem] flex flex-col items-center justify-center overflow-hidden pointer-events-none">
                             <div class="relative w-64 h-64">
-                                <div
-                                    class="absolute inset-0 border-2 border-cyan-500/30 rounded-full animate-scan-pulse">
-                                </div>
-                                <div class="absolute inset-0 border border-cyan-400/20 rounded-full animate-spin-slow">
-                                </div>
+                                <div class="absolute inset-0 border-2 border-primary/30 rounded-full"></div>
+                                <div class="absolute inset-0 border border-primary/20 rounded-full"></div>
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <Activity class="w-12 h-12 text-cyan-400 animate-pulse" />
-                                </div>
-                                <!-- Horizontal Scanning Line -->
-                                <div
-                                    class="absolute top-0 left-0 right-0 h-[1px] bg-cyan-400/60 shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-scan-line">
+                                    <Activity class="w-12 h-12 text-primary" />
                                 </div>
                             </div>
-                            <h3 class="mt-8 text-xl font-light tracking-[0.3em] text-cyan-400 uppercase animate-pulse">
+                            <h3 class="mt-8 text-xl font-light tracking-[0.3em] text-primary uppercase">
                                 Deep Research Mode</h3>
-                            <p class="text-[10px] font-mono text-cyan-500/60 mt-2 uppercase tracking-widest">Inyectando
+                            <p class="text-[10px] font-mono text-primary/60 mt-2 uppercase tracking-widest">Inyectando
                                 neuronas en la red de conocimiento...</p>
                         </div>
                     </transition>
@@ -449,25 +476,26 @@ const summaryState = computed(() => {
 
                     <!-- A. Summary / Notifications Card -->
                     <div
-                        class="flex-1 min-h-[200px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 md:p-8 relative overflow-hidden group hover:bg-card/40 transition-all cursor-default bento-card">
+                        class="flex-1 min-h-[200px] bg-card rounded-[2rem] border border-border p-6 md:p-8 relative overflow-hidden group bento-card">
                         <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Clock class="w-32 h-32 -rotate-12 text-amber-500" />
                         </div>
 
                         <div class="relative z-10 h-full flex flex-col">
                             <h3
-                                class="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Activity class="w-4 h-4 text-amber-500" /> Resumen
+                                class="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                <Activity class="w-4 h-4 text-emerald-500" /> RESUMEN OPERATIVO
                             </h3>
 
                             <div v-if="summaryState.reminders.length > 0" class="space-y-4 flex-1">
                                 <div v-for="(rem, idx) in summaryState.reminders" :key="idx"
                                     v-memo="[rem.time, rem.text]"
-                                    class="flex gap-4 items-start p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                    class="flex gap-4 items-start p-3 rounded-xl bg-secondary border border-border">
                                     <span
-                                        class="text-xs font-mono text-amber-500 mt-1 shrink-0 bg-amber-500/10 px-2 py-0.5 rounded">{{
+                                        class="text-xs font-black text-emerald-600 mt-1 shrink-0 bg-emerald-500/10 px-2 py-0.5 rounded whitespace-nowrap">{{
                                             rem.time }}</span>
-                                    <p class="text-sm text-foreground/90 leading-snug line-clamp-2">{{ rem.text }}</p>
+                                    <p class="text-sm text-foreground font-bold leading-snug line-clamp-2">{{ rem.text
+                                    }}</p>
                                 </div>
                             </div>
 
@@ -484,20 +512,16 @@ const summaryState = computed(() => {
 
                     <!-- B. Calendar Access -->
                     <Link id="tour-calendar" href="/calendar"
-                        class="h-[140px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex items-center justify-between relative overflow-hidden group hover:border-emerald-500/30 transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] calendar-widget bento-card">
+                        class="h-[140px] bg-card rounded-[2rem] border border-border p-6 flex items-center justify-between relative overflow-hidden group calendar-widget bento-card">
                         <div class="relative z-10">
                             <h3
-                                class="text-xl font-light text-foreground mb-1 group-hover:text-emerald-400 transition-colors">
+                                class="text-2xl font-black tracking-tighter text-foreground mb-1 group-hover:text-primary transition-none uppercase">
                                 Calendario</h3>
-                            <p class="text-xs text-muted-foreground">Ver agenda completa</p>
+                            <p class="text-xs text-muted-foreground font-bold uppercase tracking-widest">Ver agenda</p>
                         </div>
                         <div
-                            class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
-                            <Calendar class="w-6 h-6 text-emerald-500" />
-                        </div>
-                        <!-- Hover Gradient -->
-                        <div
-                            class="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000">
+                            class="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center border border-border">
+                            <Calendar class="w-6 h-6 text-primary" />
                         </div>
                     </Link>
 
@@ -508,35 +532,32 @@ const summaryState = computed(() => {
 
                 <!-- Notes / Text Gen -->
                 <Link id="tour-notes" href="/notes"
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-blue-500/30 tour-notes bento-card">
+                    class="lg:col-span-3 h-[120px] bg-card rounded-[2rem] border border-border p-6 flex flex-col justify-between group cursor-pointer tour-notes bento-card transition-none">
                     <div class="flex justify-between items-start">
-                        <FileText class="w-6 h-6 text-blue-500" />
-                        <ArrowRight
-                            class="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        <FileText class="w-6 h-6 text-primary" />
+                        <ArrowRight class="w-4 h-4 text-muted-foreground group-hover:translate-x-1" />
                     </div>
-                    <span class="text-sm font-medium text-foreground/80">Notas & Docs</span>
+                    <span class="text-sm font-black text-foreground uppercase tracking-widest">Notas & Docs</span>
                 </Link>
 
                 <!-- Reports -->
                 <div id="tour-reports" @click="handleOpenReports"
-                    class="lg:col-span-6 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-amber-500/30 tour-reports bento-card">
+                    class="lg:col-span-6 h-[120px] bg-card rounded-[2rem] border border-border p-6 flex flex-col justify-between group cursor-pointer tour-reports bento-card transition-none">
                     <div class="flex justify-between items-start">
-                        <Activity class="w-6 h-6 text-amber-500" />
-                        <ArrowRight
-                            class="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        <Activity class="w-6 h-6 text-emerald-500" />
+                        <ArrowRight class="w-4 h-4 text-muted-foreground group-hover:translate-x-1" />
                     </div>
-                    <span class="text-sm font-medium text-foreground/80">Reportes IA</span>
+                    <span class="text-sm font-black text-foreground uppercase tracking-widest">Reportes IA</span>
                 </div>
 
                 <!-- Settings / Profile -->
                 <Link id="tour-profile" href="/settings/profile"
-                    class="lg:col-span-3 h-[120px] bg-card/30 backdrop-blur-lg rounded-[2rem] border border-white/5 p-6 flex flex-col justify-between group hover:bg-card/40 transition-all cursor-pointer hover:border-slate-500/30 tour-profile bento-card">
+                    class="lg:col-span-3 h-[120px] bg-card rounded-[2rem] border border-border p-6 flex flex-col justify-between group cursor-pointer tour-profile bento-card transition-none">
                     <div class="flex justify-between items-start">
-                        <User class="w-6 h-6 text-slate-400" />
-                        <ArrowRight
-                            class="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        <User class="w-6 h-6 text-muted-foreground" />
+                        <ArrowRight class="w-4 h-4 text-muted-foreground group-hover:translate-x-1" />
                     </div>
-                    <span class="text-sm font-medium text-foreground/80">Mi Perfil</span>
+                    <span class="text-sm font-black text-foreground uppercase tracking-widest">Mi Perfil</span>
                 </Link>
 
             </div>
@@ -555,119 +576,6 @@ const summaryState = computed(() => {
 </template>
 
 <style scoped>
-/* Animations */
-@keyframes spin-slow {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes spin-reverse {
-    from {
-        transform: rotate(360deg);
-    }
-
-    to {
-        transform: rotate(0deg);
-    }
-}
-
-.animate-spin-slow {
-    animation: spin-slow 30s linear infinite;
-}
-
-.animate-spin-reverse {
-    animation: spin-reverse 25s linear infinite;
-}
-
-@keyframes breathing {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-
-    50% {
-        transform: scale(1.05);
-        opacity: 1;
-    }
-}
-
-.animate-breathing {
-    animation: breathing 4s ease-in-out infinite;
-    will-change: transform, opacity;
-}
-
-/* Resto de animaciones utilitarias */
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-
-    50% {
-        opacity: 0.6;
-        transform: scale(1.05);
-    }
-}
-
-.animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
-    will-change: transform, opacity;
-}
-
-@keyframes scan-line {
-    0% {
-        top: 0%
-    }
-
-    100% {
-        top: 100%
-    }
-}
-
-@keyframes scan-pulse {
-
-    0%,
-    100% {
-        transform: scale(0.9);
-        opacity: 0.2;
-    }
-
-    50% {
-        transform: scale(1.1);
-        opacity: 0.4;
-    }
-}
-
-.animate-scan-line {
-    animation: scan-line 2s linear infinite;
-}
-
-.animate-scan-pulse {
-    animation: scan-pulse 3s ease-in-out infinite;
-}
-
-.quantum-scan-enter-active,
-.quantum-scan-leave-active {
-    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-.quantum-scan-enter-from,
-.quantum-scan-leave-to {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-}
-</style>
-
-<style scoped>
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
 }
@@ -677,16 +585,16 @@ const summaryState = computed(() => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(6, 182, 212, 0.2);
+    background: hsl(var(--border));
     border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(6, 182, 212, 0.4);
+    background: hsl(var(--primary)/0.2);
 }
 
-.custom-scrollbar {
+.scroll-quantum {
     scrollbar-width: thin;
-    scrollbar-color: rgba(6, 182, 212, 0.2) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
 }
 </style>

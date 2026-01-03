@@ -27,6 +27,7 @@ class AppBootstrapService
                 'spotify_token' => app(SpotifyController::class)->token($request)->getData(),
                 'deepgram_token' => app(DeepgramController::class)->token($request)->getData(),
                 'elevenlabs_token' => config('services.elevenlabs.api_key'),
+                'openai_token' => config('services.openai.api_key'),
             ];
         } catch (\Exception $e) {
             return null;

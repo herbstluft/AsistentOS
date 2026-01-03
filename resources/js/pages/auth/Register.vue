@@ -145,16 +145,14 @@ const handleSubscriptionSuccess = async (pmId: string) => {
 
         <!-- Overlay de carga -->
         <div v-if="isProcessingRegistration"
-            class="absolute inset-0 z-50 bg-[#020617]/90 backdrop-blur-xl flex flex-col items-center justify-center rounded-[2.5rem] p-10 text-center animate-fade-in">
+            class="absolute inset-0 z-50 bg-background/95 flex flex-col items-center justify-center rounded-[2.5rem] p-10 text-center">
             <div class="relative mb-8">
-                <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse"></div>
-                <Loader2 class="w-16 h-16 text-blue-500 animate-spin relative" />
+                <Loader2 class="w-16 h-16 text-primary animate-spin relative" />
             </div>
-            <h3 class="text-2xl font-black text-white italic">Sincronizando...</h3>
-            <p class="text-slate-500 font-bold text-sm mt-3 uppercase tracking-widest">Creando tu espacio personal en la
+            <h3 class="text-2xl font-black text-foreground italic">Sincronizando...</h3>
+            <p class="text-muted-foreground font-bold text-sm mt-3 uppercase tracking-widest">Creando tu espacio personal en la
                 red.</p>
         </div>
-
         <Form v-bind="store.form()" :reset-on-success="['password', 'password_confirmation']"
             v-slot="{ errors, processing }" class="flex flex-col gap-5">
 
@@ -162,36 +160,36 @@ const handleSubscriptionSuccess = async (pmId: string) => {
                 <!-- Name -->
                 <div class="space-y-1.5">
                     <Label for="name"
-                        class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Nombre
+                        class="text-muted-foreground text-[10px] uppercase tracking-[0.2em] font-black ml-1">Nombre
                         Completo</Label>
                     <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-none">
                             <User class="w-5 h-5" />
                         </div>
                         <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" name="name"
                             v-model="formData.name" placeholder="Tu nombre"
-                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-12 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 font-medium" />
+                            class="bg-secondary border-border text-foreground placeholder:text-muted-foreground/50 h-12 rounded-2xl focus:border-primary/50 focus:ring-primary/20 transition-none pl-12 font-medium" />
                     </div>
                 </div>
 
                 <!-- Email -->
                 <div class="space-y-1.5">
                     <Label for="email"
-                        class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Correo
+                        class="text-muted-foreground text-[10px] uppercase tracking-[0.2em] font-black ml-1">Correo
                         Electrónico</Label>
                     <div class="relative group">
                         <div
-                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-none">
                             <Mail class="w-5 h-5" />
                         </div>
                         <Input id="email" type="email" required :tabindex="2" autocomplete="email" name="email"
                             v-model="formData.email" placeholder="tu@email.com"
-                            class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-12 rounded-2xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-12 pr-12 font-medium" />
+                            class="bg-secondary border-border text-foreground placeholder:text-muted-foreground/50 h-12 rounded-2xl focus:border-primary/50 focus:ring-primary/20 transition-none pl-12 pr-12 font-medium" />
 
                         <div class="absolute right-4 top-1/2 -translate-y-1/2">
                             <Loader2 v-if="emailValidation.status === 'checking'"
-                                class="w-4 h-4 text-blue-400 animate-spin" />
+                                class="w-4 h-4 text-primary animate-spin" />
                             <CheckCircle v-else-if="emailValidation.status === 'valid'"
                                 class="w-4 h-4 text-emerald-500" />
                             <XCircle v-else-if="emailValidation.status === 'invalid'" class="w-4 h-4 text-red-500" />
@@ -208,21 +206,21 @@ const handleSubscriptionSuccess = async (pmId: string) => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <Label for="password"
-                            class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Clave</Label>
+                            class="text-muted-foreground text-[10px] uppercase tracking-[0.2em] font-black ml-1">Clave</Label>
                         <div class="relative group">
                             <Input id="password" type="password" required :tabindex="3" autocomplete="new-password"
                                 name="password" v-model="formData.password" placeholder="••••••••"
-                                class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-11 rounded-xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-4 font-medium" />
+                                class="bg-secondary border-border text-foreground placeholder:text-muted-foreground/50 h-11 rounded-xl focus:border-primary/50 focus:ring-primary/20 transition-none pl-4 font-medium" />
                         </div>
                     </div>
                     <div class="space-y-1.5">
                         <Label for="password_confirmation"
-                            class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black ml-1">Confirmar</Label>
+                            class="text-muted-foreground text-[10px] uppercase tracking-[0.2em] font-black ml-1">Confirmar</Label>
                         <div class="relative group">
                             <Input id="password_confirmation" type="password" required :tabindex="4"
                                 autocomplete="new-password" name="password_confirmation"
                                 v-model="formData.password_confirmation" placeholder="••••••••"
-                                class="bg-[#0f172a]/50 border-white/5 text-white placeholder:text-slate-600 h-11 rounded-xl focus:border-blue-500/50 focus:ring-blue-500/20 transition-all pl-4 font-medium" />
+                                class="bg-secondary border-border text-foreground placeholder:text-muted-foreground/50 h-11 rounded-xl focus:border-primary/50 focus:ring-primary/20 transition-none pl-4 font-medium" />
                         </div>
                     </div>
                 </div>
@@ -230,10 +228,10 @@ const handleSubscriptionSuccess = async (pmId: string) => {
             </div>
 
             <Button type="button" @click="handleRegisterClick"
-                class="w-full h-14 rounded-2xl bg-white text-black hover:bg-slate-200 font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 mt-4"
+                class="w-full h-14 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 font-black text-lg shadow-xl transition-none mt-4"
                 tabindex="5" :disabled="processing">
                 <div class="relative flex items-center justify-center gap-2">
-                    <Spinner v-if="processing" class="text-black" />
+                    <Spinner v-if="processing" class="text-primary-foreground" />
                     <span v-else class="flex items-center gap-2">
                         Verificar Tarjeta
                         <Sparkles class="w-5 h-5" />
@@ -245,11 +243,11 @@ const handleSubscriptionSuccess = async (pmId: string) => {
         <!-- Footer -->
         <template #footer>
             <div class="flex flex-col gap-4 items-center">
-                <div class="h-px w-20 bg-white/5"></div>
+                <div class="h-px w-20 bg-border"></div>
                 <div class="flex flex-col gap-1 items-center">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">¿Ya tienes cuenta?</p>
+                    <p class="text-muted-foreground text-xs font-bold uppercase tracking-widest">¿Ya tienes cuenta?</p>
                     <Link :href="login()"
-                        class="text-lg font-black text-blue-500 hover:text-blue-400 transition-colors italic">
+                        class="text-lg font-black text-primary hover:text-primary/80 transition-none italic">
                         Iniciar sesión
                     </Link>
                 </div>

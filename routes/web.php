@@ -109,8 +109,9 @@ Route::middleware([
     Route::put('/api/notes/{id}', [App\Http\Controllers\NoteController::class, 'update']);
     Route::delete('/api/notes/{id}', [App\Http\Controllers\NoteController::class, 'destroy']);
 
-    // Gemini Proxy
+    // AI Proxies
     Route::post('/api/gemini/proxy', [App\Http\Controllers\GeminiController::class, 'proxy']);
+    Route::post('/api/openai/proxy', [App\Http\Controllers\OpenAIController::class, 'proxy']);
 
     // Subscription Routes
     Route::get('/api/subscription/status', [App\Http\Controllers\SubscriptionController::class, 'status']);
@@ -123,6 +124,7 @@ Route::middleware([
     // Memory Routes (User Preferences/Onboarding)
     Route::get('/api/memories', [App\Http\Controllers\MemoryController::class, 'index']);
     Route::post('/api/memories', [App\Http\Controllers\MemoryController::class, 'store']);
+    Route::get('/api/memories/search', [App\Http\Controllers\MemoryController::class, 'search']);
 });
 
 require __DIR__.'/settings.php';

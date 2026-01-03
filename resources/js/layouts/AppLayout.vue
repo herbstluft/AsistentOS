@@ -81,13 +81,13 @@ const setupSmartPolling = () => {
             if (shouldPerformTask('high')) {
                 fetchSubscriptionStatus();
             }
-        }, 15000); // 15s instead of 5s
+        }, 45000); // 45s instead of 15s
     } else if (newMode === 'low') {
         statusCheckInterval = window.setInterval(() => {
             if (shouldPerformTask('low')) {
                 fetchSubscriptionStatus();
             }
-        }, 60000); // 1m instead of 30s
+        }, 120000); // 120s instead of 60s
     }
 };
 

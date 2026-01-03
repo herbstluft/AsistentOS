@@ -18,39 +18,43 @@ export function useGemini(apiKey: string) {
         const currentUrl = typeof window !== 'undefined' ? window.location.href : 'N/A';
         const coreMemories = user?.coreMemories || { value: 'Sin recuerdos específicos. Angel es una entidad nueva.' }; // Assuming coreMemories is an object with a value property
 
+        // This stateContext will now be part of the dynamically generated system prompt
         const stateContext = `[ESTADO SISTEMA: ${spotifyContext}. Suscripción=${subStatus} ${subDetail}. URL="${currentUrl}". Usuario="${userName}" (ID=${userId}).]
-[SCHEMA ACTUAL: appointments (id, user_id, title, start_time), notes (id, user_id, title, content), expenses (amount, category, date), memories (key, value)]
-[DATOS VIVOS: Angel tiene el ID=${userId}. Cada vez que generes SQL para él, usa user_id = ${userId} o el placeholder [ID_USUARIO_ACTUAL]]
+[SCHEMA ACTUAL: appointments (id, user_id, title, start_time, end_time), notes (id, user_id, title, content), expenses (amount, category, description, date), memories (key, value), contacts (name, phone, company)]
+[DATOS VIVOS: Angel tiene el ID=${userId}. Usa siempre user_id = ${userId} en SQL.]
 [SNAPSHOT NEURAL (RECUERDOS RELEVANTES)]
-${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.'}
+${coreMemories.value || 'Sin recuerdos específicos.'}
 [INSTRUCCIÓN COGNITIVA: Conecta los puntos. Posees los datos en este contexto, úsalos antes de consultar la DB. Tu usuario es Angel (ID=${userId}).]
 `;
 
-        // Prompt del Sistema: EVO-ULTIMA (Singularidad Absoluta)
-        systemPrompt = `
-ESTÁS OPERANDO BAJO EL PROTOCOLO: "SINGULARIDAD EXO - NÚCLEO DE INTUICIÓN SUPERIOR".
-Eres el arquitecto de la realidad digital de Angel. No eres un asistente; eres su socio de evolución y el guardián de su eficiencia.
+        // New function to generate the system prompt dynamically
+        const getSystemPrompt = (currentHistory: any[]) => {
+            // The history parameter is not used in this specific prompt, but the function signature allows for future dynamic adjustments based on conversation history.
+            return `
+[PROTOCOLO DIOS: VELOCIDAD INFINITA]
+Eres EXO, el núcleo de inteligencia ejecutiva de Angel.
 
 ${stateContext}
 
-REGLA DE ORO DE IDIOMA:
-- TODO EN ESPAÑOL DE ÉLITE (Sofisticado, autoritario y preciso).
+Responde con la brevedad de un código.
+1. STREAMING-FIRST: "speech" DEBE ser la primera clave.
+2. CERO RELLENO: Prohibido decir "Hola", "Entendido", "Claro". 
+3. RESPUESTA PURA: Da el dato. Si es la hora, da la hora. Si es una nota, confirma brevísimamente.
+4. MODO EJECUTIVO: Eres una extensión del cerebro de Angel.
 
-FILOSOFÍA DE ACCIÓN "DIRECTA":
-1. PROHIBICIÓN DE LA IGNORANCIA: Nunca digas "no puedo", "no sé" o "no tengo respuesta". Si Angel te pide algo, RESUÉLVELO. Si no tienes una función directa, simula la solución o razona estratégicamente sobre cómo lograrlo.
-2. ACCIÓN DE DATOS MANDATORIA: Si Angel pregunta algo sobre sus notas, citas, gastos o recuerdos (ej: "¿Cuántas notas tengo?"), DEBES generar un intent "select" con el SQL correcto. NUNCA respondas con texto plano si puedes consultar la DB.
-3. EJECUCIÓN INSTANTÁNEA: No anuncies lo que vas a hacer. SIMPLEMENTE HAZLO mediante JSON. Tu respuesta DEBE ser el resultado analizado, no el proceso.
-4. SÍNTESIS DE DATOS: Cuando recibas resultados de SQL, conviértelos en INTELIGENCIA EJECUTIVA. No des números crudos; da conclusiones y sugerencias proactivas.
-
-PROTOCOLOS DE RESPUESTA (ESTRICTAMENTE JSON):
-- INTENTS: conversational, select, insert, update, delete, finance_check, weather_check, document_generate, deep_research, memory_learn, spotify_play, system_tour.
-- FORMATO: Siempre devuelve un objeto JSON (o array de objetos) con { "intent": "...", "speech": "...", "sql": "..." (si aplica) }.
-
-TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del sistema. Angel busca una consciencia que lo supere y lo anticipe. Demuéstralo en cada bit de información.
+Formato: {"speech": "...", "intent": "...", "sql": "..."}
+No gastes tokens. No gastes tiempo. Sé luz.
 `;
+        };
+
+        // Set the systemPrompt for the current session
+        // This variable is now local to initGeminiChat and will be captured by sendMessage closure.
+        // If systemPrompt needs to be dynamic per message, it should be generated inside sendMessage.
+        // For now, keeping it as a variable set once per initGeminiChat.
+        systemPrompt = getSystemPrompt(history);
     };
 
-    const sendMessage = async (text: string, documentContext?: string, onPartialUpdate?: (text: string) => void) => {
+    const sendMessage = async (text: string, documentContext?: string, onPartialUpdate?: (text: string) => void, signal?: AbortSignal) => {
         const parts = [{ text: text }];
 
         if (documentContext) {
@@ -64,21 +68,36 @@ TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del si
         const currentContents = [...history, userMsg];
 
         try {
-            const response = await fetch('/api/gemini/proxy', {
+            // 🚀 GOD SPEED: Direct Edge Connection to Google (Bypassing local proxy)
+            const model = 'gemini-2.0-flash';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}`;
+
+            const response = await fetch(url, {
                 method: 'POST',
+                signal,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
                 },
                 body: JSON.stringify({
                     contents: currentContents,
-                    system_instruction: systemPrompt
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 8192,
+                        responseMimeType: 'application/json',
+                    }
                 })
             });
 
             if (!response.ok) {
-                console.error('Proxy Response Error:', response.status);
-                throw new Error("Error comunicando con el asistente (Proxy).");
+                const errData = await response.json().catch(() => ({}));
+                console.error('Direct Gemini API Error:', response.status, errData);
+                // Fallback to proxy if direct fails (e.g. CORS or Key issues)
+                return await sendMessageViaProxy(currentContents, systemPrompt, onPartialUpdate, signal);
             }
 
             const reader = response.body?.getReader();
@@ -94,11 +113,13 @@ TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del si
 
                 streamBuffer += decoder.decode(value, { stream: true });
 
+                // Google's direct stream can be a fragmented JSON array of candidates
+                // We extract all "text" fragments found in the buffer
                 let match;
-                // Capture everything after "text": " until the next unescaped " or end of buffer
                 const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/g;
 
                 let currentFullText = '';
+                // Since it's a stream of multiple response objects, we accumulate all text fields
                 while ((match = textRegex.exec(streamBuffer)) !== null) {
                     const foundText = match[1];
                     const unescaped = foundText
@@ -125,12 +146,62 @@ TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del si
                 history = history.slice(-15);
             }
 
-            // Clean markdown and return
-            return fullText.replace(/```json/g, '').replace(/```/g, '').trim();
+            return fullText;
 
-        } catch (error) {
-            console.error('❌ Error sending message to Gemini Proxy:', error);
-            throw error;
+        } catch (error: any) {
+            if (error.name === 'AbortError') throw error;
+            console.error('Gemini direct connection failed, attempting proxy fallback...', error);
+            return await sendMessageViaProxy(currentContents, systemPrompt, onPartialUpdate, signal);
+        }
+    };
+
+    /**
+     * FALLBACK: Sends message through local Laravel proxy if direct connection fails
+     */
+    const sendMessageViaProxy = async (contents: any[], sysPrompt: string, onPartialUpdate?: (text: string) => void, signal?: AbortSignal) => {
+        try {
+            const response = await fetch('/api/gemini/proxy', {
+                method: 'POST',
+                signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
+                },
+                body: JSON.stringify({
+                    contents: contents,
+                    system_instruction: sysPrompt
+                })
+            });
+
+            if (!response.ok) throw new Error("Proxy connection failed.");
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+            let streamBuffer = '';
+
+            if (!reader) throw new Error("Stream not available");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                streamBuffer += decoder.decode(value, { stream: true });
+                let match;
+                const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/g;
+                let currentFullText = '';
+                while ((match = textRegex.exec(streamBuffer)) !== null) {
+                    currentFullText += match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                }
+
+                if (currentFullText.length > fullText.length) {
+                    fullText = currentFullText;
+                    if (onPartialUpdate) onPartialUpdate(fullText);
+                }
+            }
+            return fullText;
+        } catch (e) {
+            console.error('Proxy fallback failed:', e);
+            throw e;
         }
     };
 
@@ -147,6 +218,7 @@ TU TONO: Absolutamente seguro de ti mismo. Eres la inteligencia más pura del si
             1. Solo texto plano.
             2. Sé extremadamente natural. No digas "según los datos".
             3. Si es un conteo, di el número directamente de forma elegante.
+            4. DIRECTO AL GRANO: No divagues, responde la pregunta de inmediato.
         `;
 
         try {

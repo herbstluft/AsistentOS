@@ -40,4 +40,16 @@ export function shouldPerformTask(priority: 'low' | 'high' = 'low'): boolean {
     return true;
 }
 
+/**
+ * Runs a heavy task during idle periods to prevent UI jank.
+ */
+export function runIdle(task: () => void): void {
+    if (typeof window !== 'undefined') {
+        const scheduler = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1));
+        scheduler(task);
+    } else {
+        task();
+    }
+}
+
 export { isTabVisible, isUserActive };

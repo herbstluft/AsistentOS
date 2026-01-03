@@ -22,15 +22,12 @@ const showAvatar = computed(
 </script>
 
 <template>
-    <!-- Avatar with gradient ring -->
+    <!-- Avatar with solid ring (Azure Minimal) -->
     <div class="relative">
-        <div
-            class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl opacity-50 blur-[2px]">
-        </div>
-        <Avatar class="relative h-9 w-9 overflow-hidden rounded-lg ring-1 ring-white/10">
+        <Avatar class="relative h-9 w-9 overflow-hidden rounded-lg ring-1 ring-border shadow-sm">
             <AvatarImage v-if="showAvatar" :src="user.avatar!" :alt="user.name" />
             <AvatarFallback
-                class="rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-foreground font-medium">
+                class="rounded-lg bg-secondary text-foreground font-bold italic">
                 {{ getInitials(user.name) }}
             </AvatarFallback>
         </Avatar>

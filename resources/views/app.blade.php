@@ -36,22 +36,30 @@
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+        <!-- UNIVERSAL CONNECTIVITY: Pre-resolving all theoretical endpoints -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link rel="dns-prefetch" href="https://fonts.bunny.net">
         <link rel="preconnect" href="https://generativelanguage.googleapis.com">
         <link rel="dns-prefetch" href="https://generativelanguage.googleapis.com">
         <link rel="preconnect" href="https://api.elevenlabs.io">
         <link rel="dns-prefetch" href="https://api.elevenlabs.io">
+        <link rel="preconnect" href="https://api.deepgram.com">
+        <link rel="dns-prefetch" href="https://api.deepgram.com">
+        <link rel="preconnect" href="https://accounts.spotify.com">
+        <link rel="dns-prefetch" href="https://accounts.spotify.com">
         
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600|lexend-deca:400,700,800&display=swap" rel="stylesheet" />
+        <!-- FONT PHYSICS: Immediate swap and high priority -->
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" fetchpriority="high" />
 
-        <!-- Pre-resolving critical network paths -->
-        <link rel="preconnect" href="{{ url('/') }}" crossorigin>
-
-
-
-        <!-- Module Preload: Instruct browser to fetch and compile JS in parallel -->
+        <!-- QUANTUM PRELOAD: Instruction to browser main threat to fetch JS/CSS in parallel -->
         <link rel="modulepreload" href="{{ Vite::asset('resources/js/app.ts') }}" fetchpriority="high">
+        <link rel="preload" href="{{ Vite::asset('resources/css/app.css') }}" as="style" fetchpriority="high">
+        <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}">
+        
+        <!-- QUANTUM PRELOAD: Instruction to browser main threat to fetch JS/CSS in parallel -->
+        <link rel="modulepreload" href="{{ Vite::asset('resources/js/app.ts') }}" fetchpriority="high">
+        <link rel="preload" href="{{ Vite::asset('resources/css/app.css') }}" as="style" fetchpriority="high">
+        <link rel="stylesheet" href="{{ Vite::asset('resources/css/app.css') }}">
 
         @vite(['resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         @inertiaHead

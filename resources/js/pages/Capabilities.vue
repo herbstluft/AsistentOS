@@ -161,11 +161,10 @@ const breadcrumbs = [
 
                 <!-- Header -->
                 <div class="mb-6">
-                    <h1 class="text-4xl md:text-5xl font-light tracking-tight text-foreground mb-4">
-                        Capacidades del <span
-                            class="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-500">Asistente</span>
+                    <h1 class="text-4xl md:text-5xl font-black tracking-tighter text-foreground mb-4">
+                        Capacidades del <span class="text-primary">Asistente</span>
                     </h1>
-                    <p class="text-lg text-muted-foreground font-light max-w-2xl">
+                    <p class="text-lg text-muted-foreground font-bold max-w-2xl text-left">
                         Explora todo lo que tu IA puede hacer por ti. Estas funcionalidades están activas y listas para
                         usar ahora mismo.
                     </p>
@@ -174,7 +173,7 @@ const breadcrumbs = [
                 <!-- Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div v-for="(feature, idx) in features" :key="idx"
-                        class="group relative p-6 rounded-[2rem] border bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 overflow-hidden"
+                        class="group relative p-6 rounded-[2rem] border bg-card shadow-lg transition-none overflow-hidden"
                         :class="[feature.border]">
 
                         <!-- Hover Glow -->
@@ -190,8 +189,10 @@ const breadcrumbs = [
 
                             <!-- Content -->
                             <div>
-                                <h3 class="text-xl font-medium text-foreground mb-2">{{ feature.title }}</h3>
-                                <p class="text-sm text-muted-foreground leading-relaxed">{{ feature.description }}</p>
+                                <h3 class="text-xl font-black text-foreground mb-2 tracking-tight text-left">{{
+                                    feature.title }}</h3>
+                                <p class="text-sm text-muted-foreground font-bold leading-relaxed text-left">{{
+                                    feature.description }}</p>
                             </div>
 
                             <!-- Examples -->
@@ -212,10 +213,9 @@ const breadcrumbs = [
                 </div>
 
                 <!-- Footer CTA -->
-                <div
-                    class="mt-8 p-8 rounded-[2.5rem] bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 text-center">
-                    <h3 class="text-xl text-foreground font-medium mb-2">¿Necesitas algo más?</h3>
-                    <p class="text-muted-foreground mb-0">
+                <div class="mt-8 p-8 rounded-[2.5rem] bg-secondary border border-border text-center">
+                    <h3 class="text-xl text-foreground font-black mb-2">¿Necesitas algo más?</h3>
+                    <p class="text-muted-foreground font-bold mb-0">
                         El asistente aprende constantemente. Si necesitas una nueva funcionalidad, solo pídesela al
                         desarrollador.
                     </p>
@@ -236,11 +236,11 @@ const breadcrumbs = [
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: hsl(var(--border));
     border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: hsl(var(--muted-foreground)/0.2);
 }
 </style>

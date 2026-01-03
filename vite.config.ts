@@ -14,34 +14,32 @@ export default defineConfig({
         }
     },
     build: {
-        target: 'es2022',
+        target: 'esnext',
         minify: 'esbuild',
-        assetsInlineLimit: 4096, // 4KB - Reduce inline to decrease initial bundle
+        assetsInlineLimit: 10240, // 10KB - Inline more small assets to reduce HTTP roundtrips
         cssCodeSplit: true,
-        chunkSizeWarningLimit: 300, // Stricter warning
+        chunkSizeWarningLimit: 500,
         rollupOptions: {
             output: {
                 manualChunks: (id) => {
                     if (id.includes('node_modules')) {
-                        // Separate heavy libraries
                         if (id.includes('vue') || id.includes('@inertiajs')) return 'vendor-core';
-                        if (id.includes('radix-vue') || id.includes('class-variance')) return 'vendor-ui';
+                        if (id.includes('radix-vue') || id.includes('reka-ui')) return 'vendor-ui';
                         if (id.includes('@google') || id.includes('mediapipe')) return 'vendor-ai';
-                        // Group small utilities together
-                        if (id.includes('clsx') || id.includes('tailwind-merge')) return 'vendor-utils';
+                        if (id.includes('lucide') || id.includes('element-plus')) return 'vendor-icons';
                         return 'vendor';
                     }
                 },
-                // Optimize chunk names
-                chunkFileNames: 'assets/[name]-[hash].js',
-                entryFileNames: 'assets/[name]-[hash].js',
-                assetFileNames: 'assets/[name]-[hash][extname]'
+                chunkFileNames: 'assets/[hash].js',
+                entryFileNames: 'assets/[hash].js',
+                assetFileNames: 'assets/[hash][extname]'
             }
         }
     },
     esbuild: {
-        drop: ['console', 'debugger'], // Always strip logs
-        legalComments: 'none', // Remove license comments
+        drop: ['console', 'debugger'],
+        legalComments: 'none',
+        treeShaking: true,
     },
     optimizeDeps: {
         include: [

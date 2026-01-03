@@ -85,20 +85,18 @@ const systemNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <div
-                        class="flex flex-col gap-2 w-full p-3 rounded-2xl bg-white/5 border border-white/5 group/onboarding transition-all hover:bg-white/[0.08] hover:border-cyan-500/20 shadow-sm overflow-hidden min-w-0">
+                        class="flex flex-col gap-2 w-full p-3 rounded-2xl bg-secondary border-2 border-border group/onboarding transition-none shadow-sm overflow-hidden min-w-0">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2 min-w-0">
                                 <div class="relative flex h-2 w-2">
-                                    <span
-                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-20"></span>
-                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                                 </div>
                                 <span
-                                    class="text-[10px] font-bold tracking-widest text-cyan-400/80 uppercase truncate">Protocolo
+                                    class="text-[10px] font-black tracking-[0.2em] text-primary uppercase truncate italic">Protocolo
                                     Tour</span>
                             </div>
                             <button @click="startTour" title="Ejecutar Tour"
-                                class="p-1.5 rounded-lg text-white/40 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all active:scale-95 shrink-0">
+                                class="p-1.5 rounded-lg text-muted-foreground hover:text-primary transition-none shrink-0">
                                 <Sparkles class="w-3.5 h-3.5" />
                             </button>
                         </div>
@@ -108,12 +106,12 @@ const systemNavItems: NavItem[] = [
                             saveOnboardingPreference(next);
                         }" class="w-full text-left flex flex-col min-w-0">
                             <span
-                                class="text-[11px] font-black text-white/50 tracking-wider uppercase truncate group-hover/onboarding:text-white transition-colors">
-                                Frecuencia: <span class="text-cyan-400">{{ onboardingPreference === 'always' ? 'SIEMPRE'
+                                class="text-[11px] font-black text-muted-foreground tracking-wider uppercase truncate group-hover/onboarding:text-foreground transition-none">
+                                Frecuencia: <span class="text-primary">{{ onboardingPreference === 'always' ? 'SIEMPRE'
                                     : 'UNA VEZ' }}</span>
                             </span>
-                            <span class="text-[8px] text-white/20 mt-0.5 uppercase tracking-tight truncate">Click para
-                                alternar estado</span>
+                            <span class="text-[8px] text-muted-foreground font-bold mt-0.5 uppercase tracking-tight truncate">Click para
+                                alternar</span>
                         </button>
                     </div>
                 </SidebarMenuItem>

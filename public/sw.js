@@ -1,10 +1,10 @@
-const CACHE_NAME = 'asistentos-quantum-cache-v1';
+const CACHE_NAME = 'asistentos-god-tier-v1';
 const ASSETS_TO_CACHE = [
     '/',
     '/favicon.ico',
-    'https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap'
 ];
 
+// ⚡ GOD-TIER SERVICE WORKER: Zero-latency strategy
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -30,32 +30,46 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Only cache GET requests
     if (event.request.method !== 'GET') return;
 
-    // For navigating pages, use Network First to ensure fresh data
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request).catch(() => caches.match('/'))
-        );
-        return;
-    }
+    const url = event.request.url;
 
-    // For assets like JS, CSS, Fonts, use Cache First
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            return fetch(event.request).then((networkResponse) => {
-                // Cache external fonts and internal assets
-                const url = event.request.url;
-                if (url.includes('fonts.bunny.net') || url.includes('/build/assets/')) {
+    // 1. STRATEGY: Cache First for immutable assets (Fonts, Build Files)
+    if (url.includes('fonts.bunny.net') || url.includes('fonts.googleapis.com') || url.includes('/build/assets/')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse;
+                return fetch(event.request).then((networkResponse) => {
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseToCache);
                     });
-                }
+                    return networkResponse;
+                });
+            })
+        );
+        return;
+    }
+
+    // 2. STRATEGY: Network First for API and Navigation (ensure freshness)
+    // But fall back to cache if offline
+    if (event.request.mode === 'navigate' || url.includes('/api/')) {
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match(event.request) || caches.match('/'))
+        );
+        return;
+    }
+
+    // 3. DEFAULT: Stale-While-Revalidate
+    event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, networkResponse.clone());
+                });
                 return networkResponse;
             });
+            return cachedResponse || fetchPromise;
         })
     );
 });

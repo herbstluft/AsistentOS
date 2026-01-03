@@ -42,6 +42,31 @@ class MemoryController extends Controller
     }
 
     /**
+     * Specialized search for the AI orchestrator.
+     */
+    public function search(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) return response()->json([]);
+
+        $searchTerm = $request->query('query');
+        if (!$searchTerm) return response()->json([]);
+
+        $parts = explode(' ', $searchTerm);
+        $query = Memory::where('user_id', $user->id);
+
+        $query->where(function($q) use ($parts) {
+            foreach ($parts as $part) {
+                if (strlen($part) < 3) continue;
+                $q->orWhere('key', 'LIKE', "%$part%")
+                  ->orWhere('value', 'LIKE', "%$part%");
+            }
+        });
+
+        return response()->json($query->latest()->limit(5)->get());
+    }
+
+    /**
      * Store or update a memory.
      */
     public function store(Request $request)

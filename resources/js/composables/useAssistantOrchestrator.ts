@@ -3,7 +3,7 @@ import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { useElevenLabsVoice } from '@/composables/useElevenLabsVoice';
 import { useAudioVisualizer } from '@/composables/useAudioVisualizer';
-import { useGemini } from '@/composables/useGemini';
+import { useOpenAI } from '@/composables/useOpenAI';
 import { useDeepgramSpeech } from '@/composables/useDeepgramSpeech';
 import { useAssistantSecurity } from '@/composables/useAssistantSecurity';
 import { useAssistantUserOps } from '@/composables/useAssistantUserOps';
@@ -18,26 +18,44 @@ import { useFinance } from '@/composables/useFinance';
 import { useOnboarding } from '@/composables/useOnboarding';
 
 
-// --- QUANTUM SINGLETON STATE (Shared across all instances/components) ---
+// --- SINGLETON STATE ---
 const isProcessing = ref(false);
 const transcript = shallowRef('');
-const serverResponse = shallowRef('');
+const serverResponse = ref('');
+const statusMessage = ref('Listo');
 const currentIntent = shallowRef('');
 const visualState = shallowRef('idle');
 const currentDocumentContext = shallowRef<string>('');
-const coreMemories = ref<string>('');
+export const coreMemories = ref<string>('');
 const isResearching = ref(false);
 const speakingStartTime = ref(0);
+const assistantName = ref('Exo'); // Moved from useAssistantPreferences
+const lastUserQuery = ref(''); // Moved from end of file
+const isOrchestratorInitialized = ref(false);
+
+// Abort Controller for AI (OpenAI)
+let currentAIController: AbortController | null = null;
+
 const reportState = ref<{
-    show: boolean;
-    title: string;
-    data: any;
-    type: 'metric' | 'table' | 'bar' | 'pie';
+    isOpen: boolean;
+    data: any[];
+    config: {
+        title: string;
+        type: 'bar' | 'pie' | 'metric' | 'table';
+        x_axis: string;
+        y_axis: string;
+        insight?: string;
+    }
 }>({
-    show: false,
-    title: '',
-    data: null,
-    type: 'table'
+    isOpen: false,
+    data: [],
+    config: {
+        title: '',
+        type: 'table',
+        x_axis: '',
+        y_axis: '',
+        insight: ''
+    }
 });
 const feedbackState = ref<{
     type: 'idle' | 'listening' | 'processing' | 'success' | 'error' | 'spotify';
@@ -47,7 +65,6 @@ const feedbackState = ref<{
     message: ''
 });
 const shouldAutoActivateMic = ref(true);
-const lastUserQuery = ref('');
 
 const QUANTUM_CACHE: Record<string, any> = {
     'quien eres': { speech: 'Soy Exo, tu asistente avanzado con tecnología de núcleo neural.', intent: 'none' },
@@ -57,14 +74,14 @@ const QUANTUM_CACHE: Record<string, any> = {
 };
 
 export function useAssistantOrchestrator() {
-    const API_KEY = 'AIzaSyAZAs3i0-OEFm7F1BCqPTXjVsDvjlX4-8M';
+    const API_KEY = (window as any)._openAIToken || '';
     const page = usePage();
     const user = computed(() => page.props.auth.user);
 
     // --- Core Composables ---
-    const { isSpeaking, speak, stopSpeaking, unlockAudio, lastSpokenText } = useElevenLabsVoice();
+    const { isSpeaking, speak, stopSpeaking, unlockAudio, lastSpokenText, voiceProvider, setVoiceProvider } = useElevenLabsVoice();
     const { audioLevel, isRecording, startVisualization, stopVisualization } = useAudioVisualizer();
-    const { initGeminiChat, sendMessage, summarizeResults } = useGemini(API_KEY);
+    const { initOpenAIChat, sendMessage, summarizeResults } = useOpenAI(API_KEY);
 
     const sanitizeSpeech = (text: string): string => {
         if (!text) return '';
@@ -80,7 +97,7 @@ export function useAssistantOrchestrator() {
     const userOps = useAssistantUserOps(speak);
     const reminders = useAssistantReminders(speak, false);
     const { fetchAppointments } = useAppointmentReminders();
-    const { switchPalette, assistantName, updateAssistantName } = useAssistantPreferences();
+    const { switchPalette, updateAssistantName } = useAssistantPreferences();
     const { fetchWeather } = useWeather();
     const { fetchExchangeRate } = useFinance();
     const { updateAppearance } = useAppearance();
@@ -115,61 +132,93 @@ export function useAssistantOrchestrator() {
 
     // --- State & Speech Setup ---
 
-    // Hoisted function to break dependency cycle
-    async function processUserQuery(text: string, bypassWakeWord: boolean = false) {
-        if (isProcessing.value) return;
-        if (!text || !text.trim()) return;
+    // --- Neural Thought Aggregation ---
+    let aggregationTimer: any = null;
+    let accumulatedQuery = '';
 
+    async function processUserQuery(text: string, bypassWakeWord: boolean = false) {
+        if (!text || !text.trim()) return;
         const cleanText = text.trim().toLowerCase();
 
-        // 🛡️ QUANTUM ANTI-ECHO PROTECTION
-        if (isSpeaking.value) {
-            const lastSpokenLower = lastSpokenText.value.toLowerCase().trim();
-            // Match against parts of what we said or are saying
-            if (lastSpokenLower.includes(cleanText) || cleanText.length > 10 && lastSpokenLower.startsWith(cleanText.substring(0, 10))) {
-                console.log('🔇 QUANTUM PROTOCOL: Eco detectado e interceptado.');
-                return;
-            }
-        }
-
-        // Neural Lockout: Pulse duration check
-        if (isSpeaking.value && (Date.now() - speakingStartTime.value < 1500)) {
-            console.log('🛡️ QUANTUM LOCKOUT: Canal saturado por voz del asistente.');
+        // 🛡️ INTELLIGENT ECHO PROTECTION
+        const lastSpokenLower = lastSpokenText.value.toLowerCase().trim();
+        if (lastSpokenLower.includes(cleanText) || (cleanText.length > 15 && lastSpokenLower.startsWith(cleanText.substring(0, 15)))) {
+            console.log('🔇 ECHO SUPPRESSION: Ignorando reflejo de audio.');
             return;
         }
 
-        // QUICK-SNAP: Quantum Cache Check (Sub-millisecond resolution)
-        const cached = QUANTUM_CACHE[cleanText];
+        // 🚀 MASTER BARGE-IN (Priority Interruption)
+        if (isSpeaking.value) {
+            const speakingDuration = Date.now() - speakingStartTime.value;
+            if (speakingDuration > 300) { // Reduced from 600ms for more aggressive barge-in
+                console.log('🚀 MASTER BARGE-IN: Deteniendo habla para escuchar nueva intención.');
+                stopSpeaking(); // Clears queue & halts audio
+                accumulatedQuery = ''; // Reset for fresh start
+            } else {
+                return; // Protection for very early echoes
+            }
+        }
+
+        // 🧠 NEURAL AGGREGATION
+        // If the user says "What is the price of..." and then "Bitcoin!", we merge them.
+        accumulatedQuery = (accumulatedQuery + ' ' + text).trim();
+        console.log('🧠 AGGREGATING INPUT:', accumulatedQuery);
+
+        if (aggregationTimer) clearTimeout(aggregationTimer);
+
+        // ⚡ ZERO-DELAY AGGREGATION (0ms for fresh voice entry)
+        const waitTime = isProcessing.value ? 250 : 0;
+
+        aggregationTimer = setTimeout(() => {
+            const queryToProcess = accumulatedQuery;
+            accumulatedQuery = ''; // Clear for next turn
+            executeNeuralCycle(queryToProcess);
+        }, waitTime);
+    }
+
+    async function executeNeuralCycle(text: string) {
+        if (isProcessing.value) {
+            console.log('🛑 NEURAL OVERLOAD: Abandoning active cycle for new input.');
+            if (currentAIController) currentAIController.abort();
+            // We set isProcessing to false briefly to allow the fresh cycle to take over
+            isProcessing.value = false;
+        }
+
+        isProcessing.value = true;
+
+        // QUICK-SNAP: Cache Phase
+        const cached = QUANTUM_CACHE[text.toLowerCase()];
         if (cached) {
-            console.log('⚡ QUANTUM CACHE HIT:', cleanText);
-            isProcessing.value = true;
-            statusMessage.value = 'Heredando...';
+            console.log('⚡ CACHE HIT');
             speak(cached.speech);
             serverResponse.value = cached.speech;
             isProcessing.value = false;
             return;
         }
 
-        isProcessing.value = true;
-        statusMessage.value = 'Sincronizando red neuronal...';
-
         try {
-            // --- NEURAL SEARCH PHASE ---
-            // Before asking Gemini, we look for related context in memories
-            const entities = cleanText.split(' ').filter(word => word.length > 4);
-            if (entities.length > 0) {
-                try {
-                    const searchRes = await axios.get('/api/memories/search', { params: { query: cleanText } });
-                    if (searchRes.data && searchRes.data.length > 0) {
-                        const relatedMemories = searchRes.data.map((m: any) => `- ${m.key}: ${m.value}`).join('\n');
-                        coreMemories.value = (coreMemories.value + '\n' + relatedMemories).split('\n').slice(-30).join('\n'); // Keep top 30
-                        console.log('🧠 NEURAL CONTEXT ENRICHED');
-                    }
-                } catch (e) { /* silent fail for speed */ }
+            statusMessage.value = 'Neural burst...';
+
+            // 🚀 PARALLEL MEMORY FETCH (Don't block the AI start)
+            const memoryPromise = axios.get('/api/memories/search', { params: { query: text } })
+                .then(res => res.data)
+                .catch(() => []);
+
+            // Fire AI immediately without waiting for DB if possible, 
+            // but since a prompt needs context, we'll wait only for a very tight window (100ms)
+            // or just proceed and use memories for future turns? 
+            // For "GOD SPEED", we wait for memory search in parallel but with a timeout.
+            const memories = await Promise.any([
+                memoryPromise,
+                new Promise(r => setTimeout(() => r([]), 150)) // 150ms max DB wait
+            ]) as any[];
+
+            if (memories.length > 0) {
+                const related = memories.map((m: any) => `- ${m.key}: ${m.value}`).join('\n');
+                coreMemories.value = (coreMemories.value + '\n' + related).split('\n').slice(-30).join('\n');
             }
 
-            statusMessage.value = 'Analizando implicaciones...';
-            await askGemini(cleanText);
+            await askAI(text);
         } finally {
             isProcessing.value = false;
         }
@@ -225,24 +274,25 @@ export function useAssistantOrchestrator() {
         }
     });
 
-    // CRITICAL BARGE-IN: Detect when user ACTUALLY starts speaking    // Neural Barge-In Logic
+    // CRITICAL BARGE-IN: Detect when user ACTUALLY starts speaking (Intelligent Partial Phase)
     watch(partialTranscript, (newText) => {
         if (!isSpeaking.value) return;
-        if (!newText || newText.trim().length < 12) return;
+        if (!newText || newText.trim().length < 1) return; // Snappy detection from the first sound
 
         const cleanInterruption = newText.toLowerCase().trim();
 
-        // 🛡️ ANTI-ECHO BARGE-IN PROTECTION
-        if (lastSpokenText.value.toLowerCase().includes(cleanInterruption)) {
-            return; // It's likely just the assistant's voice
+        // 🛡️ ADVANCED ECHO SUPPRESSION
+        // We only block if the interruption is EXACTLY what the assistant is saying.
+        if (lastSpokenText.value.toLowerCase().includes(cleanInterruption) && cleanInterruption.length > 3) {
+            return;
         }
 
-        // Neural lockout: Don't allow barge-in in the first 1.2s to avoid echo-cutoff
+        // Neural lockout: 300ms to allow audio context to stabilize
         const speakingDuration = Date.now() - speakingStartTime.value;
-        if (speakingDuration < 1200) return;
+        if (speakingDuration < 300) return;
 
-        console.log('🚀 NEURAL BARGE-IN: Interrupción detectada.');
-        stopSpeaking();
+        console.log('🚀 MASTER BARGE-IN: Interrupción inteligente por voz detectada.');
+        stopSpeaking(); // Shut down assistant immediately to listen to user
     });
 
     // CRITICAL: Prevent echo - but keep microphone always on for barge-in
@@ -555,33 +605,25 @@ export function useAssistantOrchestrator() {
         await executeQuery(parsed);
     };
 
-    const reportState = ref<{
-        isOpen: boolean;
-        data: any[];
-        config: {
-            title: string;
-            type: 'bar' | 'pie' | 'metric';
-            x_axis: string;
-            y_axis: string;
-            insight?: string;
-        }
-    }>({
-        isOpen: false,
-        data: [],
-        config: {
-            title: '',
-            type: 'bar',
-            x_axis: '',
-            y_axis: '',
-            insight: ''
-        }
+    // Auto-activate microphone after assistant finishes speaking
+    window.addEventListener('assistant-speech-ended', () => {
+        // Wait a brief moment for natural conversation flow
+        setTimeout(() => {
+            if (!isPaused.value && shouldAutoActivateMic.value) {
+                console.log('🎤 FULL-DUPLEX: Auto-activando micrófono para respuesta continuada...');
+                if (!isListening.value) {
+                    startVisualization();
+                    startSpeech();
+                }
+            }
+        }, 300); // Faster re-activation (300ms) for human-like flow
     });
 
     const closeReport = () => {
         reportState.value.isOpen = false;
     };
 
-    const processIntent = async (parsed: any, index: number = 0) => {
+    const processIntent = async (parsed: any, index: number = 0, skipSpeech: boolean = false) => {
         // Reset auto-mic to true by default for every new interaction
         shouldAutoActivateMic.value = true;
 
@@ -589,7 +631,7 @@ export function useAssistantOrchestrator() {
         if (parsed.intent === 'silence') {
             shouldAutoActivateMic.value = false; // Disable auto-mic for this turn
             console.log('🤫 Silencio solicitado');
-            speak(parsed.speech || "Entendido, guardaré silencio.");
+            if (!skipSpeech) speak(parsed.speech || "Entendido, guardaré silencio.");
             statusMessage.value = "Modo silencio";
             return;
         }
@@ -602,7 +644,7 @@ export function useAssistantOrchestrator() {
 
             if (isImageSearch) {
                 // Solo si es explícitamente una imagen, abrimos ventana
-                speak(parsed.speech || `Buscando imágenes de ${parsed.query}.`);
+                if (!skipSpeech) speak(parsed.speech || `Buscando imágenes de ${parsed.query}.`);
                 statusMessage.value = "Buscando imágenes...";
                 setTimeout(() => {
                     const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(parsed.query)}`;
@@ -616,9 +658,9 @@ export function useAssistantOrchestrator() {
                 if (!parsed.speech || parsed.speech.length < 5) {
                     statusMessage.value = "Investigando...";
                     const research = await sendMessage(`El usuario quiere saber: "${parsed.query}". Investiga en tu conocimiento y responde directamente de forma elocuente.`);
-                    speak(research);
+                    if (!skipSpeech) speak(research);
                 } else {
-                    speak(parsed.speech);
+                    if (!skipSpeech) speak(parsed.speech);
                 }
             }
             return;
@@ -650,7 +692,7 @@ export function useAssistantOrchestrator() {
             const text = parsed.reminder_text || parsed.speech || 'Recordatorio';
 
             // Only speak confirmation for the first item in a batch
-            if (index === 0) {
+            if (index === 0 && !skipSpeech) {
                 speak(parsed.speech || `Entendido, te recordaré "${text}" en ${duration} segundos.`);
             }
 
@@ -857,15 +899,15 @@ export function useAssistantOrchestrator() {
                             insight: parsed.insight || 'Aquí tienes la visualización de los datos solicitados.'
                         }
                     };
-                    speak(parsed.speech || "He generado el reporte con los datos solicitados.");
+                    if (!skipSpeech) speak(parsed.speech || "He generado el reporte con los datos solicitados.");
                     statusMessage.value = "Reporte listo";
                 } else {
-                    speak("No pude generar el reporte debido a un problema con los datos.");
+                    if (!skipSpeech) speak("No pude generar el reporte debido a un problema con los datos.");
                     statusMessage.value = "No se pudo generar";
                 }
             } catch (e) {
                 console.error(e);
-                speak("Hubo un error técnico al procesar el reporte.");
+                if (!skipSpeech) speak("Hubo un error técnico al procesar el reporte.");
                 statusMessage.value = "Error de análisis";
             }
             return;
@@ -1005,7 +1047,7 @@ export function useAssistantOrchestrator() {
                 return;
             }
 
-            speak(parsed.speech || "Entendido.");
+            if (!skipSpeech) speak(parsed.speech || "Entendido.");
             triggerFeedback('spotify', 'Controlando Spotify...');
 
             try {
@@ -1072,7 +1114,7 @@ export function useAssistantOrchestrator() {
                 });
 
                 if (response.ok && parsed.action === 'disconnect') {
-                    console.log('🚮 Spotify Disconnected. Cleaning UI...');
+                    if (!skipSpeech) speak("He desconectado tu cuenta de Spotify.");
                     disconnectPlayer();
                 }
 
@@ -1240,12 +1282,24 @@ export function useAssistantOrchestrator() {
         // 12.1.1 ALIAS PARA FINANZAS (Variantes de Gemini)
         if (['currency_exchange_rate', 'currency_conversion', 'currency_query', 'fx_check'].includes(parsed.intent)) {
             parsed.intent = 'finance_check'; // Redirigir al handler principal
-            await processIntent(parsed, index);
+            await processIntent(parsed, index, true);
             return;
         }
 
         // 12.2 TOUR DEL SISTEMA (GUÍA)
         if (parsed.intent === 'system_tour') {
+            const query = (lastUserQuery.value || '').toLowerCase();
+            const explicitKeywords = ['tour', 'guía', 'tutorial', 'guia', 'onboarding'];
+            const isExplicit = explicitKeywords.some(kw => query.includes(kw));
+
+            if (!isExplicit) {
+                console.log('🛡️ TOUR BLOQUEADO: No fue solicitado específicamente.');
+                if (parsed.speech) {
+                    speak(parsed.speech);
+                }
+                return;
+            }
+
             const { startTour } = useOnboarding();
             speak(parsed.speech || "Excelente idea. Permíteme mostrarte cómo funciona mi ecosistema. Iniciando guía del sistema.");
             statusMessage.value = "Iniciando Tour...";
@@ -1767,6 +1821,7 @@ export function useAssistantOrchestrator() {
                 sql: sql,
                 speech: parsed.speech || `He eliminado todas tus citas y eventos del calendario.`
             });
+            // executeQuery already speaks if we don't control it, but here we keep it simple
             triggerFeedback('success', 'Calendario Limpio');
             // Refresh
             setTimeout(() => window.dispatchEvent(new Event('refresh-appointments')), 1000);
@@ -1781,7 +1836,7 @@ export function useAssistantOrchestrator() {
                 const newName = parsed.new_name;
                 console.log(`🏷️ Cambio de nombre a: ${newName}`);
                 updateAssistantName(newName); // Persist
-                speak(parsed.speech || `Entendido. A partir de ahora puedes llamarme ${newName}.`);
+                if (!skipSpeech) speak(parsed.speech || `Entendido. A partir de ahora puedes llamarme ${newName}.`);
                 statusMessage.value = `Nombre cambiado a ${newName}`;
                 return;
             }
@@ -1790,8 +1845,8 @@ export function useAssistantOrchestrator() {
         // 7. CONVERSACIÓN GENERAL / RESPUESTA DIRECTA
         if (!parsed.sql || parsed.sql === 'null' || parsed.sql === '' || parsed.intent === 'conversational') {
             console.log('💬 Conversación detectada.');
-            const textToSpeak = parsed.speech || parsed.response || parsed.text || "He analizado tu petición y estoy listo para proceder. ¿En qué más puedo asistirte?";
-            speak(textToSpeak);
+            const textToSpeak = parsed.speech || parsed.response || parsed.text || "Listo.";
+            if (!skipSpeech) speak(textToSpeak);
             statusMessage.value = 'En línea';
             return;
         }
@@ -1800,8 +1855,19 @@ export function useAssistantOrchestrator() {
         await validateAndExecute(parsed);
     };
 
-    const askGemini = async (text: string) => {
+    const askAI = async (text: string) => {
+        // 🛑 CANCEL PREVIOUS REQUEST IF STILL PENDING
+        if (currentAIController) {
+            console.log('🛑 Abortando pensamiento previo por nueva entrada...');
+            currentAIController.abort();
+        }
+
+        // CREATE NEW CONTROLLER
+        currentAIController = new AbortController();
+        const { signal } = currentAIController;
+
         lastUserQuery.value = text;
+        isProcessing.value = true;
 
         try {
             // Inject State Context (Spotify, Subscription, etc)
@@ -1833,11 +1899,10 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
 
             statusMessage.value = 'Generando respuesta quántica...';
             serverResponse.value = ''; // Limpiar al inicio
-            let hasStartedSpeaking = false;
-            let lastSpokenLength = 0;
 
-            const geminiResponse = await sendMessage(fullMessage, currentDocumentContext.value, (partialText) => {
-                // EXTRACCIÓN ROBUSTA DE SPEECH EN TIEMPO REAL PARA HUD
+            let lastSpokenIndex = 0;
+            const aiResponse = await sendMessage(fullMessage, currentDocumentContext.value, (partialText) => {
+                // 🌊 TURBO STREAMING: Extract and speak sentences in real-time
                 try {
                     const speechRegex = /"speech"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/i;
                     const speechMatch = partialText.match(speechRegex);
@@ -1847,13 +1912,27 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
                             .replace(/\\n/g, '\n')
                             .replace(/\\"/g, '"')
                             .replace(/\\\\/g, '\\');
+
                         serverResponse.value = cleanSpeech;
+
+                        // Identify new complete sentences to speak immediately
+                        const sentences = cleanSpeech.split(/(?<=[.!?])\s+/);
+                        for (let i = lastSpokenIndex; i < sentences.length; i++) {
+                            const sentence = sentences[i].trim();
+
+                            // Check if this segment is worth speaking (ends with punctuation OR is very long)
+                            const isComplete = i < sentences.length - 1 || /[.!?]$/.test(sentence);
+
+                            if (isComplete && sentence.length > 2) {
+                                speak(sentence);
+                                lastSpokenIndex++;
+                            }
+                        }
                     } else if (partialText.length > 0 && !partialText.includes('"intent"') && !partialText.trim().startsWith('{') && !partialText.trim().startsWith('[')) {
-                        // Only show raw text if it doesn't look like JSON is coming soon
                         serverResponse.value = partialText;
                     }
                 } catch (e) { }
-            });
+            }, signal);
 
             let parsedData: any;
             const extractJSON = (text: string): any => {
@@ -1863,39 +1942,55 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
                 if (jsonMatch) {
                     try { return JSON.parse(jsonMatch[0]); } catch { }
                 }
-                // Deep Fallback: If no JSON but we have text, assume conversational
                 return { intent: 'conversational', speech: cleaned || "He procesado tu comando, Architect." };
             };
 
-            parsedData = extractJSON(geminiResponse);
+            parsedData = extractJSON(aiResponse);
 
-            // Sincronización Estratégica:
-            // Si es un array (múltiples intenciones), unificamos el habla.
-            // Si es un solo objeto, permitimos que el handler de processIntent decida el habla 
-            // para evitar ecos y duplicación de introducciones.
             if (Array.isArray(parsedData)) {
-                const combinedSpeech = parsedData.map(p => p.speech).filter(Boolean).join(' ');
-                if (combinedSpeech) {
-                    const cleanMsg = sanitizeSpeech(combinedSpeech);
-                    serverResponse.value = cleanMsg;
-                    speak(cleanMsg);
+                let idx = 0;
+                for (const item of parsedData) {
+                    if (item.speech) {
+                        serverResponse.value = sanitizeSpeech(item.speech);
+                        const fullSentences = serverResponse.value.split(/(?<=[.!?])\s+/);
+                        for (let i = lastSpokenIndex; i < fullSentences.length; i++) {
+                            const sentence = fullSentences[i].trim();
+                            if (sentence.length > 1) {
+                                speak(sentence);
+                                lastSpokenIndex++;
+                            }
+                        }
+                    }
+                    await processIntent(item, idx++, true);
                 }
-                for (const item of parsedData) await processIntent(item);
             } else {
-                // Para intenciones únicas, el HUD se actualiza pero NO hablamos aquí
-                // si el handler va a tomar el control (como en finanzas/investigación).
                 if (parsedData.speech) {
                     serverResponse.value = sanitizeSpeech(parsedData.speech);
+                    const fullSentences = serverResponse.value.split(/(?<=[.!?])\s+/);
+                    for (let i = lastSpokenIndex; i < fullSentences.length; i++) {
+                        const sentence = fullSentences[i].trim();
+                        if (sentence.length > 1) {
+                            speak(sentence);
+                            lastSpokenIndex++;
+                        }
+                    }
                 }
-                await processIntent(parsedData);
+                await processIntent(parsedData, 0, true);
             }
 
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.log('🧠 Pensamiento abortado correctamente.');
+                return;
+            }
             console.error('Orchestrator Error:', error);
             statusMessage.value = "Error de conexión";
             speak("Lo siento, tuve un problema procesando eso.");
         } finally {
-            isProcessing.value = false;
+            if (!signal.aborted) {
+                isProcessing.value = false;
+                currentAIController = null;
+            }
         }
     };
 
@@ -1976,8 +2071,16 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
     };
 
     onMounted(async () => {
-        initGeminiChat(user.value);
-        await loadCoreMemories(); // Bootstrap Exo's short-term memory
+        if (isOrchestratorInitialized.value) return;
+        isOrchestratorInitialized.value = true;
+
+        initOpenAIChat(user.value);
+
+        // Memories are now hydrated via app-init (Hyperpure performance)
+        if (!coreMemories.value) {
+            await loadCoreMemories();
+        }
+
 
         // --- Onboarding / Welcome Logic ---
         const { loadOnboardingStatus, onboardingPreference, startTour } = useOnboarding();
@@ -2028,20 +2131,14 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
     window.addEventListener('assistant-speech-ended', () => {
         // Wait a brief moment for natural conversation flow
         setTimeout(() => {
-            if (!isPaused.value && !isListening.value && shouldAutoActivateMic.value) {
-                console.log('🎤 Auto-activando micrófono para respuesta...');
-                startVisualization();
-                startSpeech();
-            } else if (!shouldAutoActivateMic.value) {
-                console.log('🤫 Auto-mic desactivado por solicitud de usuario.');
-                // Reset flag for NEXT time user manually interacts
-                // shouldAutoActivateMic.value = true; // DO NOT reset immediately or it defeats the purpose?
-                // Actually, if they press the button manually, they clearly want to talk again.
-                // So we can assume manual interaction resets valid flow.
-                // But we don't need to reset it here. Manual click will call startSpeech anyway.
-                // We just prevent THIS auto-trigger.
+            if (!isPaused.value && shouldAutoActivateMic.value) {
+                console.log('🎤 FULL-DUPLEX: Auto-activando micrófono para respuesta continuada...');
+                if (!isListening.value) {
+                    startVisualization();
+                    startSpeech();
+                }
             }
-        }, 500); // 500ms delay for natural feel
+        }, 300); // Faster re-activation (300ms) for human-like flow
     });
 
     const setDocumentContext = (context: string) => {
@@ -2121,9 +2218,13 @@ ${coreMemories.value || 'Sin recuerdos específicos. Angel es una entidad nueva.
         userOps,
         closeReport,
         lastUserQuery,
+        assistantName,
+        updateAssistantName,
         feedbackState,
         speak,
         partialTranscript,
-        isRecording
+        isRecording,
+        voiceProvider,
+        setVoiceProvider
     };
 }

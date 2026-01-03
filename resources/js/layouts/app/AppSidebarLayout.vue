@@ -85,22 +85,10 @@ const assistantVariant = computed(() => {
             <!-- Sistema de Pestañas Global con SidebarTrigger integrado -->
             <div class="flex-1 overflow-hidden bg-transparent relative z-0 flex flex-col">
 
-                <!-- Global Ambient Background (The "Image Generator" Look) -->
-                <div class="absolute inset-0 pointer-events-none fixed z-[-1] overflow-hidden">
-                    <div
-                        class="absolute top-[-15%] left-[-10%] w-[70%] h-[70%] bg-purple-600/15 rounded-full blur-[120px]">
-                    </div>
-                    <div
-                        class="absolute bottom-[-15%] right-[-10%] w-[70%] h-[70%] bg-pink-600/10 rounded-full blur-[120px]">
-                    </div>
-                    <div
-                        class="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-indigo-600/5 rounded-full blur-[100px]">
-                    </div>
-                </div>
 
                 <!-- Trigger Row (Above Tabs) -->
                 <div
-                    class="flex items-center bg-transparent backdrop-blur-sm px-4 py-2 border-b border-border shrink-0 relative z-10">
+                    class="flex items-center bg-card px-4 py-2 border-b border-border shrink-0 relative z-10">
                     <SidebarTrigger class="text-muted-foreground hover:text-foreground" />
                 </div>
 
@@ -144,47 +132,42 @@ const assistantVariant = computed(() => {
     border: none !important;
 }
 
-/* Default (Light Mode) Tabs */
+/* Default (Light Mode) Tabs - Unified Azure Minimal */
 .global-tabs .el-tabs__item {
     border: none !important;
     border-radius: 12px 12px 0 0 !important;
     margin-right: 6px !important;
-    background: rgba(0, 0, 0, 0.05);
+    background: hsl(var(--secondary)) !important;
     /* Slight dark tint for light mode */
-    color: var(--muted-foreground);
-    transition: all 0.3s ease;
+    color: hsl(var(--muted-foreground));
+    transition: none !important;
     height: 36px;
     line-height: 36px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
 }
 
 .global-tabs .el-tabs__item:hover {
-    background: rgba(0, 0, 0, 0.1);
-    color: var(--foreground);
+    background: hsl(var(--muted)) !important;
+    color: hsl(var(--foreground));
+}
+
+.global-tabs .el-tab-pane {
+    background: hsl(var(--background));
 }
 
 .global-tabs .el-tabs__item.is-active {
-    background: rgba(0, 0, 0, 0.1) !important;
-    color: var(--foreground) !important;
+    background: hsl(var(--background)) !important;
+    color: hsl(var(--primary)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-bottom-color: hsl(var(--background)) !important;
     position: relative;
-    font-weight: 500;
+    z-index: 10;
 }
 
-/* Dark Mode Overrides */
-:root.dark .global-tabs .el-tabs__item {
-    background: rgba(255, 255, 255, 0.05);
-    color: #888;
-}
-
-:root.dark .global-tabs .el-tabs__item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ccc;
-}
-
-:root.dark .global-tabs .el-tabs__item.is-active {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #eee !important;
-}
-
+/* Purged Dark Mode & Performance-Heavy Visuals */
 /* Removed glowing line as requested */
 .global-tabs .el-tabs__item.is-active::after {
     display: none;

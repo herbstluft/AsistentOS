@@ -8,6 +8,7 @@ import { shouldPerformTask } from '@/lib/performance';
 // --- GLOBAL STATE (Singleton) ---
 const checkInterval = ref<number | null>(null);
 const notifiedAppointments = ref<Set<number>>(new Set());
+const isFetching = ref(false);
 export const upcomingAppointments = ref<any[]>([]);
 
 export function useAppointmentReminders() {
@@ -24,6 +25,9 @@ export function useAppointmentReminders() {
     };
 
     const fetchAppointments = async () => {
+        if (isFetching.value) return;
+        isFetching.value = true;
+
         try {
             // Fetch appointments for the next 24 hours
             const res = await axios.get('/api/appointments');
@@ -42,6 +46,8 @@ export function useAppointmentReminders() {
 
         } catch (e) {
             console.error('Error fetching appointments', e);
+        } finally {
+            isFetching.value = false;
         }
     };
 

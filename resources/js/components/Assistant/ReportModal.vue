@@ -7,7 +7,7 @@ const props = defineProps<{
     data: any[];
     config: {
         title: string;
-        type: 'bar' | 'pie' | 'metric';
+        type: 'bar' | 'pie' | 'metric' | 'table';
         x_axis: string; // Label field
         y_axis: string; // Value field
         description?: string;

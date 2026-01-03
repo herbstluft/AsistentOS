@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 @layer theme {
+
+    /* OPAQUE QUANTUM LIGHT - AZURE MINIMAL */
     :root {
         --background: 0 0% 100%;
-        --foreground: 222.2 84% 4.9%;
+        --foreground: 222 47% 11%;
         --card: 0 0% 100%;
-        --card-foreground: 222.2 84% 4.9%;
+        --card-foreground: 222 47% 11%;
         --popover: 0 0% 100%;
-        --popover-foreground: 222.2 84% 4.9%;
-        --primary: 222.2 47.4% 11.2%;
-        --primary-foreground: 210 40% 98%;
+        --popover-foreground: 222 47% 11%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 0 0% 100%;
         --secondary: 210 40% 96.1%;
         --secondary-foreground: 222.2 47.4% 11.2%;
         --muted: 210 40% 96.1%;
@@ -17,11 +19,19 @@
         --accent: 210 40% 96.1%;
         --accent-foreground: 222.2 47.4% 11.2%;
         --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 210 40% 98%;
+        --destructive-foreground: 0 0% 100%;
         --border: 214.3 31.8% 91.4%;
         --input: 214.3 31.8% 91.4%;
-        --ring: 222.2 84% 4.9%;
-        --radius: 0.5rem;
+        --ring: 221.2 83.2% 53.3%;
+        --sidebar-background: 0 0% 100%;
+        --sidebar-foreground: 222.2 47.4% 11.2%;
+        --sidebar-primary: 221.2 83.2% 53.3%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 210 40% 96.1%;
+        --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+        --sidebar-border: 214.3 31.8% 91.4%;
+        --sidebar-ring: 221.2 83.2% 53.3%;
+        --radius: 0.75rem;
     }
 
     /* REMOVE ALL FOCUS BORDERS AND OUTLINES */
@@ -37,34 +47,72 @@
         --tw-ring-shadow: none !important;
     }
 
-    .dark {
-        --background: 222.2 84% 4.9%;
-        --foreground: 210 40% 98%;
-        --card: 222.2 84% 4.9%;
-        --card-foreground: 210 40% 98%;
-        --popover: 222.2 84% 4.9%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 210 40% 98%;
-        --primary-foreground: 222.2 47.4% 11.2%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 212.7 26.8% 83.9%;
-        --sidebar-background: 260 30% 2%;
-        --sidebar-foreground: 210 40% 98%;
-        --sidebar-primary: 263.4 70% 50.4%;
-        --sidebar-primary-foreground: 0 0% 100%;
-        --sidebar-accent: 263.4 70% 50.4%;
-        --sidebar-accent-foreground: 210 40% 98%;
-        --sidebar-border: 260 30% 15%;
-        --sidebar-ring: 263.4 70% 50.4%;
+    /* ULTRA OPTIMIZATION: REMOVE ALL BLURS, TRANSPARENCIES AND ANIMATIONS */
+    .ultra-optimized,
+    .ultra-optimized body {
+        background-color: hsl(var(--background)) !important;
+    }
+
+    /* Global suppression of expensive effects */
+    .ultra-optimized * {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        animation: none !important;
+        transition: none !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    .ultra-optimized .bg-sidebar {
+        background: hsl(var(--sidebar-background)) !important;
+    }
+
+    .ultra-optimized .bento-card,
+    .ultra-optimized .ai-hub-container,
+    .ultra-optimized .mood-orbs-container,
+    .ultra-optimized .command-bar-container,
+    .ultra-optimized .response-hud-container,
+    .ultra-optimized .popover,
+    .ultra-optimized .card,
+    .ultra-optimized .bg-card,
+    .ultra-optimized .bg-secondary,
+    .ultra-optimized .bg-muted {
+        background-color: hsl(var(--card)) !important;
+        background-image: none !important;
+        border: 1px solid hsl(var(--border)) !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+    }
+
+    /* Ensure text is always visible and opaque */
+    .ultra-optimized .text-white,
+    .ultra-optimized .text-white\/90,
+    .ultra-optimized .text-white\/70,
+    .ultra-optimized .text-white\/40 {
+        color: hsl(var(--foreground)) !important;
+        opacity: 1 !important;
+    }
+
+    .ultra-optimized .text-slate-400,
+    .ultra-optimized .text-slate-500,
+    .ultra-optimized .text-muted-foreground {
+        color: hsl(var(--muted-foreground)) !important;
+        opacity: 1 !important;
+    }
+
+    /* Ambient elements must be completely gone */
+    .ultra-optimized .ambient-overlay,
+    .ultra-optimized .blur-\[120px\],
+    .ultra-optimized .blur-\[100px\],
+    .ultra-optimized .blur-\[80px\],
+    .ultra-optimized .blur-xl,
+    .ultra-optimized .blur-2xl,
+    .ultra-optimized .blur-3xl,
+    .ultra-optimized [class*="bg-gradient-to-"],
+    .ultra-optimized [class*="bg-indigo-"],
+    .ultra-optimized [class*="bg-purple-"],
+    .ultra-optimized .neural-ocean {
+        display: none !important;
     }
 }
 
@@ -84,7 +132,7 @@
         @apply rounded-full hover:bg-muted-foreground/50 transition-colors;
     }
 
-    /* GPU & Rendering Optimizations */
+    /* PHOTON-LEVEL GPU ACCELERATION */
     .gpu {
         transform: translateZ(0);
         backface-visibility: hidden;
@@ -101,23 +149,32 @@
         contain: paint;
     }
 
+    /* SPECULATIVE RENDERING */
+    .bento-grid,
+    .ai-hub-container,
+    .command-bar-container {
+        content-visibility: auto;
+        contain-intrinsic-size: 0 500px;
+        will-change: transform, opacity;
+    }
+
     .overscroll-none {
         overscroll-behavior: none;
     }
 
     /* Quantum Physics & GPU Bridge */
     * {
-        transition-duration: 120ms !important;
-        transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transition: none !important;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeSpeed;
+        text-rendering: optimizeLegibility;
         image-rendering: crisp-edges;
+        font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-style: normal !important;
     }
 
     .bg-sidebar {
-        background: linear-gradient(180deg, rgba(5, 2, 10, 0.98) 0%, rgba(15, 6, 30, 0.98) 100%) !important;
-        backdrop-filter: blur(4px) !important;
+        background: hsl(var(--sidebar-background)) !important;
     }
 
     main,
@@ -151,14 +208,22 @@
 /* Base styles */
 @layer base {
 
+    /* UNIVERSAL RESET FOR SPEED */
     *,
     ::after,
     ::before {
-        @apply border-border;
+        border-color: hsl(var(--border));
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 
     body {
-        @apply bg-background text-foreground font-sans antialiased;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-style: normal !important;
+        overflow-x: hidden;
     }
 }
 
@@ -186,4 +251,24 @@
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
+
+    /* --- GOD-TIER VIEW TRANSITIONS --- */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.1s;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    ::view-transition-old(root) {
+        opacity: 1;
+    }
+
+    ::view-transition-new(root) {
+        opacity: 0;
+    }
+
+    .ultra-optimized ::view-transition-old(root),
+    .ultra-optimized ::view-transition-new(root) {
+        animation: none !important;
+    }
 }

@@ -18,7 +18,7 @@ export const durationMs = ref(0);
 const isSeeking = ref(false);
 const pollingInterval = ref<any>(null);
 
-// Helper functions
+// Helper functions (Photon Level)
 const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
@@ -41,13 +41,31 @@ const loadSpotifySDK = () => {
     });
 };
 
-const transferPlayback = async (device_id: string, token: string, play: boolean = true) => {
+const getValidToken = async () => {
+    const token = (window as any).spotifyAccessToken;
+    if (token && token !== 'undefined' && token !== 'null' && token.length > 10) return token;
+
     try {
+        const res = await axios.get('/api/spotify/token');
+        const newToken = res.data.token;
+        (window as any).spotifyAccessToken = newToken;
+        return newToken;
+    } catch (e) {
+        console.error('⚡ PHOTON: Spotify token recovery failed', e);
+        return null;
+    }
+};
+
+const transferPlayback = async (device_id: string, token: string | null = null, play: boolean = true) => {
+    try {
+        const activeToken = token || (await getValidToken());
+        if (!activeToken || activeToken === 'undefined') return;
+
         await fetch('https://api.spotify.com/v1/me/player', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${activeToken}`
             },
             body: JSON.stringify({
                 device_ids: [device_id],
@@ -55,7 +73,7 @@ const transferPlayback = async (device_id: string, token: string, play: boolean 
             })
         });
     } catch (e) {
-        console.error('Transfer Playback Error', e);
+        console.error('⚡ PHOTON: Playback transfer failed', e);
     }
 };
 
@@ -67,18 +85,15 @@ const checkStatus = async () => {
 
         if (response.data.connected === false) {
             isConnected.value = false;
-            // Si no estamos conectados, no necesitamos seguir intentándolo agresivamente
             return;
         }
         isConnected.value = true;
 
         if (response.data.item) {
-            // Only update if track changed to avoid unnecessary re-renders or checks
             if (!currentTrack.value || currentTrack.value.id !== response.data.item.id) {
                 currentTrack.value = response.data.item;
-                checkIsSaved(); // Check if new track is saved
+                checkIsSaved();
             } else {
-                // Update mutable props
                 currentTrack.value = { ...currentTrack.value, ...response.data.item };
             }
 
@@ -92,17 +107,12 @@ const checkStatus = async () => {
 
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
-            // Sesión expirada o no autorizado
             isConnected.value = false;
             if (pollingInterval.value) {
                 clearTimeout(pollingInterval.value);
                 pollingInterval.value = null;
             }
             return;
-        }
-
-        if (error.response && error.response.status !== 404) {
-            console.error('Error checking Spotify status', error);
         }
     }
 };
@@ -120,36 +130,38 @@ const checkIsSaved = async () => {
 };
 
 const activateAndPlay = async () => {
-    if (deviceId.value && (window as any).spotifyAccessToken) {
-        console.log('Activating device and playing...');
-        await transferPlayback(deviceId.value, (window as any).spotifyAccessToken, true);
+    const token = await getValidToken();
+    if (deviceId.value && token) {
+        console.log('⚡ PHOTON: Activating device...');
+        await transferPlayback(deviceId.value, token, true);
         isPlaying.value = true;
     }
 };
 
 const initializePlayer = async (token: string) => {
-    if (player.value) return; // Already initialized
+    if (player.value) return;
 
     (window as any).spotifyAccessToken = token;
     const Spotify = await loadSpotifySDK() as any;
 
     player.value = new Spotify.Player({
-        name: 'MoodOrbs Web Player',
-        getOAuthToken: (cb: any) => { cb(token); },
+        name: 'EXO PHOTON PLAYER',
+        getOAuthToken: async (cb: (token: string) => void) => {
+            const currentToken = await getValidToken();
+            if (currentToken) cb(currentToken);
+        },
         volume: volume.value / 100
     });
 
     player.value.addListener('ready', ({ device_id }: any) => {
-        console.log('Ready with Device ID', device_id);
         deviceId.value = device_id;
         isPlayerReady.value = true;
         (window as any).spotifyDeviceId = device_id;
         (window as any).spotifyVolume = volume.value;
-        transferPlayback(device_id, token, false);
+        transferPlayback(device_id, null, false);
     });
 
     player.value.addListener('not_ready', ({ device_id }: any) => {
-        console.log('Device ID has gone offline', device_id);
         isPlayerReady.value = false;
     });
 
@@ -157,12 +169,10 @@ const initializePlayer = async (token: string) => {
         if (!state) return;
 
         const newTrack = state.track_window.current_track;
-        // Check if track changed
         if (!currentTrack.value || currentTrack.value.id !== newTrack.id) {
             currentTrack.value = newTrack;
             checkIsSaved();
         } else {
-            // Preserve is_saved status if we are just updating progress/state
             const savedStatus = currentTrack.value.is_saved;
             currentTrack.value = newTrack;
             currentTrack.value.is_saved = savedStatus;
@@ -183,13 +193,10 @@ const initializePlayer = async (token: string) => {
     player.value.connect();
 };
 
-// Actions
+// Actions (Optimized)
 const togglePlay = async () => {
     if (isPlayerReady.value && player.value) {
-        player.value.togglePlay().catch((e: any) => {
-            console.error('SDK Toggle Play failed', e);
-            activateAndPlay();
-        });
+        player.value.togglePlay().catch(() => activateAndPlay());
     } else {
         try {
             if (isPlaying.value) {
@@ -276,99 +283,50 @@ const saveTrack = async () => {
     const isCurrentlySaved = currentTrack.value.is_saved;
     const trackName = currentTrack.value.name;
 
-    // Optimistic update
     currentTrack.value.is_saved = !isCurrentlySaved;
 
     try {
         if (isCurrentlySaved) {
-            // Remove
             await axios.delete(`/api/spotify/remove-track?track_id=${currentTrack.value.id}`);
             addNotification('Spotify', `"${trackName}" eliminado de favoritos.`, 'info');
-            ElNotification({
-                title: 'Eliminado de Favoritos',
-                message: `"${trackName}" ha sido eliminado de tus Me gusta.`,
-                type: 'info',
-                duration: 3000,
-                position: 'bottom-right'
-            });
         } else {
-            // Add
             await axios.put('/api/spotify/save-track', { track_id: currentTrack.value.id });
             addNotification('Spotify', `"${trackName}" añadido a favoritos.`, 'success');
-            ElNotification({
-                title: 'Añadido a Favoritos',
-                message: `"${trackName}" ha sido añadido a tus Me gusta.`,
-                type: 'success',
-                duration: 3000,
-                position: 'bottom-right'
-            });
         }
     } catch (error) {
-        console.error('Error toggling save track', error);
-        // Revert on error
         currentTrack.value.is_saved = isCurrentlySaved;
         addNotification('Spotify Error', 'No se pudo actualizar favoritos.', 'error');
-        ElNotification({
-            title: 'Error',
-            message: 'No se pudo actualizar favoritos. Intenta reconectar tu cuenta.',
-            type: 'error',
-            duration: 3000,
-            position: 'bottom-right'
-        });
     }
 };
 
 const init = async () => {
-    // Only init once
     if (pollingInterval.value) return;
-
-    // Verificar si estamos en un contexto autenticado (evitar 401 en Welcome page)
-    // Usamos una verificación sencilla: si no hay un meta tag de CSRF o similar (aunque axios suele manejarlo)
-    // O mejor, intentamos una vez y si falla con 401 nos detenemos.
+    pollingInterval.value = 1;
 
     await checkStatus();
 
-    // Dynamic polling loop
     const pollLoop = async () => {
-        if (!pollingInterval.value) return; // Stop flag
-
-        // OPTIMIZACIÓN EXTREMA: Solo checar si la pestaña es visible y el usuario está activo
-        if (shouldPerformTask('low')) {
-            await checkStatus();
-        } else {
-            console.log('💤 SPOTIFY: Skipping poll (Tab hidden or user idle)');
-        }
+        if (!pollingInterval.value) return;
+        if (shouldPerformTask('low')) await checkStatus();
 
         if (isPlaying.value && !isSeeking.value && shouldPerformTask('high')) {
-            progressMs.value += 1000; // Estimate progress
+            progressMs.value += 1000;
         }
 
-        // Adjust delay based on connection status (Optimized to reduce requests)
-        const delay = isConnected.value ? 30000 : 90000;
-
+        const delay = isConnected.value ? 45000 : 120000;
         pollingInterval.value = setTimeout(pollLoop, delay);
     };
 
-    pollingInterval.value = setTimeout(pollLoop, 1000); // Start immediately-ish
+    pollingInterval.value = setTimeout(pollLoop, 1000);
 
     window.addEventListener('spotify-volume-change', ((e: CustomEvent) => {
         setVolume(e.detail);
     }) as EventListener);
-    const cachedToken = (window as any)._spotifyToken;
-    if (cachedToken) {
-        initializePlayer(cachedToken);
-    } else {
-        try {
-            const res = await axios.get('/api/spotify/token');
-            if (res.data.token) {
-                initializePlayer(res.data.token);
-            }
-        } catch (e: any) {
-            if (e.response && e.response.status !== 401) {
-                console.log('Could not init player', e);
-            }
-        }
-    }
+
+    try {
+        const res = await axios.get('/api/spotify/token');
+        if (res.data.token) initializePlayer(res.data.token);
+    } catch (e: any) { }
 };
 
 const disconnectPlayer = () => {
@@ -389,24 +347,9 @@ const disconnectPlayer = () => {
 
 export function useSpotifyPlayer() {
     return {
-        isConnected,
-        isPlaying,
-        currentTrack,
-        deviceId,
-        isPlayerReady,
-        isMinimized,
-        volume,
-        progressMs,
-        durationMs,
-        isSeeking,
-        formatTime,
-        togglePlay,
-        nextTrack,
-        prevTrack,
-        setVolume,
-        seekTo,
-        saveTrack,
-        init,
-        disconnectPlayer
+        isConnected, isPlaying, currentTrack, deviceId, isPlayerReady,
+        isMinimized, volume, progressMs, durationMs, isSeeking,
+        formatTime, togglePlay, nextTrack, prevTrack, setVolume,
+        seekTo, saveTrack, init, disconnectPlayer
     };
 }

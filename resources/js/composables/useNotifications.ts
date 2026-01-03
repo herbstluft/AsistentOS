@@ -48,20 +48,25 @@ const saveSettings = () => {
     localStorage.setItem('notification_settings', JSON.stringify({ repeatCount: repeatCount.value }));
 };
 
+// --- SHARED AUDIO SINGLETONS ---
+const sounds = {
+    success: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3') : null,
+    error: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3') : null,
+    default: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3') : null
+};
+
+// Initial Preload (Only once)
+if (typeof Audio !== 'undefined') {
+    Object.values(sounds).forEach(audio => {
+        if (audio) {
+            audio.load();
+            audio.volume = 0.5;
+        }
+    });
+}
+
 export function useNotifications() {
     // const { toast } = useToast(); // Removed unused toast
-
-    const sounds = {
-        success: new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'),
-        error: new Audio('https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3'),
-        default: new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3')
-    };
-
-    // Preload sounds
-    Object.values(sounds).forEach(audio => {
-        audio.load();
-        audio.volume = 0.5;
-    });
 
     const playSound = (type: 'info' | 'warning' | 'success' | 'error') => {
         try {
@@ -69,9 +74,11 @@ export function useNotifications() {
                 type === 'error' ? sounds.error :
                     sounds.default;
 
-            // Reset and play
-            audio.currentTime = 0;
-            audio.play().catch(e => console.warn('Could not play notification sound:', e));
+            if (audio) {
+                // Reset and play
+                audio.currentTime = 0;
+                audio.play().catch(e => console.warn('Could not play notification sound:', e));
+            }
         } catch (e) {
             console.error('Audio playback error', e);
         }

@@ -64,36 +64,40 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
         statusMessage.value = 'Conectando...';
 
         try {
-            // 1. Get microphone access
-            audioStream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    channelCount: 1,
-                    sampleRate: 16000,
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    // High-sensitivity tuning
-                }
-            });
+            // 1. Get microphone access - ULTRA SENSITIVITY CONFIG (Reuse stream if alive)
+            if (!audioStream) {
+                audioStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 48000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        // Ideal for professional speech capture
+                    }
+                });
+            }
 
             // 2. Get API key from backend
             const apiKey = await getApiKey();
 
-            // 3. Connect to Deepgram WebSocket - OPTIMIZED FOR NATURAL FLOW
+            // 3. Connect to Deepgram WebSocket - TUNED FOR WHISPERS & ZERO LAG
             const params = new URLSearchParams({
                 model: 'nova-2',
                 language: 'es',
                 punctuate: 'true',
                 interim_results: 'true',
-                endpointing: '650', // Optimized for Whispers (snappy but allows pauses)
+                endpointing: '1000', // Balanced for natural human speech pauses and zero-lag
                 vad_events: 'true',
                 smart_format: 'true',
+                filler_words: 'true', // Natural conversation support
+                no_delay: 'true',
             });
 
             socket = new WebSocket(`${DEEPGRAM_WS_URL}?${params}`, ['token', apiKey]);
 
             socket.onopen = () => {
-                console.log('🎙️ Deepgram conectado');
+                console.log('🎙️ Deepgram conectado (Bio-Acoustic Mode)');
                 isConnecting.value = false;
                 isListening.value = true;
                 statusMessage.value = 'Escuchando...';
@@ -131,17 +135,17 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
                                     accumulatedText = '';
                                     partialTranscript.value = '';
                                 } else {
-                                    // Wait for more speech or silence
-                                    const timeout = isMeetingMode.value ? 5000 : 1200;
+                                    // ⚡ HYPER-SPEED ENDPOINTING (150ms - Near Instant)
+                                    const timeout = isMeetingMode.value ? 5000 : 150;
                                     silenceTimer = setTimeout(() => {
                                         const textToSend = accumulatedText.trim();
                                         if (textToSend) {
-                                            console.log('⏱️ Silence timeout, enviando:', textToSend);
+                                            console.log('⏱️ Hyper timeout, enviando:', textToSend);
                                             listeners.forEach(fn => fn(textToSend));
                                         }
                                         accumulatedText = '';
                                         partialTranscript.value = '';
-                                    }, timeout); // Accelerated from 2.0s to 1.2s
+                                    }, timeout);
                                 }
                             } else {
                                 // Interim result - show preview
@@ -195,23 +199,50 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
     const startRecording = () => {
         if (!audioStream || !socket) return;
 
-        // --- NEURAL PRE-AMP INJECTION ---
+        // --- QUANTUM BIO-ACOUSTIC ENGINE V2 (Whisper Mastery) ---
         try {
-            audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            sourceNode = audioContext.createMediaStreamSource(audioStream);
-            gainNode = audioContext.createGain();
+            audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+                latencyHint: 'interactive',
+                sampleRate: 48000
+            });
 
-            // QUANTUM GAIN: 2.5x Boost (Perfect for whispers and low volume environments)
-            gainNode.gain.value = 2.5;
+            sourceNode = audioContext.createMediaStreamSource(audioStream);
+
+            // Stage 1: Ultra-High-Pass (100Hz) - Kill all sub-bass/room rumble
+            const lowCut = audioContext.createBiquadFilter();
+            lowCut.type = 'highpass';
+            lowCut.frequency.value = 100;
+
+            // Stage 2: Sibilance & Air (High Shelf at 5kHz) - For whisper clarity
+            const airEngine = audioContext.createBiquadFilter();
+            airEngine.type = 'highshelf';
+            airEngine.frequency.value = 5000;
+            airEngine.gain.value = 6.0; // Boost the "air" in whispers
+
+            // Stage 3: Dynamics Compressor - Normalizes audio (Makes quiet whispers loud)
+            const compressor = audioContext.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-50, audioContext.currentTime); // Reactive at low levels
+            compressor.knee.setValueAtTime(40, audioContext.currentTime);
+            compressor.ratio.setValueAtTime(12, audioContext.currentTime); // High ratio to pull up details
+            compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
+            compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+
+            // Stage 4: Massive Gain (6.0x Boost)
+            gainNode = audioContext.createGain();
+            gainNode.gain.value = 6.0;
 
             streamDestination = audioContext.createMediaStreamDestination();
 
-            sourceNode.connect(gainNode);
+            // Chain: Source -> LowCut -> AirEngine -> Compressor -> Gain -> Destination
+            sourceNode.connect(lowCut);
+            lowCut.connect(airEngine);
+            airEngine.connect(compressor);
+            compressor.connect(gainNode);
             gainNode.connect(streamDestination);
 
-            console.log('⚡ NEURAL PRE-AMP ACTIVE: Gain set to 2.5x');
+            console.log('⚡ BIO-ACOUSTIC ENGINE v2: ACTIVE | Gain 6.0x | Dynamics Compression ON');
         } catch (e) {
-            console.warn('⚠️ Pre-Amp failed, falling back to raw stream:', e);
+            console.warn('⚠️ Bio-Acoustic Engine failed, falling back to raw stream:', e);
         }
 
         const activeStream = streamDestination ? streamDestination.stream : audioStream;
@@ -233,8 +264,8 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
         console.log('⚡ QUANTUM SPEECH ACTIVE (100ms)');
     };
 
-    const stop = () => {
-        console.log('🛑 Deteniendo Deepgram...');
+    const stop = (keepStreamAlive = false) => {
+        console.log(`🛑 Deteniendo Deepgram (keepAlive=${keepStreamAlive})...`);
 
         isListening.value = false;
         isConnecting.value = false;
@@ -252,20 +283,20 @@ export function useDeepgramSpeech(onSpeechResult?: (text: string) => void) {
             socket = null;
         }
 
-        // Stop audio stream
-        if (audioStream) {
+        // Stop audio stream ONLY if requested
+        if (audioStream && !keepStreamAlive) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
         }
 
-        // Cleanup Pre-Amp
-        if (audioContext) {
+        // Cleanup Pre-Amp ONLY if requested
+        if (audioContext && !keepStreamAlive) {
             audioContext.close();
             audioContext = null;
+            gainNode = null;
+            streamDestination = null;
+            sourceNode = null;
         }
-        gainNode = null;
-        streamDestination = null;
-        sourceNode = null;
 
         // Clear timers
         if (silenceTimer) {

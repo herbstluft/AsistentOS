@@ -3,6 +3,7 @@ import { subscriptionStatus, trialTimeRemaining } from './useSubscription';
 import { upcomingAppointments } from './useAppointmentReminders';
 import { currentPalette, assistantName } from './useAssistantPreferences';
 import { isConnected, isPlaying, currentTrack, progressMs, durationMs } from './useSpotifyPlayer';
+import { coreMemories } from './useAssistantOrchestrator';
 import { ref } from 'vue';
 
 const isBooted = ref(false);
@@ -30,6 +31,14 @@ export function useAppInit() {
             upcomingAppointments.value = data.appointments;
         }
 
+        // 3.1 Hydrate Memories
+        if (data.memories && Array.isArray(data.memories)) {
+            coreMemories.value = data.memories
+                .slice(0, 15)
+                .map((m: any) => `- ${m.key}: ${m.value}`)
+                .join('\n');
+        }
+
         // 4. Hydrate Spotify
         if (data.spotify) {
             isConnected.value = data.spotify.connected !== false;
@@ -51,6 +60,7 @@ export function useAppInit() {
 
         // 6. Hydrate Tokens (to window for later use)
         if (data.elevenlabs_token) (window as any)._elevenLabsToken = data.elevenlabs_token;
+        if (data.openai_token) (window as any)._openAIToken = data.openai_token;
         if (data.deepgram_token) (window as any)._deepgramToken = data.deepgram_token.token || data.deepgram_token; // Handle object or string
         if (data.spotify_token) (window as any)._spotifyToken = data.spotify_token.token || data.spotify_token;
 
