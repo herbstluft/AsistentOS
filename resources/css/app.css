@@ -252,23 +252,24 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
 
-    /* --- GOD-TIER VIEW TRANSITIONS --- */
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-        animation-duration: 0.1s;
-        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    }
+}
 
-    ::view-transition-old(root) {
-        opacity: 1;
-    }
+/* --- GOD-TIER VIEW TRANSITIONS (Outside @theme to avoid build fail) --- */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.1s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-    ::view-transition-new(root) {
-        opacity: 0;
-    }
+::view-transition-old(root) {
+    opacity: 1;
+}
 
-    .ultra-optimized ::view-transition-old(root),
-    .ultra-optimized ::view-transition-new(root) {
-        animation: none !important;
-    }
+::view-transition-new(root) {
+    opacity: 0;
+}
+
+.ultra-optimized ::view-transition-old(root),
+.ultra-optimized ::view-transition-new(root) {
+    animation: none !important;
 }
