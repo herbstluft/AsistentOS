@@ -6,44 +6,87 @@ let history: { role: string; parts: { text: string }[] }[] = [];
 let systemPrompt: string = '';
 
 export function useGemini(apiKey: string) {
-    const initGeminiChat = async (user: any) => {
+    const initGeminiChat = async (user: any, memories?: string) => {
         history = [];
 
         // Extract user details for context
         const userId = user?.id || 'UNKNOWN_USER_ID';
-        const userName = user?.name || 'Angel';
+        const userName = user?.name || 'Usuario';
         const spotifyContext = user?.spotifyContext || 'No conectado a Spotify';
         const subStatus = user?.subscription?.status || 'Gratis';
         const subDetail = user?.subscription?.detail || 'Sin detalles';
         const currentUrl = typeof window !== 'undefined' ? window.location.href : 'N/A';
-        const coreMemories = user?.coreMemories || { value: 'Sin recuerdos específicos. Angel es una entidad nueva.' }; // Assuming coreMemories is an object with a value property
+        const activeMemories = memories || 'Sin recuerdos específicos.';
 
         // This stateContext will now be part of the dynamically generated system prompt
         const stateContext = `[ESTADO SISTEMA: ${spotifyContext}. Suscripción=${subStatus} ${subDetail}. URL="${currentUrl}". Usuario="${userName}" (ID=${userId}).]
 [SCHEMA ACTUAL: appointments (id, user_id, title, start_time, end_time), notes (id, user_id, title, content), expenses (amount, category, description, date), memories (key, value), contacts (name, phone, company)]
-[DATOS VIVOS: Angel tiene el ID=${userId}. Usa siempre user_id = ${userId} en SQL.]
+[DATOS VIVOS: El usuario actual es ${userName} con ID=${userId}. Usa siempre user_id = ${userId} en SQL.]
 [SNAPSHOT NEURAL (RECUERDOS RELEVANTES)]
-${coreMemories.value || 'Sin recuerdos específicos.'}
-[INSTRUCCIÓN COGNITIVA: Conecta los puntos. Posees los datos en este contexto, úsalos antes de consultar la DB. Tu usuario es Angel (ID=${userId}).]
+${activeMemories}
+[INSTRUCCIÓN COGNITIVA: Conecta los puntos. Posees los datos en este contexto, úsalos antes de consultar la DB. Tu usuario es ${userName} (ID=${userId}).]
 `;
 
         // New function to generate the system prompt dynamically
         const getSystemPrompt = (currentHistory: any[]) => {
-            // The history parameter is not used in this specific prompt, but the function signature allows for future dynamic adjustments based on conversation history.
             return `
-[PROTOCOLO DIOS: VELOCIDAD INFINITA]
-Eres EXO, el núcleo de inteligencia ejecutiva de Angel.
+Eres EXO, el núcleo de inteligencia ejecutiva de ${userName}.
 
 ${stateContext}
 
-Responde con la brevedad de un código.
-1. STREAMING-FIRST: "speech" DEBE ser la primera clave.
-2. CERO RELLENO: Prohibido decir "Hola", "Entendido", "Claro". 
-3. RESPUESTA PURA: Da el dato. Si es la hora, da la hora. Si es una nota, confirma brevísimamente.
-4. MODO EJECUTIVO: Eres una extensión del cerebro de Angel.
+CAPACIDADES DISPONIBLES:
+📋 **NOTAS**: Crear (note_create), listar (note_list), buscar (note_search), eliminar (note_delete_all)
+📅 **CALENDARIO**: Agendar citas (calendar_schedule), ver calendario (calendar_view), próxima cita (calendar_next)
+👥 **CONTACTOS**: Agregar (contact_add), buscar (contact_search), listar (contact_list), enviar mensaje WhatsApp (contact_message)
+⏰ **RECORDATORIOS**: Crear (reminder), listar (reminder_list), eliminar (reminder_delete)
+🎵 **SPOTIFY**: Reproducir (spotify: play/pause/next/previous/volume/connect/disconnect)
+💰 **FINANZAS**: Crear gastos (expense_create), ver gastos (expense_list), tipo de cambio (finance_check)
+🧠 **MEMORIA**: Aprender datos (memory_learn), buscar en memoria (memory_search)
+📊 **REPORTES**: Generar reportes Excel/PDF/Word/CSV con visualizaciones (report)
+📄 **DOCUMENTOS**: Generar PDFs/Word profesionales (document_generate)
+🔍 **INVESTIGACIÓN**: Búsqueda profunda y guardado automático (deep_research)
+🌐 **NAVEGACIÓN**: Ir a diferentes secciones del sistema (navigate)
+🎨 **PERSONALIZACIÓN**: Cambiar tema visual (change_theme)
+📡 **CLIMA**: Consultar clima actual (weather_check)
+🎯 **UTILIDADES**: Macros automáticas, reuniones con transcripción en vivo, timer
 
-Formato: {"speech": "...", "intent": "...", "sql": "..."}
-No gastes tokens. No gastes tiempo. Sé luz.
+REGLAS DE ORO (ESTRICTAS):
+1. IDIOMA: Responde ÚNICAMENTE en Español de España (Castellano nativo). Prohibido usar inglés o acentos extranjeros.
+2. FONÉTICA: Imagina que eres un locutor profesional de Madrid. Usa vocabulario como "Vale", "Ordenador", "Móvil".
+3. PERSONALIDAD: Inteligencia de élite, elocuente y ejecutiva.
+4. DINÁMICA DE RESPUESTA:
+   - Si ${userName} pregunta por datos (ej. "¿Cuántas...?"), responde el dato exacto.
+   - Si ${userName} pide una acción visual (ej. "Muéstrame", "Abre"), añade el intent 'navigate' con el destino correcto.
+5. CONTEXTO: Tu prioridad es la eficiencia y la precisión.
+
+⚠️ REGLA CRÍTICA - VALIDACIÓN DE PARÁMETROS:
+ANTES de ejecutar CUALQUIER acción que requiera parámetros específicos, VERIFICA que tengas TODA la información necesaria:
+
+- **note_create**: Requiere OBLIGATORIAMENTE "title" Y "content". Si falta alguno, usa intent "ask_clarification" y pregunta por lo que falta.
+  ❌ MAL: Usuario dice "crea una nota" → NO uses note_create sin datos
+  ✅ BIEN: Usuario dice "crea una nota" → { "intent": "ask_clarification", "speech": "Vale, ${userName}. Dime el título y el contenido de la nota, por favor." }
+  ✅ BIEN: Usuario dice "crea una nota sobre la reunión de mañana" → { "intent": "note_create", "title": "Reunión de mañana", "content": "Reunión de mañana", "speech": "Perfecto, creo la nota sobre la reunión de mañana." }
+
+- **contact_add**: Requiere al menos "name" y "phone" o "email"
+- **calendar_schedule**: Requiere "title", "start_time", "end_time"
+- **expense_create**: Requiere "amount", "category", "description"
+
+Si el usuario NO proporciona los datos mínimos, NUNCA ejecutes la acción. Usa "ask_clarification" y solicita la información faltante de forma natural.
+
+Formato de Respuesta (JSON Obligatorio):
+{
+  "speech": "Respuesta verbal fluida en perfecto español de España",
+  "intent": "intencion_detectada",
+  "title": "parametro_si_aplica",
+  "content": "parametro_si_aplica",
+  "sql": "sentencia_mysql_correcta_solo_si_aplica",
+  "navigation": "ruta_opcional_si_es_necesario"
+}
+
+EJEMPLOS:
+- Usuario: "Busca mis notas sobre reunión" → { "intent": "note_search", "query": "reunión", "speech": "Vale, busco ahora mismo tus notas sobre la reunión." }
+- Usuario: "Crea una nota" → { "intent": "ask_clarification", "speech": "Vale, ${userName}. Dime el título y el contenido de la nota, por favor." }
+- Usuario: "Crea una nota llamada Ideas con el contenido nuevas funciones" → { "intent": "note_create", "title": "Ideas", "content": "nuevas funciones", "speech": "Perfecto, creo la nota Ideas." }
 `;
         };
 
@@ -68,72 +111,8 @@ No gastes tokens. No gastes tiempo. Sé luz.
         const currentContents = [...history, userMsg];
 
         try {
-            // 🚀 GOD SPEED: Direct Edge Connection to Google (Bypassing local proxy)
-            const model = 'gemini-2.0-flash';
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}`;
-
-            const response = await fetch(url, {
-                method: 'POST',
-                signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: currentContents,
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 8192,
-                        responseMimeType: 'application/json',
-                    }
-                })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                console.error('Direct Gemini API Error:', response.status, errData);
-                // Fallback to proxy if direct fails (e.g. CORS or Key issues)
-                return await sendMessageViaProxy(currentContents, systemPrompt, onPartialUpdate, signal);
-            }
-
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-            let fullText = '';
-            let streamBuffer = '';
-
-            if (!reader) throw new Error("Stream not available");
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                streamBuffer += decoder.decode(value, { stream: true });
-
-                // Google's direct stream can be a fragmented JSON array of candidates
-                // We extract all "text" fragments found in the buffer
-                let match;
-                const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/g;
-
-                let currentFullText = '';
-                // Since it's a stream of multiple response objects, we accumulate all text fields
-                while ((match = textRegex.exec(streamBuffer)) !== null) {
-                    const foundText = match[1];
-                    const unescaped = foundText
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\"/g, '"')
-                        .replace(/\\\\/g, '\\');
-                    currentFullText += unescaped;
-                }
-
-                if (currentFullText.length > fullText.length) {
-                    fullText = currentFullText;
-                    if (onPartialUpdate) onPartialUpdate(fullText);
-                }
-            }
+            // 🛡️ SECURE PROXY MODE: All text traffic goes through Laravel to protect API Keys and avoid 403/CORS
+            const fullText = await sendMessageViaProxy(currentContents, systemPrompt, onPartialUpdate, signal);
 
             if (!fullText) throw new Error("Respuesta vacía de Gemini");
 
@@ -150,8 +129,8 @@ No gastes tokens. No gastes tiempo. Sé luz.
 
         } catch (error: any) {
             if (error.name === 'AbortError') throw error;
-            console.error('Gemini direct connection failed, attempting proxy fallback...', error);
-            return await sendMessageViaProxy(currentContents, systemPrompt, onPartialUpdate, signal);
+            console.error('Gemini connection failed:', error);
+            throw error;
         }
     };
 
@@ -257,7 +236,13 @@ No gastes tokens. No gastes tiempo. Sé luz.
             }
 
             console.log('🧠 Resumen Neural:', fullText);
-            return fullText.trim() || "He procesado los datos, pero la síntesis falló.";
+            // CLEANUP: Strip brackets and quotes if model hallucinated them as a list
+            const cleanText = fullText.trim()
+                .replace(/^\[\s*"/, '')
+                .replace(/"\s*\]$/, '')
+                .replace(/^"/, '')
+                .replace(/"$/, '');
+            return cleanText || "He procesado los datos, pero la síntesis falló.";
         } catch (e) {
             console.error('Error resumiendo datos:', e);
             return null;

@@ -61,6 +61,7 @@ export function useAppInit() {
         // 6. Hydrate Tokens (to window for later use)
         if (data.elevenlabs_token) (window as any)._elevenLabsToken = data.elevenlabs_token;
         if (data.openai_token) (window as any)._openAIToken = data.openai_token;
+        if (data.gemini_token) (window as any)._geminiToken = data.gemini_token;
         if (data.deepgram_token) (window as any)._deepgramToken = data.deepgram_token.token || data.deepgram_token; // Handle object or string
         if (data.spotify_token) (window as any)._spotifyToken = data.spotify_token.token || data.spotify_token;
 
@@ -87,8 +88,20 @@ export function useAppInit() {
         }
     };
 
+    const refreshData = async () => {
+        try {
+            const response = await axios.get('/api/app-init');
+            hydrate(response.data);
+            return true;
+        } catch (error) {
+            console.error('❌ REFRESH: Failed', error);
+            return false;
+        }
+    };
+
     return {
         bootstrap,
+        refreshData,
         isBooted
     };
 }

@@ -3,7 +3,7 @@
         'name' => 'laravel/vue-starter-kit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'cb78bf951a93030d34acf1e9eb7f5a3928c7e2d1',
+        'reference' => '8453cfdbb47111ebe1b3d1c5a092e777c0749cb1',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -502,7 +502,7 @@
         'laravel/vue-starter-kit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'cb78bf951a93030d34acf1e9eb7f5a3928c7e2d1',
+            'reference' => '8453cfdbb47111ebe1b3d1c5a092e777c0749cb1',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -738,6 +738,15 @@
             'install_path' => __DIR__ . '/../phpstan/phpdoc-parser',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'phpstan/phpstan' => array(
+            'pretty_version' => '2.1.33',
+            'version' => '2.1.33.0',
+            'reference' => '9e800e6bee7d5bd02784d4c6069b48032d16224f',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpstan/phpstan',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
         'phpunit/php-code-coverage' => array(
             'pretty_version' => '11.0.11',

@@ -7,6 +7,7 @@ import SubscriptionBlockedScreen from '@/components/SubscriptionBlockedScreen.vu
 import type { BreadcrumbItemType } from '@/types';
 import { useAppointmentReminders } from '@/composables/useAppointmentReminders';
 import { useSubscription } from '@/composables/useSubscription';
+// import { useRealtimeSync } from '@/composables/useRealtimeSync';  // TEMPORARILY DISABLED
 import { computed, onMounted, onUnmounted, watch } from 'vue';
 
 interface Props {
@@ -23,6 +24,9 @@ import { useAssistantReminders } from '@/composables/useAssistantReminders';
 import { useVoice } from '@/composables/useVoice';
 const { speak } = useVoice();
 useAssistantReminders(speak, true); // Enable global checking
+
+// UNIVERSAL REALTIME SYNC HUB - TEMPORARILY DISABLED
+// const realtimeSync = useRealtimeSync();
 
 // Check subscription status
 const { subscriptionStatus, fetchSubscriptionStatus, trialTimeRemaining } = useSubscription();
@@ -98,6 +102,10 @@ onMounted(() => {
     fetchSubscriptionStatus();
     setupSmartPolling();
 
+    // Initialize Real-Time Sync Hub - TEMPORARILY DISABLED
+    // realtimeSync.init();
+    // console.log('🌐 Real-Time Sync Hub activated');
+
     // Reconfigurar polling cuando cambie el tiempo restante
     watch(trialTimeRemaining, () => {
         setupSmartPolling();
@@ -110,6 +118,15 @@ onMounted(() => {
             statusCheckInterval = null;
         }
     });
+    // Desbloqueo de audio proactivo
+    const unlocker = () => {
+        speak(""); // Synthesis primming
+        window.removeEventListener('click', unlocker);
+        window.removeEventListener('keydown', unlocker);
+        console.log('🔊 Audio Context Unlocked');
+    };
+    window.addEventListener('click', unlocker);
+    window.addEventListener('keydown', unlocker);
 });
 
 // Limpiar intervalo al desmontar
@@ -117,6 +134,9 @@ onUnmounted(() => {
     if (statusCheckInterval) {
         clearInterval(statusCheckInterval);
     }
+    // Destroy sync hub - TEMPORARILY DISABLED
+    // realtimeSync.destroy();
+    // console.log('🔌 Real-Time Sync Hub disconnected');
 });
 
 const isBlocked = computed(() => {

@@ -8,6 +8,7 @@ import { useTabs } from '@/composables/useTabs';
 import { usePage } from '@inertiajs/vue3';
 import { watch, onMounted } from 'vue';
 import { ElTabs, ElTabPane } from 'element-plus';
+import { RefreshCw } from 'lucide-vue-next';
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];
@@ -70,9 +71,20 @@ const handleTabRemove = (name: any) => {
     removeTab(name as string);
 };
 
+// Función para refrescar la pestaña actual
+const refreshCurrentTab = () => {
+    console.log('🔄 Refrescando pestaña:', activeTab.value);
+    // Disparar evento personalizado para que la página se actualice
+    window.dispatchEvent(new CustomEvent('tab-refresh', {
+        detail: { url: activeTab.value }
+    }));
+    // También disparar el evento global
+    window.dispatchEvent(new Event('refresh-all'));
+};
+
 // Determine Assistant Mode
 const assistantVariant = computed(() => {
-    return page.url === '/dashboard' ? 'full' : 'floating';
+    return page.url.startsWith('/dashboard') ? 'full' : 'floating';
 });
 </script>
 
@@ -87,8 +99,7 @@ const assistantVariant = computed(() => {
 
 
                 <!-- Trigger Row (Above Tabs) -->
-                <div
-                    class="flex items-center bg-card px-4 py-2 border-b border-border shrink-0 relative z-10">
+                <div class="flex items-center bg-card px-4 py-2 border-b border-border shrink-0 relative z-10">
                     <SidebarTrigger class="text-muted-foreground hover:text-foreground" />
                 </div>
 
@@ -96,8 +107,22 @@ const assistantVariant = computed(() => {
                 <el-tabs v-model="activeTab" type="card"
                     class="global-tabs flex-1 flex flex-col overflow-hidden relative z-10" @tab-click="handleTabClick"
                     @tab-remove="handleTabRemove">
-                    <el-tab-pane v-for="item in tabs" :key="item.name" :label="item.title" :name="item.name"
+                    <el-tab-pane v-for="item in tabs" :key="item.name" :name="item.name"
                         :closable="item.closable" class="h-full overflow-auto">
+                        <!-- Custom label con icono de refresh -->
+                        <template #label>
+                            <div class="flex items-center gap-2">
+                                <span>{{ item.title }}</span>
+                                <button 
+                                    @click.stop="refreshCurrentTab"
+                                    class="refresh-tab-btn p-0.5 rounded hover:bg-muted/50 transition-colors"
+                                    title="Actualizar datos"
+                                >
+                                    <RefreshCw class="w-3 h-3" />
+                                </button>
+                            </div>
+                        </template>
+                        
                         <!-- Solo renderizamos el slot si es la pestaña activa para evitar duplicados -->
                         <div v-if="item.name === page.url" class="h-full">
                             <slot />
@@ -182,5 +207,33 @@ const assistantVariant = computed(() => {
     flex: 1;
     overflow: hidden;
     height: 100%;
+}
+
+/* Refresh button styling */
+.refresh-tab-btn {
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.refresh-tab-btn:hover {
+    opacity: 1;
+}
+
+.refresh-tab-btn:active {
+    transform: rotate(180deg);
+}
+
+/* Animation cuando se hace click */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.refresh-tab-btn.spinning {
+    animation: spin 0.5s ease-in-out;
 }
 </style>

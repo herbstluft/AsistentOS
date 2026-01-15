@@ -3,17 +3,18 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ChevronLeft, ChevronRight, Plus, Clock, Bell, CheckCircle } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { usePage } from '@inertiajs/vue3';
-import axios from 'axios';
-import { socket } from '@/lib/socket';
+import { useRealtimeSync } from '@/composables/useRealtimeSync';
 
 const props = defineProps<{
     initialAppointments?: any[];
 }>();
 
 const currentDate = ref(new Date());
-const appointments = ref<any[]>(props.initialAppointments || []);
 const selectedDate = ref<Date | null>(null);
 const showAddModal = ref(false);
+
+// Use global synced state instead of local
+const { appointments } = useRealtimeSync();
 
 // Calendar Logic
 const daysInMonth = computed(() => {
@@ -37,6 +38,9 @@ const calendarDays = computed(() => {
     const year = currentDate.value.getFullYear();
     const month = currentDate.value.getMonth();
 
+    console.log('🔄 Recalculando calendario para:', year, month + 1);
+    console.log('🔄 Total de citas en memoria:', appointments.value.length);
+
     // Previous month padding
     for (let i = 0; i < firstDayOfMonth.value; i++) {
         days.push({ date: null, isPadding: true });
@@ -45,12 +49,22 @@ const calendarDays = computed(() => {
     // Current month days
     for (let i = 1; i <= daysInMonth.value; i++) {
         const date = new Date(year, month, i);
+        // Force reactivity by accessing appointments.value inside the computed
+        const dayAppointments = appointments.value.filter(app => {
+            const appDate = new Date(app.start_time);
+            return isSameDay(appDate, date);
+        });
+        
+        if (dayAppointments.length > 0) {
+            console.log(`📌 Día ${i}: ${dayAppointments.length} cita(s)`, dayAppointments.map(a => a.title));
+        }
+        
         days.push({
             date: date,
             day: i,
             isPadding: false,
             isToday: isSameDay(date, new Date()),
-            hasAppointments: getAppointmentsForDate(date).length > 0
+            hasAppointments: dayAppointments.length > 0
         });
     }
 
@@ -72,6 +86,42 @@ const getAppointmentsForDate = (date: Date | null) => {
     });
 };
 
+// Generate dynamic color for appointment based on title hash
+const getAppointmentColor = (appointment: any): string => {
+    if (appointment.status === 'completed') {
+        return 'bg-green-600 text-white opacity-70 line-through';
+    }
+    
+    // Hash function to generate consistent color from title
+    const str = appointment.title || 'event';
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Vibrant color palette (Google Calendar inspired)
+    const colors = [
+        'bg-blue-600 text-white hover:bg-blue-700',
+        'bg-purple-600 text-white hover:bg-purple-700',
+        'bg-pink-600 text-white hover:bg-pink-700',
+        'bg-red-600 text-white hover:bg-red-700',
+        'bg-orange-600 text-white hover:bg-orange-700',
+        'bg-amber-600 text-white hover:bg-amber-700',
+        'bg-lime-600 text-white hover:bg-lime-700',
+        'bg-emerald-600 text-white hover:bg-emerald-700',
+        'bg-teal-600 text-white hover:bg-teal-700',
+        'bg-cyan-600 text-white hover:bg-cyan-700',
+        'bg-sky-600 text-white hover:bg-sky-700',
+        'bg-indigo-600 text-white hover:bg-indigo-700',
+        'bg-violet-600 text-white hover:bg-violet-700',
+        'bg-fuchsia-600 text-white hover:bg-fuchsia-700',
+        'bg-rose-600 text-white hover:bg-rose-700'
+    ];
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+};
+
 const prevMonth = () => {
     currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() - 1, 1);
 };
@@ -86,31 +136,8 @@ const selectDate = (day: any) => {
     }
 };
 
-const fetchAppointments = async () => {
-    try {
-        const res = await axios.get('/api/appointments');
-        appointments.value = res.data;
-    } catch (e) {
-        console.error('Error fetching appointments', e);
-    }
-};
+// No need for manual fetch - the global sync hub handles it!
 
-onMounted(() => {
-    fetchAppointments();
-
-    // Listen for real-time updates via Socket
-    socket.on('appointments:updated', fetchAppointments);
-    // Listen for local orchestrator updates
-    window.addEventListener('refresh-appointments', fetchAppointments);
-});
-
-onUnmounted(() => {
-    socket.off('appointments:updated', fetchAppointments);
-    window.removeEventListener('refresh-appointments', fetchAppointments);
-});
-
-// Expose refresh method
-defineExpose({ fetchAppointments });
 </script>
 
 <template>
@@ -179,40 +206,32 @@ defineExpose({ fetchAppointments });
                                 selectedDate && isSameDay(day.date, selectedDate) ? 'bg-card border-purple-400 ring-2 ring-purple-400/30 shadow-md transform scale-[1.02] z-10' :
                                     'bg-card border-border/60 hover:border-purple-500/40 hover:shadow-lg hover:-translate-y-0.5'
                     ]">
-                        <!-- Date Number -->
+                        <!-- Date Number (Moved to top-left corner) -->
                         <span :class="[
-                            'text-base sm:text-lg font-semibold w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full mb-2 transition-colors',
+                            'absolute top-1 left-1 text-xs sm:text-sm font-bold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full transition-colors z-10',
                             day.isToday
-                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/40'
-                                : selectedDate && isSameDay(day.date, selectedDate)
-                                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200'
-                                    : 'text-foreground/80 group-hover:text-foreground bg-secondary/50'
+                                ? 'bg-purple-600 text-white shadow-md'
+                                : 'text-foreground/70'
                         ]">
                             {{ day.day }}
                         </span>
 
-                        <!-- Appointment Dots (Mobile/Tablet) -->
-                        <div class="flex lg:hidden gap-1 mt-1 flex-wrap justify-center">
-                            <div v-for="n in Math.min(getAppointmentsForDate(day.date).length, 4)" :key="n"
-                                class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50"></div>
-                        </div>
-
-                        <!-- Appointment List (Desktop Only) -->
-                        <div class="hidden lg:flex flex-col gap-1.5 w-full overflow-hidden mt-1">
-                            <div v-for="app in getAppointmentsForDate(day.date).slice(0, 4)" :key="app.id"
-                                @click.stop="$emit('edit-appointment', app)" :class="['text-[11px] px-2 py-1 rounded-md truncate w-full border-l-[3px] font-medium transition-all hover:scale-[1.02]',
-                                    app.status === 'completed'
-                                        ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/50 line-through opacity-60'
-                                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/60 hover:bg-purple-500/20'
+                        <!-- Appointment Blocks (Google Calendar Style) -->
+                        <div class="flex flex-col gap-1 w-full mt-8 overflow-hidden">
+                            <div v-for="app in getAppointmentsForDate(day.date).slice(0, 3)" :key="app.id"
+                                @click.stop="$emit('edit-appointment', app)" 
+                                :class="[
+                                    'text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-1 rounded-md truncate w-full font-medium transition-all hover:scale-[1.02] cursor-pointer shadow-sm',
+                                    getAppointmentColor(app)
                                 ]">
-                                {{ new Date(app.start_time).toLocaleTimeString([], {
+                                <span class="font-bold">{{ new Date(app.start_time).toLocaleTimeString([], {
                                     hour: '2-digit', minute: '2-digit',
-                                    hour12: true
-                                }) }} <span class="opacity-80 ml-1 font-normal">| {{ app.title }}</span>
+                                    hour12: false
+                                }) }}</span> {{ app.title }}
                             </div>
-                            <div v-if="getAppointmentsForDate(day.date).length > 4"
-                                class="text-[10px] text-muted-foreground pl-1 font-medium italic">
-                                +{{ getAppointmentsForDate(day.date).length - 4 }} más...
+                            <div v-if="getAppointmentsForDate(day.date).length > 3"
+                                class="text-[9px] sm:text-[10px] text-muted-foreground font-bold pl-1">
+                                +{{ getAppointmentsForDate(day.date).length - 3 }} más
                             </div>
                         </div>
                     </div>

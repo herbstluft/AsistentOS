@@ -7,6 +7,8 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\AssistantPreferenceController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\SpotifyController;
+use App\Http\Controllers\MemoryController;
+use App\Http\Controllers\DeepgramController;
 
 class SystemInitController extends Controller
 {
@@ -25,6 +27,7 @@ class SystemInitController extends Controller
             'deepgram_token' => app(DeepgramController::class)->token($request)->getData(),
             'onboarding_preference' => \App\Models\Memory::where('user_id', $user->id)->where('key', 'onboarding_preference')->first(),
             'elevenlabs_token' => config('services.elevenlabs.api_key'),
+            'openai_token' => env('OPENAI_API_KEY'),
         ]);
     }
 }

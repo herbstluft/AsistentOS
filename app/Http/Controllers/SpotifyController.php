@@ -397,4 +397,33 @@ class SpotifyController extends Controller
 
         return response()->json(['is_saved' => false]);
     }
+
+    public function control(Request $request)
+    {
+        $action = $request->input('action');
+        $query = $request->input('query');
+
+        switch ($action) {
+            case 'play':
+                return $this->play($request);
+            case 'pause':
+                return $this->pause($request);
+            case 'next':
+                return $this->next($request);
+            case 'previous':
+                return $this->previous($request);
+            case 'volume_up':
+            case 'volume_down':
+                $state = $this->playerState()->getData();
+                if (!isset($state->device)) {
+                    return response()->json(['error' => 'No active device found'], 404);
+                }
+                $currentVolume = $state->device->volume_percent;
+                $newVolume = ($action === 'volume_up') ? min(100, $currentVolume + 10) : max(0, $currentVolume - 10);
+                $request->merge(['volume_percent' => $newVolume]);
+                return $this->volume($request);
+            default:
+                return response()->json(['error' => 'Invalid action'], 400);
+        }
+    }
 }

@@ -39,6 +39,14 @@ Route::middleware([
         return Inertia::render('Capabilities');
     })->name('capabilities');
 
+    Route::get('/reminders', function () {
+        return Inertia::render('Reminders');
+    })->name('reminders');
+
+    // EXO Realtime Voice Testing Page
+    Route::get('/test-realtime', function () {
+        return Inertia::render('TestingRealtime');
+    })->name('test.realtime');
 
 
     Route::get('/settings/biometrics', function () {
@@ -86,6 +94,7 @@ Route::middleware([
     Route::put('/api/spotify/save-track', [App\Http\Controllers\SpotifyController::class, 'saveTrack']);
     Route::delete('/api/spotify/remove-track', [App\Http\Controllers\SpotifyController::class, 'removeTrack']);
     Route::get('/api/spotify/check-saved', [App\Http\Controllers\SpotifyController::class, 'checkSaved']);
+    Route::post('/api/spotify/control', [App\Http\Controllers\SpotifyController::class, 'control']);
 
     // Appointment Routes
     Route::get('/api/appointments', [App\Http\Controllers\AppointmentController::class, 'index']);
@@ -112,6 +121,12 @@ Route::middleware([
     // AI Proxies
     Route::post('/api/gemini/proxy', [App\Http\Controllers\GeminiController::class, 'proxy']);
     Route::post('/api/openai/proxy', [App\Http\Controllers\OpenAIController::class, 'proxy']);
+    
+    // Gemini Realtime Multimodal Voice API
+    Route::get('/api/gemini/realtime/status', [App\Http\Controllers\Api\GeminiRealtimeController::class, 'status']);
+    Route::get('/api/gemini/token', [App\Http\Controllers\Api\GeminiRealtimeController::class, 'token']);
+    Route::post('/api/gemini/realtime/log', [App\Http\Controllers\Api\GeminiRealtimeController::class, 'logEvent']);
+    Route::get('/api/gemini/realtime/stats', [App\Http\Controllers\Api\GeminiRealtimeController::class, 'stats']);
 
     // Subscription Routes
     Route::get('/api/subscription/status', [App\Http\Controllers\SubscriptionController::class, 'status']);
@@ -125,8 +140,7 @@ Route::middleware([
     Route::get('/api/memories', [App\Http\Controllers\MemoryController::class, 'index']);
     Route::post('/api/memories', [App\Http\Controllers\MemoryController::class, 'store']);
     Route::get('/api/memories/search', [App\Http\Controllers\MemoryController::class, 'search']);
+    Route::post('/api/execute-ai-query', [AiQueryController::class, 'execute']);
 });
 
 require __DIR__.'/settings.php';
-
-Route::post('/api/execute-ai-query', [AiQueryController::class, 'execute']);

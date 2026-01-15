@@ -299,6 +299,26 @@ const saveTrack = async () => {
     }
 };
 
+const pausePlayback = async () => {
+    if (isPlayerReady.value && player.value) {
+        await player.value.pause();
+    } else {
+        await axios.post('/api/spotify/pause', { device_id: deviceId.value });
+    }
+    isPlaying.value = false;
+    setTimeout(checkStatus, 500);
+};
+
+const resumePlayback = async () => {
+    if (isPlayerReady.value && player.value) {
+        await player.value.resume();
+    } else {
+        await axios.post('/api/spotify/play', { device_id: deviceId.value });
+    }
+    isPlaying.value = true;
+    setTimeout(checkStatus, 500);
+};
+
 const init = async () => {
     if (pollingInterval.value) return;
     pollingInterval.value = 1;
@@ -349,7 +369,7 @@ export function useSpotifyPlayer() {
     return {
         isConnected, isPlaying, currentTrack, deviceId, isPlayerReady,
         isMinimized, volume, progressMs, durationMs, isSeeking,
-        formatTime, togglePlay, nextTrack, prevTrack, setVolume,
-        seekTo, saveTrack, init, disconnectPlayer
+        formatTime, togglePlay, pausePlayback, resumePlayback, nextTrack, prevTrack, setVolume,
+        seekTo, saveTrack, init, disconnectPlayer, checkStatus
     };
 }

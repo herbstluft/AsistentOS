@@ -1029,6 +1029,62 @@ checkSavedForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 checkSaved.form = checkSavedForm
 
-const SpotifyController = { redirect, callback, disconnect, status, play, pause, next, previous, playerState, token, volume, seek, saveTrack, removeTrack, checkSaved }
+/**
+* @see \App\Http\Controllers\SpotifyController::control
+* @see app/Http/Controllers/SpotifyController.php:401
+* @route '/api/spotify/control'
+*/
+export const control = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: control.url(options),
+    method: 'post',
+})
+
+control.definition = {
+    methods: ["post"],
+    url: '/api/spotify/control',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\SpotifyController::control
+* @see app/Http/Controllers/SpotifyController.php:401
+* @route '/api/spotify/control'
+*/
+control.url = (options?: RouteQueryOptions) => {
+    return control.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SpotifyController::control
+* @see app/Http/Controllers/SpotifyController.php:401
+* @route '/api/spotify/control'
+*/
+control.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: control.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SpotifyController::control
+* @see app/Http/Controllers/SpotifyController.php:401
+* @route '/api/spotify/control'
+*/
+const controlForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: control.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\SpotifyController::control
+* @see app/Http/Controllers/SpotifyController.php:401
+* @route '/api/spotify/control'
+*/
+controlForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: control.url(options),
+    method: 'post',
+})
+
+control.form = controlForm
+
+const SpotifyController = { redirect, callback, disconnect, status, play, pause, next, previous, playerState, token, volume, seek, saveTrack, removeTrack, checkSaved, control }
 
 export default SpotifyController

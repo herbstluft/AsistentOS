@@ -7,6 +7,7 @@ use App\Http\Controllers\AssistantPreferenceController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\DeepgramController;
+use App\Http\Controllers\MemoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,12 +25,15 @@ class AppBootstrapService
                 'subscription' => app(SubscriptionController::class)->status()->getData(),
                 'preferences' => app(AssistantPreferenceController::class)->getPreference()->getData(),
                 'appointments' => app(AppointmentController::class)->index($request)->getData(),
+                'memories' => app(MemoryController::class)->index($request)->getData(),
                 'spotify_token' => app(SpotifyController::class)->token($request)->getData(),
                 'deepgram_token' => app(DeepgramController::class)->token($request)->getData(),
                 'elevenlabs_token' => config('services.elevenlabs.api_key'),
                 'openai_token' => config('services.openai.api_key'),
+                'gemini_token' => config('services.gemini.key'),
             ];
         } catch (\Exception $e) {
+            \Log::error('Bootstrap Error: ' . $e->getMessage());
             return null;
         }
     }

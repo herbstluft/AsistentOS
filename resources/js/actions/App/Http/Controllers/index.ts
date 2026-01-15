@@ -9,9 +9,10 @@ import ContactController from './ContactController'
 import NoteController from './NoteController'
 import GeminiController from './GeminiController'
 import OpenAIController from './OpenAIController'
+import Api from './Api'
 import MemoryController from './MemoryController'
-import Settings from './Settings'
 import AiQueryController from './AiQueryController'
+import Settings from './Settings'
 
 const Controllers = {
     SubscriptionController: Object.assign(SubscriptionController, SubscriptionController),
@@ -25,9 +26,10 @@ const Controllers = {
     NoteController: Object.assign(NoteController, NoteController),
     GeminiController: Object.assign(GeminiController, GeminiController),
     OpenAIController: Object.assign(OpenAIController, OpenAIController),
+    Api: Object.assign(Api, Api),
     MemoryController: Object.assign(MemoryController, MemoryController),
-    Settings: Object.assign(Settings, Settings),
     AiQueryController: Object.assign(AiQueryController, AiQueryController),
+    Settings: Object.assign(Settings, Settings),
 }
 
 export default Controllers

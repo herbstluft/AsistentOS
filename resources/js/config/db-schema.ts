@@ -9,6 +9,7 @@ CONTEXTO DE BASE DE DATOS (MySQL / Laravel):
 - expenses (id, user_id, amount, description, category, date, created_at, updated_at)
 - job_batches (id, name, total_jobs, pending_jobs, failed_jobs, failed_job_ids, options, cancelled_at, created_at, finished_at)
 - jobs (id, queue, payload, attempts, reserved_at, available_at, created_at)
+- incomes (id, user_id, amount, description, source, date, created_at, updated_at)
 - memories (id, user_id, key, value, type, created_at, updated_at)
 - notes (id, user_id, title, content, created_at, updated_at)
 - palettes (id, name, created_at, updated_at)

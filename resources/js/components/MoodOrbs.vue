@@ -93,17 +93,71 @@ watch([isListening, isSpeaking], ([listening, speaking]) => {
         </div>
     </div>
 
-    <!-- HEADLESS MODE -->
-    <div v-else class="floating-assistant-wrapper" style="display: none;">
+    <!-- FLOATING MODE (Global System Assistant) -->
+    <div v-else class="floating-assistant-wrapper">
         <teleport to="body">
-            <div :class="`palette-${currentPalette}`">
-                <UserCreationModal v-model:show-user-modal="userOps.showUserModal.value"
-                    :new-user-form="userOps.newUserForm.value" @confirm-create-user="userOps.confirmCreateUser"
+            <div :class="[`palette-${currentPalette}`, 'fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-4']">
+                
+                <!-- Floating Response HUD -->
+                <transition enter-active-class="transition duration-300 ease-out"
+                            enter-from-class="translate-y-4 opacity-0 scale-95"
+                            enter-to-class="translate-y-0 opacity-100 scale-100"
+                            leave-active-class="transition duration-200 ease-in"
+                            leave-from-class="translate-y-0 opacity-100 scale-100"
+                            leave-to-class="translate-y-4 opacity-0 scale-95">
+                    <div v-if="serverResponse" 
+                         class="bg-card/90 backdrop-blur-xl border border-border/50 rounded-2xl p-4 shadow-2xl max-w-xs md:max-w-md pointer-events-auto mb-2">
+                        <p class="text-sm font-bold text-foreground leading-relaxed uppercase tracking-tight">
+                            {{ serverResponse }}
+                        </p>
+                    </div>
+                </transition>
+
+                <!-- Floating Controls -->
+                <div class="flex items-center gap-3">
+                    <!-- Status Label -->
+                    <transition enter-active-class="transition duration-300 ease-out"
+                                enter-from-class="translate-x-4 opacity-0"
+                                enter-to-class="translate-x-0 opacity-100"
+                                leave-active-class="transition duration-200 ease-in"
+                                leave-from-class="translate-x-0 opacity-100"
+                                leave-to-class="translate-x-4 opacity-0">
+                        <span v-if="isListening || isSpeaking || isProcessing" 
+                              class="bg-secondary/80 backdrop-blur-md border border-border/50 px-3 py-1.5 rounded-full text-[10px] font-black text-primary uppercase tracking-widest shadow-lg">
+                            {{ statusMessage }}
+                        </span>
+                    </transition>
+
+                    <!-- Main Floating Orb/Button -->
+                    <button @click="triggerMicActivation(true)" 
+                            :class="[
+                                'w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 overflow-hidden border-2',
+                                isListening ? 'bg-primary border-primary scale-110' : 
+                                isSpeaking ? 'bg-secondary border-primary ring-4 ring-primary/20' : 
+                                'bg-card border-border hover:border-primary/50'
+                            ]">
+                        <div v-if="isListening || isSpeaking || isProcessing" class="absolute inset-0 opacity-50">
+                             <MoodVisualizer :audio-level="audioLevel" :is-listening="isListening" :is-speaking="isSpeaking" :palette-id="dynamicPalette" />
+                        </div>
+                        <div v-else class="relative z-10 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                            <div class="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        
+                        <!-- Interruption Icon -->
+                        <div v-if="isSpeaking" @click.stop="stopSpeaking" class="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors z-20">
+                             <div class="w-3 h-3 bg-white rounded-sm"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Modals (Persistent UI) -->
+                <UserCreationModal v-model:show-user-modal="userOps.showUserModal"
+                    :new-user-form="userOps.newUserForm" @confirm-create-user="userOps.confirmCreateUser"
                     @cancel-create-user="userOps.cancelCreateUser" />
-                <SecurityModals v-model:show-nip-modal="security.showNipModal.value"
-                    v-model:nip-input="security.nipInput.value"
-                    v-model:show-access-denied-modal="security.showAccessDeniedModal.value"
-                    :nip-error="security.nipError.value" :status-message="security.statusMessage.value"
+                <SecurityModals v-model:show-nip-modal="security.showNipModal"
+                    v-model:nip-input="security.nipInput"
+                    v-model:show-access-denied-modal="security.showAccessDeniedModal"
+                    :nip-error="security.nipError" :status-message="security.statusMessage"
                     @verify-nip="handleVerifyNip" @cancel-nip="security.cancelNip" />
                 <ReportModal :show="reportState.isOpen" :data="reportState.data" :config="reportState.config"
                     @close="closeReport" />

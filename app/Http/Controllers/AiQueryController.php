@@ -80,16 +80,15 @@ class AiQueryController extends Controller
 
                 // --- SEGURIDAD: Validar NIP para operaciones críticas ---
                 // Tablas que NO requieren NIP (Datos personales del usuario)
-                $safeTables = ['notes', 'assistant_preferences', 'contacts', 'biometric_credentials', 'expenses', 'memories', 'appointments'];
+                $safeTables = ['notes', 'assistant_preferences', 'contacts', 'biometric_credentials', 'expenses', 'memories', 'appointments', 'incomes'];
                 
                 // Verificar si la consulta afecta a tablas críticas
                 // Si la consulta contiene alguna tabla segura, asumimos que es segura POR AHORA
                 // (Una implementación más robusta analizaría la tabla exacta del FROM/UPDATE)
                 $isSafeOperation = false;
                 foreach ($safeTables as $table) {
-                    if (str_contains($lowerSql, $table)) {
+                    if (preg_match("/\b{$table}\b/i", $lowerSql)) {
                         // Regla especial para 'contacts': Debe estar delimitada por usuario (user_id)
-                        // Si es una operación global (ej: DELETE FROM contacts sin user_id), NO es segura.
                         if ($table === 'contacts' && !str_contains($lowerSql, 'user_id')) {
                             continue; 
                         }
@@ -101,7 +100,7 @@ class AiQueryController extends Controller
                 // Tablas CRÍTICAS que SIEMPRE requieren NIP (Override de seguridad)
                 $criticalTables = ['users', 'migrations', 'password_reset_tokens', 'jobs', 'failed_jobs'];
                 foreach ($criticalTables as $table) {
-                    if (str_contains($lowerSql, $table)) {
+                    if (preg_match("/\b{$table}\b/i", $lowerSql)) {
                         $isSafeOperation = false; // Si toca users, YA NO es segura
                         break;
                     }

@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('incomes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->decimal('amount', 10, 2);
+            $table->string('description');
+            $table->string('source')->nullable(); // Ej: 'Salario', 'Freelance'
+            $table->timestamp('date')->useCurrent();
             $table->timestamps();
         });
     }

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 export const bootstrap = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ bootstrap.definition = {
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 bootstrap.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ bootstrap.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 bootstrap.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ bootstrap.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 bootstrap.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ bootstrap.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 const bootstrapForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const bootstrapForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> 
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 bootstrapForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ bootstrapForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 
 /**
 * @see \App\Http\Controllers\SystemInitController::bootstrap
-* @see app/Http/Controllers/SystemInitController.php:13
+* @see app/Http/Controllers/SystemInitController.php:15
 * @route '/api/app-init'
 */
 bootstrapForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

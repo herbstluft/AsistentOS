@@ -1,16 +1,17 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 
 export interface Reminder {
     id: number;
     text: string;
     timestamp: number; // Unix timestamp in ms when it should trigger
     fired: boolean;
+    createdAt: number;
 }
 
 import { useNotifications } from '@/composables/useNotifications';
 
-// Singleton State
-const reminders = ref<Reminder[]>([]);
+// Singleton State (Global)
+export const reminders = ref<Reminder[]>([]);
 
 // Load from LocalStorage (Shared)
 const loadReminders = () => {
@@ -18,6 +19,7 @@ const loadReminders = () => {
     if (stored) {
         try {
             reminders.value = JSON.parse(stored);
+            console.log('📋 Recordatorios cargados:', reminders.value.length);
         } catch (e) {
             console.error('Error loading reminders', e);
             reminders.value = [];
@@ -28,11 +30,17 @@ const loadReminders = () => {
 // Save to LocalStorage (Shared)
 const saveReminders = () => {
     localStorage.setItem('assistant_reminders', JSON.stringify(reminders.value));
+    window.dispatchEvent(new Event('reminders-updated'));
 };
 
 export function useAssistantReminders(speak: (text: string) => void, enableChecking: boolean = true) {
     const intervalId = ref<any>(null);
     const { addNotification } = useNotifications();
+
+    // Active reminders (not fired)
+    const activeReminders = computed(() => {
+        return reminders.value.filter(r => !r.fired).sort((a, b) => a.timestamp - b.timestamp);
+    });
 
     // Add a new reminder
     const addReminder = (text: string, durationSeconds: number) => {
@@ -45,15 +53,44 @@ export function useAssistantReminders(speak: (text: string) => void, enableCheck
         const targetTime = now + (durationSeconds * 1000);
 
         const newReminder: Reminder = {
-            id: now, // Simple ID
+            id: now,
             text,
             timestamp: targetTime,
-            fired: false
+            fired: false,
+            createdAt: now
         };
 
         reminders.value.push(newReminder);
         saveReminders();
-        console.log(`🔔 Recordatorio guardado: "${text}" para ${new Date(targetTime).toLocaleTimeString()}`);
+        console.log(`🔔 Recordatorio guardado: "${text}" para ${new Date(targetTime).toLocaleString()}`);
+
+        return newReminder;
+    };
+
+    // Edit a reminder
+    const editReminder = (id: number, text: string, newTimestamp?: number) => {
+        const reminder = reminders.value.find(r => r.id === id);
+        if (reminder) {
+            reminder.text = text;
+            if (newTimestamp) {
+                reminder.timestamp = newTimestamp;
+            }
+            saveReminders();
+            console.log('✏️ Recordatorio editado:', text);
+        }
+    };
+
+    // Delete a reminder
+    const deleteReminder = (id: number) => {
+        reminders.value = reminders.value.filter(r => r.id !== id);
+        saveReminders();
+        console.log('🗑️ Recordatorio eliminado');
+    };
+
+    // Delete all fired reminders
+    const clearFiredReminders = () => {
+        reminders.value = reminders.value.filter(r => !r.fired);
+        saveReminders();
     };
 
     // Check for due reminders
@@ -66,18 +103,24 @@ export function useAssistantReminders(speak: (text: string) => void, enableCheck
                 // Trigger reminder
                 console.log(`🔔 EJECUTANDO RECORDATORIO: ${reminder.text}`);
 
-                // 1. Speak
-                speak(`🔔 Recordatorio: ${reminder.text}`);
+                // 1. Speak (Voz del asistente)
+                speak(`Recordatorio: ${reminder.text}.`);
 
                 // 2. Add to internal notification system (plays sound)
-                addNotification('Recordatorio', reminder.text, 'info');
+                addNotification('⏰ Recordatorio', reminder.text, 'info');
 
                 // 3. System Notification Backup
                 if (Notification.permission === 'granted') {
-                    new Notification('Recordatorio MoodOrbs', {
+                    const notification = new Notification('⏰ Recordatorio - Exo', {
                         body: reminder.text,
-                        icon: '/favicon.ico' // Adjust path if needed
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico',
+                        tag: `reminder-${reminder.id}`,
+                        requireInteraction: true
                     });
+
+                    // Auto-close after 10 seconds
+                    setTimeout(() => notification.close(), 10000);
                 }
 
                 reminder.fired = true;
@@ -86,8 +129,6 @@ export function useAssistantReminders(speak: (text: string) => void, enableCheck
         });
 
         if (changed) {
-            // Remove fired reminders or keep them as history? Let's remove them for now to keep it clean
-            reminders.value = reminders.value.filter(r => !r.fired);
             saveReminders();
         }
     };
@@ -97,15 +138,23 @@ export function useAssistantReminders(speak: (text: string) => void, enableCheck
         // Check every second only if enabled (Global Instance)
         if (enableChecking) {
             intervalId.value = setInterval(checkReminders, 1000);
+            console.log('⏱️ Checker de recordatorios iniciado');
         }
     });
 
     onUnmounted(() => {
-        if (intervalId.value) clearInterval(intervalId.value);
+        if (intervalId.value) {
+            clearInterval(intervalId.value);
+            console.log('⏱️ Checker de recordatorios detenido');
+        }
     });
 
     return {
         reminders,
-        addReminder
+        activeReminders,
+        addReminder,
+        editReminder,
+        deleteReminder,
+        clearFiredReminders
     };
 }

@@ -52,7 +52,7 @@ const saveSettings = () => {
 const sounds = {
     success: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3') : null,
     error: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3') : null,
-    default: typeof Audio !== 'undefined' ? new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3') : null
+    default: typeof Audio !== 'undefined' ? new Audio(notifySound) : null
 };
 
 // Initial Preload (Only once)
@@ -156,6 +156,11 @@ export function useNotifications() {
 
         // Show native system notification
         showSystemNotification(title, message, type);
+
+        // Auto-dismiss toast after 5 seconds
+        setTimeout(() => {
+            markAsRead(newNotification.id);
+        }, 5000);
 
         // Limit history to 50 items
         if (notifications.value.length > 50) {

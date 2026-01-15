@@ -1,48 +1,36 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 // --- Universal Voice State ---
-type VoiceProvider = 'elevenlabs' | 'deepgram' | 'browser';
+type VoiceProvider = 'legacy' | 'browser';
+
+const getStoredProvider = (): VoiceProvider => {
+    const stored = localStorage.getItem('exo_voice_provider');
+    if (stored === 'legacy' || stored === 'browser') return stored as VoiceProvider;
+    // Migration: discard old providers (elevenlabs, deepgram, etc)
+    return 'legacy';
+};
+
 const isSpeaking = ref(false);
-const voiceProvider = ref<VoiceProvider>((localStorage.getItem('exo_voice_provider') as VoiceProvider) || 'deepgram');
-const currentVoice = ref('l1zE9xgNpUTaQCZzpNJa'); // Default ElevenLabs voice
+const voiceProvider = ref<VoiceProvider>(getStoredProvider());
 const lastSpokenText = ref('');
 const lastSpokenTime = ref(0);
-const hasExhaustedQuota = ref(false);
 const speechQueue: string[] = [];
 let isProcessingQueue = false;
 let audioElement: HTMLAudioElement | null = null;
-
-// ElevenLabs Spanish voices
-export const ELEVENLABS_VOICES = {
-    'pFZP5JQG7iQjIQuC4Bku': { name: 'Lily', gender: 'female', lang: 'es', description: 'Femenina, cálida' },
-    'EXAVITQu4vr4xnSDxMaL': { name: 'Sarah', gender: 'female', lang: 'en', description: 'Soft, young' },
-    'FGY2WhTYpPnrIDTdsKH5': { name: 'Laura', gender: 'female', lang: 'en', description: 'Upbeat, friendly' },
-    'XB0fDUnXU5powFXDhCwa': { name: 'Charlotte', gender: 'female', lang: 'en', description: 'Elegant, measured' },
-    'pNInz6obpgDQGcFmaJgB': { name: 'Adam', gender: 'male', lang: 'en', description: 'Deep, narrative' },
-    'ErXwobaYiN019PkySvjV': { name: 'Antoni', gender: 'male', lang: 'en', description: 'Well-rounded' },
-    'l1zE9xgNpUTaQCZzpNJa': { name: 'Principal (Exo)', gender: 'neutral', lang: 'es', description: 'Voz principal configurada' },
-};
-
-// Cache API key to avoid redundant hits
-let cachedApiKey: string | null = null;
 let pendingResolve: (() => void) | null = null;
 
 export function useElevenLabsVoice() {
 
-    // Get ElevenLabs Key
-    const getElevenLabsApiKey = async (): Promise<string> => {
-        if (cachedApiKey) return cachedApiKey;
-        const response = await fetch('/api/elevenlabs/token');
-        const data = await response.json();
-        cachedApiKey = data.token;
-        return data.token;
-    };
-
-    // Get Deepgram Key
-    const getDeepgramApiKey = async (): Promise<string> => {
-        const response = await fetch('/api/deepgram/token');
-        const data = await response.json();
-        return data.token;
+    // Get OpenAI Key
+    const getOpenAIApiKey = async (): Promise<string> => {
+        if ((window as any)._openAIToken) return (window as any)._openAIToken;
+        try {
+            const response = await fetch('/api/app-init');
+            const data = await response.json();
+            return data.openai_token || '';
+        } catch (e) {
+            return '';
+        }
     };
 
     // Clean text for TTS
@@ -66,10 +54,6 @@ export function useElevenLabsVoice() {
         return cleanText.trim();
     };
 
-    // --- Speech Queue System ---
-    const speechQueue: string[] = [];
-    let isProcessingQueue = false;
-
     const processQueue = async () => {
         if (isProcessingQueue || speechQueue.length === 0) return;
         isProcessingQueue = true;
@@ -84,7 +68,7 @@ export function useElevenLabsVoice() {
         isProcessingQueue = false;
     };
 
-    const speak = async (text: string, voiceOverride?: string) => {
+    const speak = async (text: string) => {
         if (!text) return;
         console.log(`📥 QUEUEING SPEECH [${voiceProvider.value.toUpperCase()}]:`, text);
         speechQueue.push(text);
@@ -95,86 +79,92 @@ export function useElevenLabsVoice() {
         const cleanText = cleanTextForSpeech(text);
         if (!cleanText) return;
 
-        if (voiceProvider.value === 'elevenlabs' && !hasExhaustedQuota.value) {
-            await executeSpeakElevenLabs(cleanText);
-        } else if (voiceProvider.value === 'deepgram') {
-            await executeSpeakDeepgram(cleanText);
+        if (voiceProvider.value === 'legacy') {
+            await executeSpeakOpenAI(cleanText);
         } else {
-            await fallbackToWebSpeech(cleanText);
+            await executeWebSpeech(cleanText);
         }
     };
 
-    // MOTOR: ElevenLabs (Neural Realism)
-    const executeSpeakElevenLabs = async (text: string, voiceOverride?: string) => {
+    const executeSpeakOpenAI = async (text: string) => {
         isSpeaking.value = true;
         lastSpokenText.value = text.toLowerCase();
 
         try {
-            const apiKey = await getElevenLabsApiKey();
-            const voiceId = voiceOverride || currentVoice.value;
+            const apiKey = await getOpenAIApiKey();
+            if (!apiKey) throw new Error('No OpenAI API Key found');
 
-            const response = await fetch(
-                `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?optimize_streaming_latency=4`,
-                {
-                    method: 'POST',
-                    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: text,
-                        model_id: 'eleven_turbo_v2_5',
-                        voice_settings: { stability: 0.5, similarity_boost: 0.8 }
-                    }),
-                }
-            );
-
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 429) hasExhaustedQuota.value = true;
-                throw new Error(`ElevenLabs Failed: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            await playAudioBlob(blob, 1.08);
-
-        } catch (error) {
-            console.error('ElevenLabs Error:', error);
-            await fallbackToWebSpeech(text);
-        }
-    };
-
-    // MOTOR: Deepgram Aura (Quantum Latency - "Celeste")
-    const executeSpeakDeepgram = async (text: string) => {
-        isSpeaking.value = true;
-        lastSpokenText.value = text.toLowerCase();
-
-        try {
-            const apiKey = await getDeepgramApiKey();
-            const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-2-celeste-es', {
+            const response = await fetch('https://api.openai.com/v1/audio/speech', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Token ${apiKey}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ text })
+                body: JSON.stringify({
+                    model: 'tts-1',
+                    input: text,
+                    voice: 'shimmer',
+                    speed: 1.05
+                })
             });
 
-            if (!response.ok) throw new Error('Deepgram TTS failed');
+            if (!response.ok) throw new Error('OpenAI TTS failed');
 
             const blob = await response.blob();
-            await playAudioBlob(blob, 1.1); // Slightly faster for Aura
+            await playAudioBlob(blob, 1.0);
 
         } catch (error) {
-            console.error('Deepgram Error:', error);
-            await fallbackToWebSpeech(text);
+            console.error('Legacy Voice Error (OpenAI):', error);
+            await executeWebSpeech(text);
         }
     };
 
-    // SHARED: play audio helper
+    const executeWebSpeech = (text: string) => {
+        return new Promise<void>((resolve) => {
+            console.log('🌐 Using Web Speech API');
+            isSpeaking.value = true;
+            lastSpokenText.value = text.toLowerCase();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-MX';
+            utterance.rate = 1.1;
+            utterance.pitch = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.lang.includes('es-MX') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.includes('es-MX')) ||
+                voices.find(v => v.lang.includes('es'));
+
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            utterance.onend = () => {
+                isSpeaking.value = false;
+                lastSpokenTime.value = Date.now();
+                window.dispatchEvent(new CustomEvent('assistant-speech-ended'));
+                resolve();
+            };
+
+            utterance.onerror = (e) => {
+                console.error('Web Speech Error:', e);
+                isSpeaking.value = false;
+                resolve();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        });
+    };
+
     const playAudioBlob = (blob: Blob, rate: number = 1.0) => {
         return new Promise<void>((resolve) => {
             if (pendingResolve) pendingResolve();
             pendingResolve = resolve;
 
             const url = URL.createObjectURL(blob);
-            if (!audioElement) audioElement = new Audio();
+            if (!audioElement) {
+                audioElement = new Audio();
+                audioElement.preservesPitch = true;
+            }
+
             audioElement.src = url;
             audioElement.playbackRate = rate;
 
@@ -193,39 +183,11 @@ export function useElevenLabsVoice() {
                 isSpeaking.value = false;
                 onDone();
             };
+
             audioElement.play().catch(onDone);
         });
     };
 
-    // Web Speech Fallback with Promise
-    const fallbackToWebSpeech = (text: string) => {
-        return new Promise<void>((resolve) => {
-            console.log('⚠️ Falling back to Web Speech API');
-            isSpeaking.value = true;
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'es-MX';
-            utterance.rate = 1.15;
-            utterance.pitch = 1.05;
-
-            const voices = window.speechSynthesis.getVoices();
-            const spanishVoice = voices.find(v => v.lang.includes('es') && v.name.includes('Google')) ||
-                voices.find(v => v.lang.includes('es'));
-
-            if (spanishVoice) utterance.voice = spanishVoice;
-
-            utterance.onend = () => {
-                isSpeaking.value = false;
-                lastSpokenTime.value = Date.now();
-                window.dispatchEvent(new CustomEvent('assistant-speech-ended'));
-                resolve();
-            };
-
-            window.speechSynthesis.speak(utterance);
-        });
-    };
-
-    // Stop speaking
     const stopSpeaking = () => {
         speechQueue.length = 0;
         isProcessingQueue = false;
@@ -233,7 +195,7 @@ export function useElevenLabsVoice() {
         if (audioElement) {
             audioElement.pause();
             audioElement.currentTime = 0;
-            audioElement.src = ''; // Force release
+            audioElement.src = '';
         }
         window.speechSynthesis.cancel();
         isSpeaking.value = false;
@@ -244,17 +206,8 @@ export function useElevenLabsVoice() {
         }
     };
 
-    // Set voice
-    const setVoice = (voiceId: string) => {
-        currentVoice.value = voiceId;
-    };
-
-    // Unlock audio for mobile
     const unlockAudio = () => {
-        if (!audioElement) {
-            audioElement = new Audio();
-        }
-        // Play silent audio to unlock
+        if (!audioElement) audioElement = new Audio();
         audioElement.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
         audioElement.play().catch(() => { });
 
@@ -265,27 +218,17 @@ export function useElevenLabsVoice() {
         }
     };
 
-    // Get available voices
-    const getAvailableVoices = () => {
-        return Object.entries(ELEVENLABS_VOICES).map(([id, info]) => ({
-            id,
-            ...info
-        }));
-    };
-
-    // Set Provider
     const setVoiceProvider = (provider: VoiceProvider) => {
         const wasSpeaking = isSpeaking.value;
         const textToResume = lastSpokenText.value;
 
-        stopSpeaking(); // Atomic Stop
+        stopSpeaking();
 
         voiceProvider.value = provider;
         localStorage.setItem('exo_voice_provider', provider);
         console.log(`🎙️ Voice Engine switched to: ${provider}`);
 
         if (wasSpeaking && textToResume) {
-            console.log('🔄 Hot-swapping voice engine mid-sentence');
             speak(textToResume);
         }
     };
@@ -294,14 +237,10 @@ export function useElevenLabsVoice() {
         isSpeaking,
         voiceProvider,
         setVoiceProvider,
-        currentVoice,
         speak,
         stopSpeaking,
-        setVoice,
         unlockAudio,
-        getAvailableVoices,
         lastSpokenText,
-        lastSpokenTime,
-        ELEVENLABS_VOICES
+        lastSpokenTime
     };
 }

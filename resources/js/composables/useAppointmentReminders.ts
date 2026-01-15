@@ -35,10 +35,10 @@ export function useAppointmentReminders() {
             const now = new Date();
 
             // Update exposed list
-            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const cutoff = new Date(now.getTime() - 15 * 60 * 1000); // 15 mins buffer
 
             upcomingAppointments.value = appointments
-                .filter((app: any) => new Date(app.start_time) >= yesterday)
+                .filter((app: any) => new Date(app.start_time) >= cutoff)
                 .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
             // Also check reminders immediately after fetch in case we missed one
@@ -107,6 +107,12 @@ export function useAppointmentReminders() {
             console.log('🔔 New appointment data detected from socket');
             fetchAppointments();
         });
+    }
+
+    // Listen for local orchestrator updates
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('refresh-appointments', fetchAppointments);
+        window.addEventListener('refresh-appointments', fetchAppointments);
     }
 
     onMounted(() => {

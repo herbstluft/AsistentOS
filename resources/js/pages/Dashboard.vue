@@ -26,7 +26,10 @@ import {
     Brain,
     Image as ImageIcon,
     Mic,
-    Send
+    Send,
+    Square,
+    Loader2,
+    RefreshCw
 } from 'lucide-vue-next';
 import { useAssistantOrchestrator } from '@/composables/useAssistantOrchestrator';
 import { useAssistantReminders } from '@/composables/useAssistantReminders';
@@ -34,9 +37,35 @@ import { useAppointmentReminders } from '@/composables/useAppointmentReminders';
 import { useVoice } from '@/composables/useVoice';
 import { useAssistantPreferences } from '@/composables/useAssistantPreferences';
 import { useDocumentAnalyzer } from '@/composables/useDocumentAnalyzer';
+import { useEXOVoiceMode } from '@/composables/useEXOVoiceMode';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+
+// ============================================
+// 🔥 EXO REALTIME VOICE MODE 🔥
+// ============================================
+const {
+    currentMode,
+    isRealtimeMode,
+    isLegacyMode,
+    isRealtimeAvailable,
+    realtimeError,
+    isConnected: rtConnected,
+    isUserSpeaking: rtUserSpeaking,
+    isAssistantSpeaking: rtAssistantSpeaking,
+    isProcessing: rtProcessing,
+    currentTranscript: rtTranscript,
+    statusMessage: rtStatusMessage,
+    enableRealtimeMode,
+    disableRealtimeMode,
+    toggleMode,
+    checkRealtimeAvailability,
+    stopAssistant: rtStopAssistant
+} = useEXOVoiceMode();
+
+const showRealtimeToggle = ref(false);
+const isEnablingRealtime = ref(false);
 
 // Composable usage for real status
 // Composable usage for real status
@@ -69,6 +98,13 @@ watch(statusMessage, (msg) => {
     if (msg && msg.includes('BLOQUEADO')) {
         micPermissionStatus.value = 'denied';
         showMicModal.value = true;
+    }
+});
+
+// Watch for realtime transcript to show it in HUD
+watch(rtTranscript, (newText) => {
+    if (newText && isRealtimeMode.value) {
+        serverResponse.value = newText;
     }
 });
 
@@ -124,9 +160,32 @@ const handleTextSubmit = async () => {
     await processTextQuery(text);
 };
 
+// Auto-hide response HUD after 15 seconds
+let responseTimeout: number | null = null;
+watch(serverResponse, (newVal) => {
+    if (newVal) {
+        // Clear any existing timeout
+        if (responseTimeout) {
+            clearTimeout(responseTimeout);
+        }
+        // Set new timeout to clear response after 15 seconds
+        responseTimeout = window.setTimeout(() => {
+            serverResponse.value = '';
+        }, 15000);
+    }
+});
+
+const closeResponseHUD = () => {
+    serverResponse.value = '';
+    if (responseTimeout) {
+        clearTimeout(responseTimeout);
+        responseTimeout = null;
+    }
+};
+
 // Use core functions directly
 // Use core functions directly
-const toggleMic = (event?: MouseEvent) => {
+const toggleMic = async (event?: MouseEvent) => {
     // SECURITY CHECK: Block script-generated clicks
     if (event && !event.isTrusted) {
         console.error('🤖 CLIC FANTASMA BLOQUEADO: El evento no es confiable (isTrusted=false).');
@@ -135,10 +194,39 @@ const toggleMic = (event?: MouseEvent) => {
 
     console.log('👆 toggleMic invocado por usuario real.');
 
-    if (isListening.value) {
-        stopMicrophone();
-    } else {
-        triggerMicActivation(true);
+    // CASE 1: REALTIME MODE (Gemini Live - Audio to Audio)
+    if (voiceProvider.value === 'realtime') {
+        if (isRealtimeMode.value) {
+            // If already connected and speaking, barge-in (stop speaking)
+            if (rtAssistantSpeaking.value) {
+                rtStopAssistant();
+            } else {
+                // If connected but silent, just disconnect (stop listening totally)
+                disableRealtimeMode();
+            }
+        } else {
+            // ACTIVATE: This is where we connect ONLY after user gesture
+            try {
+                isEnablingRealtime.value = true;
+                await enableRealtimeMode({
+                    userId: user.value.id.toString(),
+                    userName: user.value.name,
+                    context: `Usuario ejecutivo. Hora actual: ${new Date().toLocaleString('es-MX')}`
+                });
+            } catch (error) {
+                console.error('Error starting Realtime session:', error);
+            } finally {
+                isEnablingRealtime.value = false;
+            }
+        }
+    }
+    // CASE 2: STANDARD MODE (Sequential - Deepgram + Gemini + ElevenLabs)
+    else {
+        if (isListening.value) {
+            stopMicrophone();
+        } else {
+            triggerMicActivation(true);
+        }
     }
 };
 const { upcomingAppointments } = useAppointmentReminders(); // Read DB appointments
@@ -156,10 +244,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 const greeting = ref('');
 const time = ref('');
 const date = ref('');
+const currentTime = ref(Date.now());
 let timeInterval: number | null = null;
 
 const updateTime = () => {
     const now = new Date();
+    currentTime.value = now.getTime();
     time.value = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     date.value = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -173,9 +263,98 @@ const handleOpenReports = () => {
     window.dispatchEvent(new CustomEvent('trigger-ai-report'));
 };
 
-onMounted(() => {
+// ============================================
+// 🎯 UNIFIED STATE (Legacy + Realtime)
+// ============================================
+// True if the assistant is currently outputting voice
+const unifiedIsSpeaking = computed(() => {
+    return isRealtimeMode.value ? rtAssistantSpeaking.value : isSpeaking.value;
+});
+
+// True if the microphone/session is actively listening for user input
+const unifiedIsListening = computed(() => {
+    return isRealtimeMode.value ? isRealtimeMode.value : isListening.value;
+});
+
+// True specifically when user voice energy is detected (VAD)
+const unifiedIsUserSpeaking = computed(() => {
+    return isRealtimeMode.value ? rtUserSpeaking.value : isListening.value;
+});
+
+const unifiedStatusMessage = computed(() => {
+    return isRealtimeMode.value ? rtStatusMessage.value : statusMessage.value;
+});
+
+const unifiedIsProcessing = computed(() => {
+    return isRealtimeMode.value ? rtProcessing.value : isProcessing.value;
+});
+
+// ============================================
+// 🚀 REALTIME MODE TOGGLE
+// ============================================
+// ============================================
+// 🎙️ UNIFIED VOICE LOGIC
+// ============================================
+const handleVoiceProviderChange = async (provider: 'realtime' | 'standard') => {
+    // 1. Stop everything if currently active
+    unifiedStopSpeaking();
+
+    // 2. Clear Realtime connection if switching away from legacy
+    if (isRealtimeMode.value) {
+        disableRealtimeMode();
+    }
+
+    // 3. Set new provider (This only sets the PREFERENCE, doesn't open the mic)
+    setVoiceProvider(provider);
+    console.log(`🎙️ Voice Engine prepared: ${provider.toUpperCase()}`);
+};
+
+// Update our watch to handle the button click correctly
+watch(voiceProvider, (newVal) => {
+    // Persistent logic if needed, but we use handleVoiceProviderChange for UI clicks
+});
+
+// We replace setVoiceProvider in the template with handleVoiceProviderChange
+const handleToggleRealtimeMode = () => {
+    // Deprecated
+};
+
+// ============================================
+// 🛑 UNIFIED STOP FUNCTIONS
+// ============================================
+const unifiedStopSpeaking = () => {
+    if (isRealtimeMode.value) {
+        rtStopAssistant();
+    } else {
+        stopSpeaking();
+    }
+};
+
+const unifiedStopMicrophone = () => {
+    if (isRealtimeMode.value) {
+        // In realtime mode, stopping is handled by toggling the mode off
+        // or by the assistant's own logic
+    } else {
+        stopMicrophone();
+    }
+};
+
+onMounted(async () => {
     updateTime(); // Actualizar inmediatamente
     timeInterval = window.setInterval(updateTime, 60000); // Cada minuto
+
+    // ⚡ Check Realtime Availability (Check ONLY, don't connect)
+    try {
+        const available = await checkRealtimeAvailability();
+        if (available) {
+            showRealtimeToggle.value = true;
+            console.log('✅ Realtime Voice Mode disponible');
+        } else {
+            console.log('⚠️ Realtime Voice Mode no disponible:', realtimeError.value);
+        }
+    } catch (error) {
+        console.error('Error checking realtime:', error);
+    }
 });
 
 onBeforeUnmount(() => {
@@ -202,26 +381,13 @@ const summaryState = computed(() => {
     }));
 
     // 3. Merge and Sort
-    const now = Date.now();
-    const yesterday = now - (24 * 60 * 60 * 1000);
+    const now = currentTime.value;
+    // Only show items from now onwards (or at most 5 minutes ago to catch "just started")
+    const threshold = now - (5 * 60 * 1000);
 
     const all = [...localItems, ...dbItems]
-        .filter(item => item.timestamp > yesterday)
-        .sort((a, b) => {
-            const aIsFuture = a.timestamp >= now;
-            const bIsFuture = b.timestamp >= now;
-
-            // Prioritize Future over Past
-            if (aIsFuture && !bIsFuture) return -1;
-            if (!aIsFuture && bIsFuture) return 1;
-
-            // If both are Future: Ascending (Soonest first)
-            if (aIsFuture && bIsFuture) return a.timestamp - b.timestamp;
-
-            // If both are Past: Descending (Most recent past first)
-            // This keeps "just missed" items near the top, and "long ago" items at the bottom
-            return b.timestamp - a.timestamp;
-        });
+        .filter(item => item.timestamp > threshold)
+        .sort((a, b) => a.timestamp - b.timestamp); // Ascending: Soonest first
 
     if (all.length === 0) {
         return {
@@ -233,11 +399,15 @@ const summaryState = computed(() => {
     }
 
     // Take top 3
-    const top3 = all.slice(0, 3).map(r => ({
-        time: new Date(r.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-        text: r.text,
-        type: r.type
-    }));
+    const top3 = all.slice(0, 3).map(r => {
+        const itemDate = new Date(r.timestamp);
+        return {
+            time: itemDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+            date: itemDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }),
+            text: r.text,
+            type: r.type
+        };
+    });
 
     return {
         reminders: top3,
@@ -285,7 +455,7 @@ const summaryState = computed(() => {
 
                 <!-- 1. AI COMMAND CENTER (Main Stage) -->
                 <div id="tour-genesis"
-                    class="lg:col-span-8 lg:row-span-2 relative group flex-1 min-h-[350px] md:min-h-[500px] lg:min-h-0 basis-auto ai-hub-container bento-card"
+                    class="lg:col-span-8 lg:row-span-2 relative group flex-1 min-h-[350px] br-30 md:min-h-[500px] lg:min-h-0 basis-auto ai-hub-container bento-card"
                     @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
 
                     <div
@@ -293,27 +463,11 @@ const summaryState = computed(() => {
 
                         <!-- Visualizer Background (Static) -->
                         <div id="tour-mood"
-                            class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none mood-orbs-container z-10">
-                            <div class="relative w-[300px] h-[300px] md:w-full md:max-w-[500px] md:aspect-square">
-                                <!-- Idle Ring (Static) -->
-                                <div v-if="!isSpeaking"
-                                    class="absolute inset-0 border border-muted-foreground/20 rounded-full">
-                                </div>
-                                <div v-if="!isSpeaking"
-                                    class="absolute inset-4 border border-muted-foreground/10 rounded-full">
-                                </div>
-
-                                <!-- Logo/Core -->
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <Brain v-if="!isSpeaking"
-                                        class="w-16 h-16 md:w-24 md:h-24 text-muted-foreground/50" />
-                                </div>
-
-                                <!-- Active Voice Wave -->
-                                <div v-if="isSpeaking"
-                                    class="absolute inset-0 flex items-center justify-center scale-150">
-                                    <SiriWave :is-speaking="isSpeaking" />
-                                </div>
+                            class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                            <div class="relative w-full h-full flex items-center justify-center">
+                                <!-- Logo/Core (Enhanced Visibility) -->
+                                <Brain v-if="!unifiedIsSpeaking"
+                                    class="w-16 h-16 md:w-24 md:h-24 text-primary/40 brightness-90 md:brightness-100" />
                             </div>
                         </div>
 
@@ -329,16 +483,6 @@ const summaryState = computed(() => {
                                         <span class="uppercase tracking-widest">{{ assistantName || 'EXO CORE' }}</span>
                                     </div>
 
-                                    <!-- Voice Engine Selector -->
-                                    <div
-                                        class="flex items-center gap-1 bg-secondary rounded-full p-1 border border-border shadow-inner">
-                                        <button v-for="p in ['elevenlabs', 'deepgram', 'browser']" :key="p"
-                                            @click="setVoiceProvider(p as any)" :disabled="isSpeaking"
-                                            class="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase transition-none disabled:opacity-30 disabled:cursor-not-allowed"
-                                            :class="voiceProvider === p ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'">
-                                            {{ p === 'elevenlabs' ? 'LABS' : p === 'deepgram' ? 'AURA' : 'WEB' }}
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
 
@@ -347,48 +491,61 @@ const summaryState = computed(() => {
                                 class="flex-1 flex flex-col items-center justify-center text-center space-y-4 md:space-y-8">
                                 <!-- Real-time Status Text -->
                                 <div class="space-y-2 mb-4">
-                                    <h2 v-if="isListening"
+                                    <h2 v-if="unifiedIsSpeaking"
+                                        class="text-xl md:text-3xl font-black tracking-tighter text-primary uppercase">
+                                        {{ assistantName }} rindiendo
+                                    </h2>
+                                    <h2 v-else-if="unifiedIsUserSpeaking"
                                         class="text-2xl md:text-4xl font-black tracking-tighter text-foreground uppercase">
                                         Escuchando...
                                     </h2>
-                                    <h2 v-else-if="isProcessing"
+                                    <h2 v-else-if="unifiedIsProcessing"
                                         class="text-2xl md:text-4xl font-black tracking-tighter text-foreground uppercase">
                                         Pensando...
                                     </h2>
-                                    <h2 v-else-if="isSpeaking"
-                                        class="text-xl md:text-3xl font-black tracking-tighter text-primary uppercase">
-                                        {{ assistantName }} rindiendo
+                                    <h2 v-else-if="unifiedIsListening"
+                                        class="text-2xl md:text-4xl font-black tracking-tighter text-primary/60 uppercase">
+                                        En espera
                                     </h2>
                                     <h2 v-else
                                         class="text-2xl md:text-4xl font-black tracking-tighter text-muted-foreground opacity-20 uppercase">
                                         Sistema Activo
                                     </h2>
-                                    <p v-if="isListening"
+                                    <p v-if="unifiedIsListening"
                                         class="text-primary font-black text-[10px] tracking-[0.3em] uppercase">Protocolo
                                         Quantum</p>
                                 </div>
 
                                 <!-- Central Visualizer Stage -->
                                 <div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
-                                    <div v-if="!isSpeaking && !isListening && !isProcessing"
+                                    <div v-if="!unifiedIsSpeaking && !unifiedIsUserSpeaking && !unifiedIsProcessing"
                                         class="absolute inset-0 bg-primary/5 rounded-full"></div>
-                                    <SiriWave :is-speaking="isSpeaking || isListening || isProcessing"
-                                        :amplitude="isListening ? 1.5 : (isSpeaking ? 1.2 : 0.4)" />
+                                    <SiriWave :is-speaking="unifiedIsSpeaking || unifiedIsUserSpeaking"
+                                        :amplitude="unifiedIsUserSpeaking ? 1.5 : (unifiedIsSpeaking ? 1.2 : 0.0)" />
                                 </div>
                             </div>
 
-                            <!-- FLOATING COMMAND BAR (Pinned to bottom) -->
                             <div class="absolute bottom-6 md:bottom-8 left-0 right-0 px-4 md:px-8 z-30">
                                 <div id="tour-mic" class="w-full max-w-2xl mx-auto mic-button-container">
                                     <div
-                                        class="command-bar-container relative flex items-center gap-1.5 md:gap-3 p-1.5 md:p-2 pr-1.5 md:pr-3 bg-card border border-border rounded-full shadow-lg">
+                                        class="command-bar-container relative flex items-center gap-1.5 md:gap-3 p-2 pr-3 bg-card/80 backdrop-blur-xl border border-primary/10 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
 
-                                        <!-- Mic Toggle -->
+                                        <!-- Mic Toggle (Enhanced Contrast) -->
                                         <button @click="toggleMic($event)"
-                                            class="w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-none shrink-0 relative overflow-hidden group/mic"
-                                            :class="isListening ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-secondary text-foreground hover:bg-muted'">
-                                            <Mic v-if="!!isListening" class="w-5 h-5 md:w-6 md:h-6" />
-                                            <div v-else class="w-4 h-4 bg-primary-foreground rounded-sm"></div>
+                                            class="w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 relative overflow-hidden group/mic shadow-md hover:shadow-lg active:scale-95"
+                                            :class="unifiedIsListening ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' : 'bg-secondary text-primary hover:bg-muted border border-border/50'">
+
+                                            <!-- Listening Icon (Stable) -->
+                                            <Mic v-if="unifiedIsListening && !unifiedIsSpeaking"
+                                                class="w-5 h-5 md:w-6 md:h-6"
+                                                :class="{ 'animate-pulse': unifiedIsUserSpeaking }" />
+
+                                            <!-- Stop Icon (When speaking or in Realtime) -->
+                                            <Square v-else-if="unifiedIsSpeaking || isRealtimeMode"
+                                                class="w-4 h-4 md:w-5 md:h-5 fill-current" />
+
+                                            <!-- Idle Mic Icon -->
+                                            <Mic v-else class="w-5 h-5 md:w-6 md:h-6 opacity-80" />
                                         </button>
 
                                         <!-- Text Input -->
@@ -428,7 +585,13 @@ const summaryState = computed(() => {
                             <div v-show="serverResponse"
                                 class="absolute bottom-28 md:bottom-36 left-0 right-0 flex justify-center px-4 md:px-10 z-40 pointer-events-none">
                                 <div
-                                    class="response-hud-container w-full max-w-2xl bg-card border-2 border-primary/20 rounded-[2rem] p-5 md:p-8 shadow-2xl pointer-events-auto transition-none">
+                                    class="response-hud-container w-full max-w-2xl bg-card border-2 border-primary/20 rounded-[2rem] p-5 md:p-8 shadow-2xl pointer-events-auto transition-none relative">
+                                    <!-- Close Button -->
+                                    <button @click="closeResponseHUD"
+                                        class="absolute top-3 right-3 w-6 h-6 rounded-full bg-secondary hover:bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                                        <span class="text-xs font-bold">✕</span>
+                                    </button>
+                                    
                                     <div class="max-h-[120px] md:max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                                         <p
                                             class="text-sm md:text-lg text-foreground font-bold leading-relaxed text-center tracking-tight text-pretty">
@@ -489,13 +652,19 @@ const summaryState = computed(() => {
 
                             <div v-if="summaryState.reminders.length > 0" class="space-y-4 flex-1">
                                 <div v-for="(rem, idx) in summaryState.reminders" :key="idx"
-                                    v-memo="[rem.time, rem.text]"
+                                    v-memo="[rem.time, rem.date, rem.text]"
                                     class="flex gap-4 items-start p-3 rounded-xl bg-secondary border border-border">
-                                    <span
-                                        class="text-xs font-black text-emerald-600 mt-1 shrink-0 bg-emerald-500/10 px-2 py-0.5 rounded whitespace-nowrap">{{
-                                            rem.time }}</span>
-                                    <p class="text-sm text-foreground font-bold leading-snug line-clamp-2">{{ rem.text
-                                    }}</p>
+                                    <div class="flex flex-col gap-1 shrink-0">
+                                        <span
+                                            class="text-[10px] font-black text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded whitespace-nowrap text-center">{{
+                                                rem.time }}</span>
+                                        <span
+                                            class="text-[8px] font-bold text-muted-foreground uppercase text-center">{{
+                                                rem.date }}</span>
+                                    </div>
+                                    <p class="text-sm text-foreground font-bold leading-snug line-clamp-2 mt-0.5">{{
+                                        rem.text
+                                        }}</p>
                                 </div>
                             </div>
 
